@@ -7,20 +7,38 @@
             <form id="add_content_to_bank_{{ bank_title }}">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5">Add Content: {{ bank_title }}</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> 
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                        <div class="row" style="width: 80%">
-                                <input class="form-control" type="file" name="file" required  style="margin-bottom: 20px">
-                                <select class="form-select" name="content_type" required>
-                                    <option selected disabled value="">Select content type</option>
-                                    {% for c in content %}
-                                        {% if c['enabled'] %}
-                                            <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
+                    <div class="row">
+                        <div class="col">
+                            <select id="bank-add-content-type" class="form-select" name="content_type" required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                {% if c['enabled'] %}
+                                <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
                         </div>
+                        <div class="col">
+                            <input id="bank-add-file-input" class="form-control" type="file" name="file" required>
+                        </div>
+                        <script>
+                            const contentTypeSelect = document.getElementById('bank-add-content-type');
+                            const fileInput = document.getElementById('bank-add-file-input');
+                            contentTypeSelect.addEventListener('change', (e) => {
+                                // Special case selections for our well known types
+                                if (e.target.value === 'photo') {
+                                    fileInput.accept = "image/*";
+                                } else if (e.target.value === 'video') {
+                                    fileInput.accept = "video/*";
+                                } else {
+                                    fileInput.accept = "file";
+                                }
+                            });
+                        </script>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Add</button>
