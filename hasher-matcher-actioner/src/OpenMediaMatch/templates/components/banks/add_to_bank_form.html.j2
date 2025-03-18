@@ -1,26 +1,33 @@
 {# Copyright (c) Meta Platforms, Inc. and affiliates. #}
-<button type="button" class="btn btn-light" data-bs-toggle="modal" data-bs-target="#{{bank_title}}">Add content</button>
+<button type="button" class="btn btn-light" data-bs-toggle="modal"
+    data-bs-target="#add-content-modal-{{bank_title}}">Add content</button>
 <!-- Modal -->
-<div class="modal fade" id="{{bank_title}}" tabindex="-1">
+<div class="modal fade" id="add-content-modal-{{bank_title}}" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 60%; max-width: none;">
         <div class="modal-content modal-xl" style="padding: 20px">
             <form id="add_content_to_bank_{{ bank_title }}">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5">Add Content: {{ bank_title }}</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> 
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                        <div class="row" style="width: 80%">
-                                <input class="form-control" type="file" name="file" required  style="margin-bottom: 20px">
-                                <select class="form-select" name="content_type" required>
-                                    <option selected disabled value="">Select content type</option>
-                                    {% for c in content %}
-                                        {% if c['enabled'] %}
-                                            <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
-                                        {% endif %}
-                                    {% endfor %}
-                                </select>
+                    <div class="row">
+                        <div class="col">
+                            <select id="bank-add-content-type-{{ bank_title }}" class="form-select" name="content_type"
+                                required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                {% if c['enabled'] %}
+                                <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
                         </div>
+                        <div class="col">
+                            <input id="bank-add-file-input-{{ bank_title }}" class="form-control" type="file"
+                                name="file" required>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Add</button>
@@ -32,6 +39,3 @@
         </div>
     </div>
 </div>
-<script>
-
-</script>
