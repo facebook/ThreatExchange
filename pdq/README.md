@@ -13,6 +13,7 @@ See also the [Meta Newsroom Post](https://newsroom.fb.com/news/2019/08/open-sour
 As of November 2018 there are C++, PHP, and Java implementations.  Details are in the `*/README.md` files.
 
 ## Other Bindings and Implementations
+* C# / DotNet: [crispthinking/pdqhash](https://github.com/crispthinking/PdqHash)
 * Python: [faustomorales/pdqhash-python](https://github.com/faustomorales/pdqhash-python)
 * Rust: [darwinium-com/pdqhash](https://github.com/darwinium-com/pdqhash) - a great visualization of the algorithm also lives here.
 
