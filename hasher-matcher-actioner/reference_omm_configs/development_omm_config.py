@@ -35,6 +35,7 @@ PRODUCTION = False
 ROLE_HASHER = True
 ROLE_MATCHER = True
 ROLE_CURATOR = True
+UI_ENABLED = True
 # APScheduler (background threads for development)
 TASK_FETCHER = True
 TASK_INDEXER = True
