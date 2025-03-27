@@ -20,3 +20,4 @@ DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 # Role configuration
 PRODUCTION = True
 ROLE_CURATOR = True
+UI_ENABLED = True

@@ -116,7 +116,7 @@ def home():
         "signal": curation.get_all_signal_types(),
         "content": curation.get_all_content_types(),
         "exchange_apis": _api_cls_info(),
-        "production": current_app.config.get("PRODUCTION", True),
+        "production": current_app.config.get("PRODUCTION", False),
         "index": _index_info(),
         "collabs": _collab_info(),
         "is_banks_seeded": contains_seed_bank_0 and contains_seed_bank_1,

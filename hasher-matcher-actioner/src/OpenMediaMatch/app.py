@@ -149,17 +149,15 @@ def create_app() -> flask.Flask:
 
         storage.init_flask(app)
 
-        is_production = app.config.get("PRODUCTION", True)
+        is_ui_enabled = app.config.get("UI_ENABLED", False)
         # Register Flask blueprints for whichever server roles are enabled...
         # URL prefixing facilitates easy Layer 7 routing :)
 
-        if (
-            not is_production
-            and app.config.get("ROLE_HASHER", False)
-            and app.config.get("ROLE_MATCHER", False)
-        ):
-            app.register_blueprint(development.bp, url_prefix="/dev")
+        if is_ui_enabled:
             app.register_blueprint(ui.bp, url_prefix="/ui")
+
+        if not app.config.get("PRODUCTION", False):
+            app.register_blueprint(development.bp, url_prefix="/dev")
 
         if app.config.get("ROLE_HASHER", False):
             app.register_blueprint(hashing.bp, url_prefix="/h")
@@ -174,7 +172,7 @@ def create_app() -> flask.Flask:
 
     @app.route("/")
     def home():
-        dst = "status" if is_production else "ui"
+        dst = "status" if is_ui_enabled else "ui"
         return flask.redirect(f"/{dst}")
 
     @app.route("/status")
