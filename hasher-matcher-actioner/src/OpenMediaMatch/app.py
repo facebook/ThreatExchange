@@ -172,7 +172,7 @@ def create_app() -> flask.Flask:
 
     @app.route("/")
     def home():
-        dst = "status" if is_ui_enabled else "ui"
+        dst = "ui" if is_ui_enabled else "status"
         return flask.redirect(f"/{dst}")
 
     @app.route("/status")
