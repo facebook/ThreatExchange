@@ -8,7 +8,7 @@ ifeq ($(OS),Windows_NT)
   OMP_LIB=-lgomp
 else
   CC_IF_WIN=$(CXX) -O2 -std=c++14 -I../.. 
-  OMP_LIB=-lomp
+  OMP_LIB=-lgomp
 endif
 
 # ----------------------------------------------------------------
