@@ -11,6 +11,19 @@ produced in conjunction with Facebook AI Research ('FAIR').
   https://github.com/facebookresearch/videoalignment for a research version of
   TMK, with different parameter-weighting than presented here.
 
+- The Tech Coalition evaluated TMK+PDQF as part of their [Benchmark-based Analysis of Perceptual Hash Systems for Video](https://www.technologycoalition.org/knowledge-hub/phvspec-a-benchmark-based-analysis-of-perceptual-hash-systems-for-videos), where you can compare it's performance characteristics against other video detection systems, and [vPDQ](https://github.com/facebook/ThreatExchange/tree/main/vpdq), which is also in this library.
+
+- TMK+PDQF was targeted for a specific performance niche that has been mostly unexplored by other perceptual video algorithms. Make sure you understand the tradeoffs vs other algorithms.
+  - TMK focused on ease-of-indexing, with fixed length hashes, aiming to find a simple video perceptual hash that could replace the use cryptographic file hashes to find identical videos.
+  - The primary usecase imagined was making matches of full videos that were nearly identical
+    - With PDQ as the default frame algorithm, it tolerates minor edits like watermarking, and generally inherits all of PDQ's strengths and weaknesses
+    - Consider using much higher thresholds for level-1 and level-2 scores if using TMK+PDQF to look for exact matches (.9 or higher).  
+  - The secondary usecase imagined was as a pre-filtering step for more expensive and discerning hashing algorithms
+    - When using it for this purpose, one would use the suggested relaxed thresholds to generate candidate matches for comparing with the more expensive algorithm
+    - You could also choose to only use level-1 or level-2 thresholds (instead of both), or otherwise adjust thresholds to meet your desired recall vs lookup cost.  
+  - While the algorithm explores some techniques for matching speed-altered versions of videos, it is weak at matching clips, and doesn't imagine solutions for streaming video in the initial release.
+  - Check out the [the above benchmark](https://www.technologycoalition.org/knowledge-hub/phvspec-a-benchmark-based-analysis-of-perceptual-hash-systems-for-videos) for other performance characteristics. 
+
 # Status
 
 - For cross-company sharing, for exports, one needs to compute hashes for a
@@ -21,7 +34,7 @@ produced in conjunction with Facebook AI Research ('FAIR').
   is single-machine-only: nothing is connected up to databases or RPC yet.
 
 - Integration with [FAISS](https://github.com/facebookresearch/faiss) has been
-  successfully prototyped -- we will post information about this soon.
+  successfully prototyped.
 
 # Goals
 
