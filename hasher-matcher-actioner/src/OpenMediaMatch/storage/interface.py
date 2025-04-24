@@ -418,7 +418,7 @@ class IBankStore(metaclass=abc.ABCMeta):
     # Bank content
     @abc.abstractmethod
     def bank_content_get(
-        self, id: t.Iterable[int], signal_type: t.Optional[str] = None
+        self, id: t.Iterable[int], *, include_signals: bool = false
     ) -> t.Sequence[BankContentConfig]:
         """
         Get the content config for a bank.
