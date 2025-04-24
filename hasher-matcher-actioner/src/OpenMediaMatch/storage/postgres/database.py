@@ -159,7 +159,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         self.disable_until_ts = cfg.disable_until_ts
         return self
 
-    def as_storage_iface_cls(self, include_signals: bool = False) -> BankContentConfig:
+    def as_storage_iface_cls(self, *, include_signals: bool = False) -> BankContentConfig:
         """
         Convert a database BankContent record to a BankContentConfig interface object.
 
