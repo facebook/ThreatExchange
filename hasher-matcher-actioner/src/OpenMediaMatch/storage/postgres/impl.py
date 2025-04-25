@@ -37,7 +37,7 @@ from threatexchange.exchanges.fetch_state import (
 )
 
 from OpenMediaMatch.storage import interface
-from threatexchange.cli.storage.interfaces import SignalTypeConfig
+from threatexchange.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.storage.postgres import database, flask_utils
 
 
@@ -513,6 +513,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             ).one_or_404()
             previous.name = bank.name
             previous.enabled_ratio = bank.matching_enabled_ratio
+            previous.content_type_counts = bank.content_type_counts
 
         database.db.session.commit()
 
@@ -617,6 +618,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         # Query for all ContentSignals and stream results with the proper batch size
         query = (
             select(database.ContentSignal)
+            .join(database.BankContent)
+            .join(database.Bank)
             .order_by(
                 database.ContentSignal.signal_type,
                 database.ContentSignal.create_time,
@@ -640,7 +643,14 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
             # Yield the results as BankContentIterationItem
             for row in partition:
-                yield row._tuple()[0].as_iteration_item()
+                content_signal = row._tuple()[0]
+                yield interface.BankContentIterationItem(
+                    signal_type_name=content_signal.signal_type,
+                    signal_val=content_signal.signal_val,
+                    bank_content_id=content_signal.content_id,
+                    bank_content_timestamp=int(content_signal.create_time.timestamp()),
+                    bank_name=content_signal.content.bank.name
+                )
 
     def init_flask(self, app: flask.Flask) -> None:
         migrate = flask_migrate.Migrate()

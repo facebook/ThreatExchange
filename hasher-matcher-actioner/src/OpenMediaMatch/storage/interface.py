@@ -351,6 +351,7 @@ class BankContentIterationItem:
     signal_val: str
     bank_content_id: int
     bank_content_timestamp: int
+    bank_name: str
 
 
 class IBankStore(metaclass=abc.ABCMeta):
