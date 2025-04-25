@@ -59,11 +59,11 @@ from threatexchange.utils import dataclass_json
 
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.storage.interface import (
+    BankContentIterationItem,
     BankConfig,
     BankContentConfig,
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
-    BankContentIterationItem,
     SignalExchangeAPIConfig,
 )
 
@@ -112,7 +112,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
         return BankConfig(
             name=self.name,
             matching_enabled_ratio=self.enabled_ratio,
-            content_type_counts=self.content_type_counts
+            content_type_counts=self.content_type_counts,
         )
 
     @classmethod
@@ -120,7 +120,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
         return cls(
             name=cfg.name,
             enabled_ratio=cfg.matching_enabled_ratio,
-            content_type_counts=cfg.content_type_counts
+            content_type_counts=cfg.content_type_counts,
         )
 
     @validates("name")
@@ -209,6 +209,7 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
             signal_val=self.signal_val,
             bank_content_id=self.content_id,
             bank_content_timestamp=int(self.create_time.timestamp()),
+            bank_name=self.content.bank.name,
         )
 
 

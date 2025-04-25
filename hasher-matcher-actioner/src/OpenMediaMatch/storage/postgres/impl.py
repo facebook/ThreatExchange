@@ -649,7 +649,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     signal_val=content_signal.signal_val,
                     bank_content_id=content_signal.content_id,
                     bank_content_timestamp=int(content_signal.create_time.timestamp()),
-                    bank_name=content_signal.content.bank.name
+                    bank_name=content_signal.content.bank.name,
                 )
 
     def init_flask(self, app: flask.Flask) -> None:
