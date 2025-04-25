@@ -70,7 +70,7 @@ class TATHashListAPI:
     For our Hash List documentation: https://terrorismanalytics.org/docs/hash-list-v1
     """
 
-    BASE_URL: t.ClassVar[str] = "https://beta.terrorismanalytics.org/"
+    BASE_URL: t.ClassVar[str] = "https://app.terrorismanalytics.org/"
 
     def __init__(self, username: str, password: str) -> None:
         self.username = username
