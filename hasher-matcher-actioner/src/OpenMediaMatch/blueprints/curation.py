@@ -38,7 +38,10 @@ bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 @bp.route("/banks", methods=["GET"])
 def banks_index():
     storage = persistence.get_storage()
-    return [{"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio} for bank in storage.get_banks().values()]
+    return [
+        {"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio}
+        for bank in storage.get_banks().values()
+    ]
 
 
 @bp.route("/bank/<bank_name>", methods=["GET"])
@@ -61,7 +64,10 @@ def bank_create():
     elif "enabled" in data:
         enabled_ratio = 1.0 if flask_utils.str_to_bool(data["enabled"]) else 0.0
     bank = bank_create_impl(name, enabled_ratio)
-    return {"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio}, 201
+    return {
+        "name": bank.name,
+        "matching_enabled_ratio": bank.matching_enabled_ratio,
+    }, 201
 
 
 def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:

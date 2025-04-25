@@ -67,7 +67,8 @@ def build_index(
         )
     elif bank_checkpoint is None:
         logger.info(
-            "No bank content found for %s, skipping index build", for_signal_type.get_name()
+            "No bank content found for %s, skipping index build",
+            for_signal_type.get_name(),
         )
         return
     elif (
@@ -86,7 +87,7 @@ def build_index(
     signal_list = []
     last_cs = None
     bank_content_counts: dict[str, dict[str, int]] = {}
-    seen_signals = set() 
+    seen_signals = set()
 
     for last_cs in bank_store.bank_yield_content(for_signal_type):
         signal_tuple = (last_cs.signal_val, last_cs.bank_content_id)
@@ -103,7 +104,10 @@ def build_index(
                 )
 
     if not signal_list:
-        logger.info("No content found for signal type %s, creating empty index", for_signal_type.get_name())
+        logger.info(
+            "No content found for signal type %s, creating empty index",
+            for_signal_type.get_name(),
+        )
         # Create an empty index with an empty checkpoint
         built_index = index_cls.build([])
         checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
