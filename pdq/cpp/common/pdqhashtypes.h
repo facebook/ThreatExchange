@@ -39,7 +39,7 @@ struct Hash256 {
   // align to 64-bit boundary for faster scalar popcnt
   // (compiler can optimize without peeling to natural word size)
   // index/flat.h also relies on this assumption, do not remove.
-  Hash16 __attribute__((aligned(8))) w[HASH256_NUM_WORDS];
+  Hash16 w[HASH256_NUM_WORDS] __attribute__((aligned(8)));
 
   int getNumWords() const { return HASH256_NUM_WORDS; }
 

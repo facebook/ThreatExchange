@@ -35,6 +35,9 @@ class Flat {
     uint64_t __attribute__((aligned(64))) tmp[8];
     const __m512i ones = _mm512_set1_epi64(~0ULL);
 
+    // Split 256-bit hash into 4x64-bit words, then place each hash vertically
+    // in 64-bit lanes.
+
     for (size_t regi = 0; regi < 4; regi++) {
       for (size_t needlei = 0; needlei < 8; needlei++) {
         tmp[needlei] = ((uint64_t*)(&needles[needlei].w))[regi];
@@ -73,25 +76,32 @@ class Flat {
     auto result = _mm512_setzero_si512();
     for (size_t i = 0; i < haystack_size; i++) {
       const auto quadWords = (uint64_t*)&haystack[i].w;
+      // broadcast each quad word to a register.
       const auto query0 = _mm512_set1_epi64(quadWords[0]);
       const auto query1 = _mm512_set1_epi64(quadWords[1]);
       const auto query2 = _mm512_set1_epi64(quadWords[2]);
       const auto query3 = _mm512_set1_epi64(quadWords[3]);
 
+      // xor the query with the needles.
       const auto diff0 = _mm512_xor_epi64(query0, _packedNeedles[0]);
       const auto diff1 = _mm512_xor_epi64(query1, _packedNeedles[1]);
       const auto diff2 = _mm512_xor_epi64(query2, _packedNeedles[2]);
       const auto diff3 = _mm512_xor_epi64(query3, _packedNeedles[3]);
 
+      // population count, since we complemented the query now the result is the
+      // # of bits that were the same.
       const auto popcnt0 = _mm512_popcnt_epi64(diff0);
       const auto popcnt1 = _mm512_popcnt_epi64(diff1);
       const auto popcnt2 = _mm512_popcnt_epi64(diff2);
       const auto popcnt3 = _mm512_popcnt_epi64(diff3);
 
+      // vertical summation
       const auto reduction0 = _mm512_add_epi64(popcnt0, popcnt1);
       const auto reduction1 = _mm512_add_epi64(popcnt2, popcnt3);
       const auto reduction = _mm512_add_epi64(reduction0, reduction1);
 
+      // add the threshold, now if the distance was within threshold, this
+      // distance would be between 256 and 256 * 2 - 1 (i.e. dist & 256 != 0)
       result = _mm512_or_si512(result, _mm512_add_epi64(reduction, addend));
     }
 
@@ -134,28 +144,36 @@ class Flat {
     const auto threshold_v = _mm512_set1_epi64(256 - threshold);
 
     for (size_t i = 0; i < haystack_size; i++) {
+      // broadcast each quad word to a register.
       const auto quadWords = (uint64_t*)&haystack[i].w;
       const auto query0 = _mm512_set1_epi64(quadWords[0]);
       const auto query1 = _mm512_set1_epi64(quadWords[1]);
       const auto query2 = _mm512_set1_epi64(quadWords[2]);
       const auto query3 = _mm512_set1_epi64(quadWords[3]);
 
+      // xor the query with the needles.
       const auto diff0 = _mm512_xor_epi64(query0, _packedNeedles[0]);
       const auto diff1 = _mm512_xor_epi64(query1, _packedNeedles[1]);
       const auto diff2 = _mm512_xor_epi64(query2, _packedNeedles[2]);
       const auto diff3 = _mm512_xor_epi64(query3, _packedNeedles[3]);
 
+      // population count, since we complemented the query now the result is the
+      // # of bits that were the same.
       const auto popcnt0 = _mm512_popcnt_epi64(diff0);
       const auto popcnt1 = _mm512_popcnt_epi64(diff1);
       const auto popcnt2 = _mm512_popcnt_epi64(diff2);
       const auto popcnt3 = _mm512_popcnt_epi64(diff3);
 
+      // vertical summation
       const auto reduction0 = _mm512_add_epi64(popcnt0, popcnt1);
       const auto reduction1 = _mm512_add_epi64(popcnt2, popcnt3);
       const auto reduction = _mm512_add_epi64(reduction0, reduction1);
 
+      // compare the reduction with the threshold
+      // test if any has value >= (256 - threshold)
       auto test = _mm512_cmpge_epi64_mask(reduction, threshold_v);
 
+      // pop off any set bit in the mask
       while (test != 0) {
         const auto index = _tzcnt_u64(test);
         matches.emplace_back(i, index);
