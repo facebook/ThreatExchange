@@ -159,7 +159,9 @@ static void query(char* argv0, int argc, char** argv) {
 
   // Generate random hashes for index
   std::vector<facebook::pdq::hashing::Hash256> index;
-  for (size_t i = 0; i < indexSize - querySize; i++) {
+  const size_t numberOfRandomHashes =
+      (indexSize > querySize * 8) ? indexSize - querySize * 8 : 0;
+  for (size_t i = 0; i < numberOfRandomHashes; i++) {
     const auto hash = facebook::pdq::hashing::generateRandomHash(gen);
     index.push_back(hash);
   }
@@ -219,8 +221,8 @@ static void query(char* argv0, int argc, char** argv) {
       : 0;
   printf("QUERIES PER SECOND:     %.2lf\n", queriesPerSecond);
   if (result.totalQuerySeconds > 0) {
-    const double throughput = (result.queryCount / result.totalQuerySeconds) *
-        8 * querySize * index.size() / 1e6;
+    const double throughput =
+        (result.queryCount / result.totalQuerySeconds) * 8 * index.size() / 1e6;
     printf("THROUGHPUT (millions of amortized tests/sec): %.2lf\n", throughput);
   }
   printf("\n");
