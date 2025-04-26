@@ -6,10 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pdq/cpp/common/pdqutils.h>
+#include <pdq/cpp/index/flat.h>
 #include <pdq/cpp/index/mih.h>
 #include <pdq/cpp/io/hashio.h>
 
 #include <algorithm>
+#include <array>
 #include <random>
 #include <set>
 
@@ -35,20 +37,16 @@ static BenchmarkResult queryLinear(
     const unsigned int seed,
     const size_t indexSize,
     const size_t querySize,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        queries,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        index);
+    const std::vector<std::array<facebook::pdq::hashing::Hash256, 8>>& queries,
+    const std::vector<facebook::pdq::hashing::Hash256>& index);
 static BenchmarkResult queryMIH(
     const int maxDistance,
     const bool verbose,
     const unsigned int seed,
     const size_t indexSize,
     const size_t querySize,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        queries,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        index);
+    const std::vector<std::array<facebook::pdq::hashing::Hash256, 8>>& queries,
+    const std::vector<facebook::pdq::hashing::Hash256>& index);
 
 // ----------------------------------------------------------------
 int main(int argc, char** argv) {
@@ -150,39 +148,47 @@ static void query(char* argv0, int argc, char** argv) {
   std::mt19937 gen(seed);
 
   // Generate random hashes for queries
-  std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> queries;
+  std::vector<std::array<facebook::pdq::hashing::Hash256, 8>> queries;
   for (size_t i = 0; i < querySize; i++) {
-    auto hash = facebook::pdq::hashing::generateRandomHash(gen);
-    queries.push_back({hash, "query_" + std::to_string(i)});
+    std::array<facebook::pdq::hashing::Hash256, 8> hashes;
+    for (size_t j = 0; j < 8; j++) {
+      hashes[j] = facebook::pdq::hashing::generateRandomHash(gen);
+    }
+    queries.push_back(hashes);
   }
 
   // Generate random hashes for index
-  std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> index;
+  std::vector<facebook::pdq::hashing::Hash256> index;
   for (size_t i = 0; i < indexSize - querySize; i++) {
-    auto hash = facebook::pdq::hashing::generateRandomHash(gen);
-    index.push_back({hash, "index_" + std::to_string(i)});
+    const auto hash = facebook::pdq::hashing::generateRandomHash(gen);
+    index.push_back(hash);
   }
 
   // Add noise to queries then insert into index
   std::uniform_int_distribution<int> noiseDist(1, maxDistance);
   for (const auto& query : queries) {
-    int bitsToFlip = noiseDist(gen);
-    auto noisyHash =
-        facebook::pdq::hashing::addNoise(query.first, bitsToFlip, gen);
-    index.push_back({noisyHash, "index_noisy_" + query.second});
+    const auto dihedralToAdd = gen() % 8;
+    for (size_t j = 0; j < 8; j++) {
+      int bitsToFlip = noiseDist(gen);
+      const auto noisyHash = facebook::pdq::hashing::addNoise(
+          query[dihedralToAdd], bitsToFlip, gen);
+      index.push_back(noisyHash);
+    }
   }
   std::shuffle(index.begin(), index.end(), gen);
 
   if (verbose) {
     printf("GENERATED QUERIES:\n");
     for (const auto& it : queries) {
-      printf("%s,%s\n", it.first.format().c_str(), it.second.c_str());
+      for (size_t j = 0; j < 8; j++) {
+        printf("%s\n", it[j].format().c_str());
+      }
     }
     printf("\n");
 
     printf("GENERATED INDEX:\n");
     for (const auto& it : index) {
-      printf("%s,%s\n", it.first.format().c_str(), it.second.c_str());
+      printf("%s\n", it.format().c_str());
     }
     printf("\n");
   }
@@ -201,7 +207,10 @@ static void query(char* argv0, int argc, char** argv) {
   }
 
   printf("METHOD: %s\n", result.method.c_str());
-  printf("QUERY COUNT:             %d\n", result.queryCount);
+  printf(
+      "QUERY COUNT:             %d * 8 = %d\n",
+      result.queryCount,
+      result.queryCount * 8);
   printf("INDEX COUNT:             %d\n", result.indexCount);
   printf("TOTAL MATCH COUNT:       %d\n", result.totalMatchCount);
   printf("TOTAL QUERY SECONDS:     %.6lf\n", result.totalQuerySeconds);
@@ -209,6 +218,11 @@ static void query(char* argv0, int argc, char** argv) {
       ? result.queryCount / result.totalQuerySeconds
       : 0;
   printf("QUERIES PER SECOND:     %.2lf\n", queriesPerSecond);
+  if (result.totalQuerySeconds > 0) {
+    const double throughput = (result.queryCount / result.totalQuerySeconds) *
+        8 * querySize * index.size() / 1e6;
+    printf("THROUGHPUT (millions of amortized tests/sec): %.2lf\n", throughput);
+  }
   printf("\n");
 }
 
@@ -222,25 +236,22 @@ static BenchmarkResult queryLinear(
     const unsigned int seed,
     const size_t indexSize,
     const size_t querySize,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        queries,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        index) {
+    const std::vector<std::array<facebook::pdq::hashing::Hash256, 8>>& queries,
+    const std::vector<facebook::pdq::hashing::Hash256>& index) {
   // Do linear searches
-  std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
+  std::vector<std::pair<size_t, size_t>> matches;
 
   Timer queryTimer("Linear query", verbose);
-  for (const auto& it : queries) {
-    for (const auto& it2 : index) {
-      if (it.first.hammingDistance(it2.first) <= maxDistance) {
-        matches.push_back(it2);
-      }
-    }
+  for (const std::array<facebook::pdq::hashing::Hash256, 8>& it : queries) {
+    const facebook::pdq::index::Flat flat(it);
+    flat.queryAll(index.data(), index.size(), maxDistance, matches);
   }
   double seconds = queryTimer.elapsed();
 
   return {
-      "linear query",
+      facebook::pdq::index::Flat::SIMD_ACCELERATED
+          ? "linear query (SIMD accelerated)"
+          : "linear query",
       static_cast<int>(queries.size()),
       static_cast<int>(index.size()),
       static_cast<int>(matches.size()),
@@ -254,16 +265,17 @@ static BenchmarkResult queryMIH(
     const unsigned int seed,
     const size_t indexSize,
     const size_t querySize,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        queries,
-    const std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>>&
-        index) {
+    const std::vector<std::array<facebook::pdq::hashing::Hash256, 8>>& queries,
+    const std::vector<facebook::pdq::hashing::Hash256>& index) {
   // Build the MIH
-  facebook::pdq::index::MIH256<std::string> mih;
+  facebook::pdq::index::MIH256<int> mih;
 
+  Timer insertTimer("MIH insert", verbose);
   for (const auto& it : index) {
-    mih.insert(it.first, it.second);
+    mih.insert(it, 0);
   }
+  double insertSeconds = insertTimer.elapsed();
+  printf("MIH index build time: %.6lf\n", insertSeconds);
 
   printf("\n");
   if (verbose) {
@@ -273,12 +285,14 @@ static BenchmarkResult queryMIH(
   }
 
   // Do indexed searches
-  std::vector<std::pair<facebook::pdq::hashing::Hash256, std::string>> matches;
+  std::vector<std::pair<facebook::pdq::hashing::Hash256, int>> matches;
   matches.clear();
 
   Timer queryTimer("MIH query", verbose);
   for (const auto& it : queries) {
-    mih.queryAll(it.first, maxDistance, matches);
+    for (size_t j = 0; j < 8; j++) {
+      mih.queryAll(it[j], maxDistance, matches);
+    }
   }
   double seconds = queryTimer.elapsed();
 
