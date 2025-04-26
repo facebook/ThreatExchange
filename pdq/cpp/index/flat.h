@@ -8,7 +8,10 @@
 #include <array>
 #include <pdq/cpp/common/pdqhashtypes.h>
 
+#ifdef __AVX512VPOPCNTDQ__
 #include <immintrin.h>
+#endif
+
 #include <stdint.h>
 #include <type_traits>
 #include <vector>
@@ -36,7 +39,7 @@ class Flat {
     const __m512i ones = _mm512_set1_epi64(~0ULL);
 
     // Split 256-bit hash into 4x64-bit words, then place each hash vertically
-    // in 64-bit lanes.
+    // in 64-bit lanes. Finally complement all registers.
 
     for (size_t regi = 0; regi < 4; regi++) {
       for (size_t needlei = 0; needlei < 8; needlei++) {
@@ -60,7 +63,7 @@ class Flat {
  public:
 #ifdef __AVX512VPOPCNTDQ__
   /**
-   * @brief Test if the any needles matched the haystack
+   * @brief Test if any needles matched the index (haystack) in constant time
    *
    * @param haystack  array of 256-bit hashes
    * @param haystack_size  number of 256-bit hashes in the haystack
@@ -111,18 +114,25 @@ class Flat {
     return test_mask != 0;
   }
 #else
+  /**
+   * @brief Test if the any needles matched the haystack in constant time
+   *
+   * @param haystack  array of 256-bit hashes
+   * @param haystack_size  number of 256-bit hashes in the haystack
+   * @param threshold  hamming distance threshold
+   * @return true if the haystack matches the needles, false otherwise
+   */
   bool test(
       const facebook::pdq::hashing::Hash256* haystack,
       size_t haystack_size,
       int threshold) const {
+    bool matched = false;
     for (size_t i = 0; i < haystack_size; i++) {
       for (size_t j = 0; j < 8; j++) {
-        if (haystack[i].hammingDistance(_needles[j]) <= threshold) {
-          return true;
-        }
+        matched |= (haystack[i].hammingDistance(_needles[j]) <= threshold);
       }
     }
-    return false;
+    return matched;
   }
 #endif
 

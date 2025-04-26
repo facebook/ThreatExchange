@@ -268,11 +268,12 @@ static BenchmarkResult queryMIH(
     const std::vector<std::array<facebook::pdq::hashing::Hash256, 8>>& queries,
     const std::vector<facebook::pdq::hashing::Hash256>& index) {
   // Build the MIH
-  facebook::pdq::index::MIH256<int> mih;
+  facebook::pdq::index::MIH256<size_t> mih;
 
+  size_t ix = 0;
   Timer insertTimer("MIH insert", verbose);
   for (const auto& it : index) {
-    mih.insert(it, 0);
+    mih.insert(it, ix++);
   }
   double insertSeconds = insertTimer.elapsed();
   printf("MIH index build time: %.6lf\n", insertSeconds);
@@ -285,7 +286,7 @@ static BenchmarkResult queryMIH(
   }
 
   // Do indexed searches
-  std::vector<std::pair<facebook::pdq::hashing::Hash256, int>> matches;
+  std::vector<std::pair<facebook::pdq::hashing::Hash256, size_t>> matches;
   matches.clear();
 
   Timer queryTimer("MIH query", verbose);
