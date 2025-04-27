@@ -28,10 +28,6 @@ const int HASH256_NUM_BITS = 256;
 const int HASH256_NUM_WORDS = 16;
 const int HASH256_TEXT_LENGTH = 65;
 
-static inline int popcnt64(uint64_t x, uint64_t y) {
-  return std::bitset<64>(x ^ y).count();
-}
-
 // Hex-formatted strings.
 using Hash256Text = char[HASH256_TEXT_LENGTH];
 
@@ -91,10 +87,10 @@ struct Hash256 {
   int hammingDistance(const Hash256& that) const {
     const uint64_t* this_words = reinterpret_cast<const uint64_t*>(this->w);
     const uint64_t* that_words = reinterpret_cast<const uint64_t*>(that.w);
-    return popcnt64(this_words[0], that_words[0]) +
-        popcnt64(this_words[1], that_words[1]) +
-        popcnt64(this_words[2], that_words[2]) +
-        popcnt64(this_words[3], that_words[3]);
+    return hammingDistance64(this_words[0], that_words[0]) +
+        hammingDistance64(this_words[1], that_words[1]) +
+        hammingDistance64(this_words[2], that_words[2]) +
+        hammingDistance64(this_words[3], that_words[3]);
   }
 
   int getBit(int k) const { return (this->w[(k & 255) >> 4] >> (k & 15)) & 1; }
