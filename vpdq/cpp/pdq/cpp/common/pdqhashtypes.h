@@ -13,6 +13,8 @@
 #include <pdq/cpp/common/pdqhamming.h>
 
 #include <stdio.h>
+#include <bitset>
+#include <cinttypes>
 #include <string>
 
 namespace facebook {
@@ -26,12 +28,19 @@ const int HASH256_NUM_BITS = 256;
 const int HASH256_NUM_WORDS = 16;
 const int HASH256_TEXT_LENGTH = 65;
 
+static inline int popcnt64(uint64_t x, uint64_t y) {
+  return std::bitset<64>(x ^ y).count();
+}
+
 // Hex-formatted strings.
 using Hash256Text = char[HASH256_TEXT_LENGTH];
 
 // ================================================================
 struct Hash256 {
-  Hash16 w[HASH256_NUM_WORDS];
+  // align to 64-bit boundary for faster scalar popcnt
+  // (compiler can optimize without peeling to natural word size)
+  // index/flat.h also relies on this assumption, do not remove.
+  alignas(8) Hash16 w[HASH256_NUM_WORDS];
 
   int getNumWords() const { return HASH256_NUM_WORDS; }
 
@@ -78,12 +87,14 @@ struct Hash256 {
     }
     return n;
   }
+
   int hammingDistance(const Hash256& that) const {
-    int n = 0;
-    for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      n += hammingDistance16(this->w[i], that.w[i]);
-    }
-    return n;
+    const uint64_t* this_words = reinterpret_cast<const uint64_t*>(this->w);
+    const uint64_t* that_words = reinterpret_cast<const uint64_t*>(that.w);
+    return popcnt64(this_words[0], that_words[0]) +
+        popcnt64(this_words[1], that_words[1]) +
+        popcnt64(this_words[2], that_words[2]) +
+        popcnt64(this_words[3], that_words[3]);
   }
 
   int getBit(int k) const { return (this->w[(k & 255) >> 4] >> (k & 15)) & 1; }
@@ -171,6 +182,8 @@ struct Hash256 {
     printf("\n");
   }
 };
+
+static_assert(sizeof(Hash256) == 32, "Hash256 should be 32 bytes");
 
 int hammingDistance(const Hash256& hash1, const Hash256& hash2);
 std::string hashToString(const Hash256& hash);
