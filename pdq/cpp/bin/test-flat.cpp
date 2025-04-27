@@ -26,6 +26,22 @@ void expectTest(
 }
 
 // ----------------------------------------------------------------
+// test that under misuse and nonsensical input the function still yield
+// numerically correct results
+void test_misuse(
+    std::vector<facebook::pdq::hashing::Hash256>& haystack,
+    const std::array<facebook::pdq::hashing::Hash256, 8>& needles) {
+  const facebook::pdq::hashing::Hash256 backup(haystack[0]);
+  const auto needles_comp = ~needles[0];
+  haystack[0] = needles_comp;
+  expectTest(haystack, needles, 0, 0);
+  expectTest(haystack, needles, 31, 0);
+  expectTest(haystack, needles, 64, 0);
+  expectTest(haystack, needles, 256, ~0);
+  expectTest(haystack, needles, 999, ~0);
+}
+
+// ----------------------------------------------------------------
 // test that 1 hit can appear at any cartesian product of needle and haystack,
 // with 0 or maxDistance fuzzed
 void test_1hit(
@@ -207,6 +223,10 @@ int main(int argc, char** argv) {
     expectTest(haystack, needles, maxDistance, 0);
     printf("\tPASS: no hits at the end\n");
   }
+
+  printf("Testing correctness under misuse\n");
+  test_misuse(haystack, needles);
+  printf("\tPASS: correctness under misuse\n");
 
   return 0;
 }

@@ -113,7 +113,7 @@ class Flat {
       result = _mm512_or_si512(result, _mm512_add_epi64(reduction, addend));
     }
 
-    const auto test = _mm512_set1_epi64(256);
+    const auto test = _mm512_set1_epi64(~255); // ignore the lower bits
     const auto test_mask = _mm512_test_epi64_mask(result, test);
 
     return test_mask;
