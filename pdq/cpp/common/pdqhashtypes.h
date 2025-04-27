@@ -12,11 +12,8 @@
 #include <pdq/cpp/common/pdqbasetypes.h>
 #include <pdq/cpp/common/pdqhamming.h>
 
-#ifdef __POPCNT__
-#include <nmmintrin.h>
-#endif
-
 #include <stdio.h>
+#include <bitset>
 #include <cinttypes>
 #include <string>
 
@@ -30,6 +27,10 @@ namespace hashing {
 const int HASH256_NUM_BITS = 256;
 const int HASH256_NUM_WORDS = 16;
 const int HASH256_TEXT_LENGTH = 65;
+
+static inline int popcnt64(uint64_t x, uint64_t y) {
+  return std::bitset<64>(x ^ y).count();
+}
 
 // Hex-formatted strings.
 using Hash256Text = char[HASH256_TEXT_LENGTH];
@@ -86,24 +87,16 @@ struct Hash256 {
     }
     return n;
   }
-#ifdef __POPCNT__
+
   int hammingDistance(const Hash256& that) const {
-    const uint64_t* quadwords = reinterpret_cast<const uint64_t*>(this->w);
-    const uint64_t* that_quadwords = reinterpret_cast<const uint64_t*>(that.w);
-    return _mm_popcnt_u64(quadwords[0] ^ that_quadwords[0]) +
-        _mm_popcnt_u64(quadwords[1] ^ that_quadwords[1]) +
-        _mm_popcnt_u64(quadwords[2] ^ that_quadwords[2]) +
-        _mm_popcnt_u64(quadwords[3] ^ that_quadwords[3]);
+    const uint64_t* this_words = reinterpret_cast<const uint64_t*>(this->w);
+    const uint64_t* that_words = reinterpret_cast<const uint64_t*>(that.w);
+    return popcnt64(this_words[0], that_words[0]) +
+        popcnt64(this_words[1], that_words[1]) +
+        popcnt64(this_words[2], that_words[2]) +
+        popcnt64(this_words[3], that_words[3]);
   }
-#else
-  int hammingDistance(const Hash256& that) const {
-    int n = 0;
-    for (int i = 0; i < HASH256_NUM_WORDS; i++) {
-      n += hammingDistance16(this->w[i], that.w[i]);
-    }
-    return n;
-  }
-#endif
+
   int getBit(int k) const { return (this->w[(k & 255) >> 4] >> (k & 15)) & 1; }
 
   void setBit(int k) { this->w[(k & 255) >> 4] |= 1 << (k & 15); }
