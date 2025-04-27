@@ -65,13 +65,14 @@ class Flat {
 #ifdef __AVX512VPOPCNTDQ__
   /**
    * @brief Test if any needles matched the index (haystack) in constant time
+   * w.r.t. the contents of the index or query
    *
    * @param haystack  array of 256-bit hashes
    * @param haystack_size  number of 256-bit hashes in the haystack
    * @param threshold  hamming distance threshold
-   * @return true if the haystack matches the needles, false otherwise
+   * @return uint8_t a bitmask of which queries matched the haystack
    */
-  bool test(
+  uint8_t test(
       const facebook::pdq::hashing::Hash256* haystack,
       size_t haystack_size,
       int threshold) const {
@@ -112,7 +113,7 @@ class Flat {
     const auto test = _mm512_set1_epi64(256);
     const auto test_mask = _mm512_test_epi64_mask(result, test);
 
-    return test_mask != 0;
+    return test_mask;
   }
 #else
   /**
@@ -121,19 +122,21 @@ class Flat {
    * @param haystack  array of 256-bit hashes
    * @param haystack_size  number of 256-bit hashes in the haystack
    * @param threshold  hamming distance threshold
-   * @return true if the haystack matches the needles, false otherwise
+   * @return uint8_t a bitmask of which queries matched the haystack
    */
-  bool test(
+  uint8_t test(
       const facebook::pdq::hashing::Hash256* haystack,
       size_t haystack_size,
       int threshold) const {
-    bool matched = false;
+    uint8_t result = 0;
     for (size_t i = 0; i < haystack_size; i++) {
       for (size_t j = 0; j < 8; j++) {
-        matched |= (haystack[i].hammingDistance(_needles[j]) <= threshold);
+        const auto matched =
+            haystack[i].hammingDistance(_needles[j]) <= threshold;
+        result |= ((uint8_t)matched << j);
       }
     }
-    return matched;
+    return result;
   }
 #endif
 
