@@ -184,7 +184,18 @@ class Flat {
       auto test = _mm512_cmpge_epi64_mask(reduction, threshold_v);
 
       // pop off any set bit in the mask
-      while (test != 0) {
+      while (
+#if defined(__GNUC__)
+          __builtin_expect(test != 0, 0)
+#else
+          test != 0
+#endif
+              )
+#if defined(__cplusplus) && __cplusplus >= 202002L
+          [[unlikely]]
+#endif
+      {
+
         const auto index = _tzcnt_u64(test);
         matches.emplace_back(i, index);
         test ^= 1ULL << index;
