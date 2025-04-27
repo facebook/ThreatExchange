@@ -35,7 +35,8 @@ class Flat {
 
 #ifdef __AVX512VPOPCNTDQ__
   Flat(const std::array<facebook::pdq::hashing::Hash256, 8>& needles) {
-    uint64_t __attribute__((aligned(64))) tmp[8];
+    alignas(64) uint64_t tmp[8];
+
     const __m512i ones = _mm512_set1_epi64(~0ULL);
 
     // Split 256-bit hash into 4x64-bit words, then place each hash vertically

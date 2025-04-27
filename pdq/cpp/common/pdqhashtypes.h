@@ -39,7 +39,7 @@ struct Hash256 {
   // align to 64-bit boundary for faster scalar popcnt
   // (compiler can optimize without peeling to natural word size)
   // index/flat.h also relies on this assumption, do not remove.
-  Hash16 w[HASH256_NUM_WORDS] __attribute__((aligned(8)));
+  alignas(8) Hash16 w[HASH256_NUM_WORDS];
 
   int getNumWords() const { return HASH256_NUM_WORDS; }
 
@@ -189,6 +189,8 @@ struct Hash256 {
     printf("\n");
   }
 };
+
+static_assert(sizeof(Hash256) == 32, "Hash256 should be 32 bytes");
 
 int hammingDistance(const Hash256& hash1, const Hash256& hash2);
 std::string hashToString(const Hash256& hash);
