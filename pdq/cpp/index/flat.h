@@ -65,7 +65,10 @@ class Flat {
 #ifdef __AVX512VPOPCNTDQ__
   /**
    * @brief Test if any needles matched the index (haystack) in constant time
-   * w.r.t. the contents of the index or query
+   * w.r.t. the contents of the index or query,
+   * this is harder to use but more suitable for real-time screening with high
+   * security requirements, and potentially slightly faster for the no-match
+   * case, and potentially slightly faster on the no-match case.
    *
    * @param haystack  array of 256-bit hashes
    * @param haystack_size  number of 256-bit hashes in the haystack
