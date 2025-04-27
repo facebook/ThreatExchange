@@ -12,7 +12,6 @@
 #include <pdq/cpp/common/pdqbasetypes.h>
 #include <pdq/cpp/common/pdqhamming.h>
 
-#include <stdio.h>
 #include <bitset>
 #include <cinttypes>
 #include <string>

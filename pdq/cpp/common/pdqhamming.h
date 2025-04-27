@@ -9,6 +9,7 @@
 
 #include <pdq/cpp/common/pdqbasetypes.h>
 
+// NOTICE:
 // USE_BUILTIN_POPCOUNT controls how the popcount is calculated.
 // If it is not defined, the popcount will be calculated with lookup tables.
 // If it is defined, it calculates popcount using bitset. This generally is
