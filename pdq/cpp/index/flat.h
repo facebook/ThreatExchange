@@ -44,7 +44,8 @@ class Flat {
 
     for (size_t regi = 0; regi < 4; regi++) {
       for (size_t needlei = 0; needlei < 8; needlei++) {
-        tmp[needlei] = ((uint64_t*)(&needles[needlei].w))[regi];
+        tmp[needlei] =
+            reinterpret_cast<const uint64_t*>(needles[needlei].w)[regi];
       }
       _packedNeedles[regi] = _mm512_xor_epi64(ones, _mm512_load_si512(tmp));
     }
@@ -83,7 +84,7 @@ class Flat {
 
     auto result = _mm512_setzero_si512();
     for (size_t i = 0; i < haystack_size; i++) {
-      const auto quadWords = (uint64_t*)&haystack[i].w;
+      const auto quadWords = reinterpret_cast<const uint64_t*>(haystack[i].w);
       // broadcast each quad word to a register.
       const auto query0 = _mm512_set1_epi64(quadWords[0]);
       const auto query1 = _mm512_set1_epi64(quadWords[1]);
@@ -162,7 +163,7 @@ class Flat {
 
     for (size_t i = 0; i < haystack_size; i++) {
       // broadcast each quad word to a register.
-      const auto quadWords = (uint64_t*)&haystack[i].w;
+      const auto quadWords = reinterpret_cast<const uint64_t*>(haystack[i].w);
       const auto query0 = _mm512_set1_epi64(quadWords[0]);
       const auto query1 = _mm512_set1_epi64(quadWords[1]);
       const auto query2 = _mm512_set1_epi64(quadWords[2]);
@@ -197,16 +198,15 @@ class Flat {
 #else
           test != 0
 #endif
-              )
+      )
 #if defined(__cplusplus) && __cplusplus >= 202002L
-          [[unlikely]]
+        [[unlikely]]
 #endif
-      {
-
-        const auto index = _tzcnt_u64(test);
-        matches.emplace_back(i, index);
-        test ^= 1ULL << index;
-      }
+        {
+          const auto index = _tzcnt_u64(test);
+          matches.emplace_back(i, index);
+          test ^= 1ULL << index;
+        }
     }
   }
 #else
