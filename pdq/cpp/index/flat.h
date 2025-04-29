@@ -238,15 +238,15 @@ class Flat {
 #else
           test != 0
 #endif
-              )
+      )
 #if defined(__cplusplus) && __cplusplus >= 202002L
-          [[unlikely]]
+        [[unlikely]]
 #endif
-      {
-        const auto index = _tzcnt_u64(test);
-        matches.emplace_back(i, index);
-        test ^= 1ULL << index;
-      }
+        {
+          const auto index = _tzcnt_u64(test);
+          matches.emplace_back(i, index);
+          test ^= 1ULL << index;
+        }
     }
   }
 #else
