@@ -83,8 +83,7 @@ struct Hash256 {
   }
 
   int hammingDistance(const Hash256& that) const {
-    static_assert(
-        alignof(Hash256::w) == 8, "Hash256 should be 8 bytes aligned");
+    static_assert(alignof(Hash256) == 8, "Hash256 should be 8 bytes aligned");
 
     const uint64_t* this_words = reinterpret_cast<const uint64_t*>(this->w);
     const uint64_t* that_words = reinterpret_cast<const uint64_t*>(that.w);
@@ -180,7 +179,7 @@ struct Hash256 {
   }
 };
 
-static_assert(sizeof(Hash256) == 32, "Hash256 should be 32 bytes");
+static_assert(sizeof(Hash256) == 32, "Hash256 should be exactly 32 bytes");
 
 int hammingDistance(const Hash256& hash1, const Hash256& hash2);
 std::string hashToString(const Hash256& hash);

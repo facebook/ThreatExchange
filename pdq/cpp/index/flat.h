@@ -22,9 +22,9 @@ namespace index {
 // base assumptions using throughout the index for efficient data loading
 static_assert(
     sizeof(facebook::pdq::hashing::Hash256) == 32,
-    "Hash256 should be 32 bytes");
+    "Hash256 should be exactly 32 bytes");
 static_assert(
-    alignof(facebook::pdq::hashing::Hash256::w) == 8,
+    alignof(facebook::pdq::hashing::Hash256) == 8,
     "Hash256 should be 8 bytes aligned");
 
 /**
