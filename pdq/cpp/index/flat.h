@@ -19,6 +19,36 @@ namespace facebook {
 namespace pdq {
 namespace index {
 
+/**
+ * @brief Flat index for PDQ matching based on amortized linear scan.
+ *
+ * The implementation is similar to FAISS IndexBinaryFlat but with PDQ-specific
+ * memory layout optimizations, see issue #1810 for more details.
+ *
+ * No index building is required using this index, it simply needs a packed
+ * array of the database hashes fed through the matching function.
+ *
+ * Metadata can be tracked using parallel arrays.
+ *
+ * Live mutations can be done by partitioning the database into multiple
+ * subsets, then use atomic variables and other synchronization primitives to
+ * ensure thread-safety.
+ *
+ * This index is intended for use when:
+ *   - The query can be batched by 8 hashes at a time (the most common reason
+ *     is to search all 8 dihedral variants of an image), AND
+ *   - One of the following is true:
+ *     - Minimal memory usage is desired, OR
+ *     - The threshold varies widely (for example per-user risk-based
+ * thresholds) at runtime making MIH too inflexible / space-inefficient, OR
+ *     - Timing correlation between the content of the index and the query is
+ *       unacceptable (use test() instead), OR
+ *     - The runtime environment has a modern (2020+) AVX512 CPU with
+ *       AVX512VPOPCNTDQ support, which can significantly outperform 8 MIH
+ *       queries with much less pressure on microarchitectural resources,
+ *       testing shows ~3x~6x improvement with an index of 10 million hashes
+ *       depending on whether matches are found.
+ */
 class Flat {
 #ifdef __AVX512VPOPCNTDQ__
   __m512i _packedNeedles[4];
@@ -121,7 +151,9 @@ class Flat {
   }
 #else
   /**
-   * @brief Test if the any needles matched the haystack in constant time
+   * @brief Test if the any needles matched the haystack in near-constant time,
+   * minus microarchitectural variations that are more pronounced using scalar
+   * code.
    *
    * @param haystack  array of 256-bit hashes
    * @param haystack_size  number of 256-bit hashes in the haystack
