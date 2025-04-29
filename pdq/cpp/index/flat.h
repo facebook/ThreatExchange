@@ -19,6 +19,14 @@ namespace facebook {
 namespace pdq {
 namespace index {
 
+// base assumptions using throughout the index for efficient data loading
+static_assert(
+    sizeof(facebook::pdq::hashing::Hash256) == 32,
+    "Hash256 should be 32 bytes");
+static_assert(
+    alignof(facebook::pdq::hashing::Hash256::w) == 8,
+    "Hash256 should be 8 bytes aligned");
+
 /**
  * @brief Flat index for PDQ matching based on amortized linear scan.
  *
@@ -85,12 +93,12 @@ class Flat {
       : _needles(needles) {}
 #endif
 
-  ~Flat() {}
-
- private:
   // Disallow copying
-  Flat(const Flat& /*that*/) {}
-  void operator=(const facebook::pdq::hashing::Hash256& /*that*/) {}
+  Flat(const Flat&) = delete;
+  Flat& operator=(const Flat&) = delete;
+  Flat(Flat&&) = delete;
+  Flat& operator=(Flat&&) = delete;
+  ~Flat() = default;
 
  public:
 #ifdef __AVX512VPOPCNTDQ__
@@ -230,15 +238,15 @@ class Flat {
 #else
           test != 0
 #endif
-      )
+              )
 #if defined(__cplusplus) && __cplusplus >= 202002L
-        [[unlikely]]
+          [[unlikely]]
 #endif
-        {
-          const auto index = _tzcnt_u64(test);
-          matches.emplace_back(i, index);
-          test ^= 1ULL << index;
-        }
+      {
+        const auto index = _tzcnt_u64(test);
+        matches.emplace_back(i, index);
+        test ^= 1ULL << index;
+      }
     }
   }
 #else

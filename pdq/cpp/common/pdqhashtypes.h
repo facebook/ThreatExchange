@@ -12,8 +12,7 @@
 #include <pdq/cpp/common/pdqbasetypes.h>
 #include <pdq/cpp/common/pdqhamming.h>
 
-#include <bitset>
-#include <cinttypes>
+#include <cstdint>
 #include <string>
 
 namespace facebook {
@@ -84,6 +83,9 @@ struct Hash256 {
   }
 
   int hammingDistance(const Hash256& that) const {
+    static_assert(
+        alignof(Hash256::w) == 8, "Hash256 should be 8 bytes aligned");
+
     const uint64_t* this_words = reinterpret_cast<const uint64_t*>(this->w);
     const uint64_t* that_words = reinterpret_cast<const uint64_t*>(that.w);
     return hammingDistance64(this_words[0], that_words[0]) +

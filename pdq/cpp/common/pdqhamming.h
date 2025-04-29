@@ -29,7 +29,7 @@ namespace hashing {
  * @param T An unsigned integer type.
  */
 template <typename T>
-int popcount(T const x) {
+int popcount(const T x) {
   return static_cast<int>(std::bitset<sizeof(T) * 8U>(x).count());
 }
 

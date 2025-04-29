@@ -2,9 +2,6 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <pdq/cpp/common/pdqutils.h>
 #include <pdq/cpp/index/flat.h>
 #include <pdq/cpp/index/mih.h>
@@ -12,6 +9,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <random>
 #include <set>
 

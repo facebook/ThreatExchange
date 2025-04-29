@@ -4,7 +4,6 @@
 
 #ifndef PDQBASETYPES_H
 #define PDQBASETYPES_H
-#include <stdio.h>
 #include <cstdint>
 namespace facebook {
 namespace pdq {
