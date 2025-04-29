@@ -12,7 +12,7 @@
 #include <immintrin.h>
 #endif
 
-#include <stdint.h>
+#include <cstdint>
 #include <type_traits>
 #include <vector>
 namespace facebook {
