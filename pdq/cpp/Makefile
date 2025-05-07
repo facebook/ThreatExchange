@@ -31,6 +31,7 @@ LIBHDRS=\
  downscaling/downscaling.h \
  io/pdqio.h \
  index/mih.h \
+ index/flat.h \
  hashing/torben.h \
  ./CImg.h \
  common/pdqutils.h
@@ -57,13 +58,14 @@ MAINS=\
  test-bits \
  hamming-tabulate \
  test-hamming \
+ test-flat \
  benchmark-query \
  benchmark-photo-hasher
 
 WASMMAINS=pdq-photo-hasher
 
 TESTS=\
- run-test-bits run-test-hamming run-reg-test
+ run-test-bits run-test-hamming run-reg-test run-test-flat
 
 # ================================================================
 top: $(MAINS) $(TESTS)
@@ -78,6 +80,8 @@ run-test-hamming: test-hamming
 	./test-hamming
 run-reg-test:
 	./reg_test/run
+run-test-flat: test-flat
+	./test-flat
 itso:
 	cp output-regtest/out reg_test/expected
 
@@ -117,6 +121,8 @@ test-mih: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/test-mih.cpp $(LIBSRCS) -o test-mih $(LFLAGS)
 test-mihg: bin/test-mih.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCDBG) bin/test-mih.cpp $(LIBSRCS) -o test-mihg $(LFLAGS)
+test-flat: bin/test-flat.cpp $(LIBSRCS) $(LIBHDRS)
+	$(CCOPT) bin/test-flat.cpp $(LIBSRCS) -o test-flat $(LFLAGS)
 clusterize256: bin/clusterize256.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/clusterize256.cpp $(LIBSRCS) -o clusterize256 $(LFLAGS)
 clusterize256-prof: bin/clusterize256.cpp $(LIBSRCS) $(LIBHDRS)
