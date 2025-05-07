@@ -59,11 +59,11 @@ from threatexchange.utils import dataclass_json
 
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.storage.interface import (
+    BankContentIterationItem,
     BankConfig,
     BankContentConfig,
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
-    BankContentIterationItem,
     SignalExchangeAPIConfig,
 )
 
@@ -92,6 +92,7 @@ class Bank(db.Model):  # type: ignore[name-defined]
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     enabled_ratio: Mapped[float] = mapped_column(default=1.0)
+    content_type_counts: Mapped[t.Optional[dict]] = mapped_column(JSON, nullable=True)
 
     content: Mapped[t.List["BankContent"]] = relationship(
         back_populates="bank", cascade="all, delete"
@@ -108,11 +109,19 @@ class Bank(db.Model):  # type: ignore[name-defined]
     )
 
     def as_storage_iface_cls(self) -> BankConfig:
-        return BankConfig(self.name, self.enabled_ratio)
+        return BankConfig(
+            name=self.name,
+            matching_enabled_ratio=self.enabled_ratio,
+            content_type_counts=self.content_type_counts,
+        )
 
     @classmethod
     def from_storage_iface_cls(cls, cfg: BankConfig) -> t.Self:
-        return cls(name=cfg.name, enabled_ratio=cfg.matching_enabled_ratio)
+        return cls(
+            name=cfg.name,
+            enabled_ratio=cfg.matching_enabled_ratio,
+            content_type_counts=cfg.content_type_counts,
+        )
 
     @validates("name")
     def validate_name(self, _key: str, name: str) -> str:
@@ -200,6 +209,7 @@ class ContentSignal(db.Model):  # type: ignore[name-defined]
             signal_val=self.signal_val,
             bank_content_id=self.content_id,
             bank_content_timestamp=int(self.create_time.timestamp()),
+            bank_name=self.content.bank.name,
         )
 
 

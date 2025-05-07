@@ -38,7 +38,10 @@ bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 @bp.route("/banks", methods=["GET"])
 def banks_index():
     storage = persistence.get_storage()
-    return list(storage.get_banks().values())
+    return [
+        {"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio}
+        for bank in storage.get_banks().values()
+    ]
 
 
 @bp.route("/bank/<bank_name>", methods=["GET"])
@@ -48,7 +51,7 @@ def bank_show_by_name(bank_name: str):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    return jsonify(bank)
+    return {"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio}
 
 
 @bp.route("/banks", methods=["POST"])
@@ -60,7 +63,11 @@ def bank_create():
         enabled_ratio = flask_utils.str_to_type(data["enabled_ratio"], float)
     elif "enabled" in data:
         enabled_ratio = 1.0 if flask_utils.str_to_bool(data["enabled"]) else 0.0
-    return jsonify(bank_create_impl(name, enabled_ratio)), 201
+    bank = bank_create_impl(name, enabled_ratio)
+    return {
+        "name": bank.name,
+        "matching_enabled_ratio": bank.matching_enabled_ratio,
+    }, 201
 
 
 def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
@@ -97,7 +104,7 @@ def bank_update(bank_name: str):
         abort(400, *e.args)
     except IntegrityError:
         abort(403, "Bank name already exists")
-    return jsonify(bank)
+    return {"name": bank.name, "matching_enabled_ratio": bank.matching_enabled_ratio}
 
 
 @bp.route("/bank/<bank_name>", methods=["DELETE"])
