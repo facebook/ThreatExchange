@@ -118,6 +118,14 @@ def hash_media_from_form_data() -> dict[str, str]:
                 if issubclass(st, BytesHasher):
                     ret[st.get_name()] = st.hash_from_bytes(bytes)
 
+                elif issubclass(st, FileHasher):
+                    with tempfile.NamedTemporaryFile("wb") as tmp:
+                        current_app.logger.debug("Writing to %s for hashing, signal_type=%s", tmp.name, st.get_name())
+                        with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
+                            temp_file.write(bytes)
+                            path = Path(tmp.name)
+                            ret[st.get_name()] = st.hash_from_file(path)
+
     return ret
 
 
