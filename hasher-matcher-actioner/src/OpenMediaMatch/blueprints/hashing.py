@@ -120,7 +120,11 @@ def hash_media_from_form_data() -> dict[str, str]:
 
                 elif issubclass(st, FileHasher):
                     with tempfile.NamedTemporaryFile("wb") as tmp:
-                        current_app.logger.debug("Writing to %s for hashing, signal_type=%s", tmp.name, st.get_name())
+                        current_app.logger.debug(
+                           "Writing to %s for hashing, signal_type=%s",
+                           tmp.name,
+                           st.get_name(),
+                        )
                         with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
                             temp_file.write(bytes)
                             path = Path(tmp.name)
