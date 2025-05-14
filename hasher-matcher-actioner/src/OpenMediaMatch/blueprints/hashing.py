@@ -8,6 +8,10 @@ from pathlib import Path
 import tempfile
 import typing as t
 import requests
+import logging
+from urllib.parse import urlparse
+import ipaddress
+import socket
 
 from flask import Blueprint
 from flask import abort, request, current_app
@@ -20,13 +24,56 @@ from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, Sign
 
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils import flask_utils
+from OpenMediaMatch.storage.interface import BankConfig
+
+logger = logging.getLogger(__name__)
 
 bp = Blueprint("hashing", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
+bp.register_error_handler(Exception, flask_utils.api_error_handler)
+
+# Add these constants at the top level
+MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
+
+
+def is_valid_url(url: str) -> bool:
+    """
+    Validate URL to prevent SSRF attacks.
+    Returns True if URL is safe, False otherwise.
+    """
+    try:
+        parsed = urlparse(url)
+
+        if not parsed.scheme or not parsed.netloc:
+            return False
+
+        if parsed.scheme not in ("http", "https"):
+            return False
+
+        hostname = parsed.netloc.split(":")[0]
+        # Check for malformed URLs with invalid port numbers
+        if ":" in parsed.netloc and not parsed.netloc.split(":")[1].isdigit():
+            return False
+
+        # Check if there is an allowlist and hostname matches.
+        allowed_hostnames = current_app.config.get("ALLOWED_HOSTNAMES", set())
+        if not allowed_hostnames:
+            return True
+
+        if any(
+            hostname == allowed or hostname.endswith(f".{allowed}")
+            for allowed in allowed_hostnames
+        ):
+            return True
+
+        return False
+    except Exception as e:
+        logger.warning(f"URL validation error: {str(e)}")
+        return False
 
 
 @bp.route("/hash", methods=["GET"])
-def hash_media() -> dict[str, str]:
+def hash_media():
     """
     Fetch content and return its hash.
 
@@ -38,33 +85,64 @@ def hash_media() -> dict[str, str]:
     """
     media_url = request.args.get("url", None)
     if media_url is None:
-        abort(400, "url is required")
+        abort(400, "Missing required parameter: url")
 
-    download_resp = requests.get(media_url, allow_redirects=True, timeout=30 * 1000)
-    download_resp.raise_for_status()
+    if not is_valid_url(media_url):
+        abort(400, "Invalid or unsafe URL provided")
 
-    url_content_type = download_resp.headers["content-type"]
+    # First make a HEAD request to check content length
+    try:
+        head_resp = requests.head(media_url, allow_redirects=True, timeout=5)
+        head_resp.raise_for_status()
 
-    current_app.logger.debug("%s is type %s", media_url, url_content_type)
+        content_length = head_resp.headers.get("content-length")
+        if content_length and int(content_length) > MAX_CONTENT_LENGTH:
+            abort(
+                413,
+                f"Content too large. Maximum size is {MAX_CONTENT_LENGTH/1024/1024}MB",
+            )
+    except requests.exceptions.RequestException as e:
+        abort(400, f"Failed to fetch URL: {str(e)}")
 
-    content_type = _parse_request_content_type(url_content_type)
-    signal_types = _parse_request_signal_type(content_type)
+    # Now make the actual GET request with streaming to handle large files safely
+    try:
+        download_resp = requests.get(
+            media_url, allow_redirects=True, timeout=30, stream=True
+        )
+        download_resp.raise_for_status()
 
-    ret: dict[str, str] = {}
+        # Check content length again from the actual response
+        content_length = download_resp.headers.get("content-length")
+        if content_length and int(content_length) > MAX_CONTENT_LENGTH:
+            abort(
+                413,
+                f"Content too large. Maximum size is {MAX_CONTENT_LENGTH/1024/1024}MB",
+            )
 
-    # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
-    with tempfile.NamedTemporaryFile("wb") as tmp:
-        current_app.logger.debug("Writing to %s", tmp.name)
-        with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
-            temp_file.write(download_resp.content)
-        path = Path(tmp.name)
-        for st in signal_types.values():
-            # At this point, every BytesHasher is a FileHasher, but we could
-            # explicitly pull those out to avoiding storing any copies of
-            # data locally, even temporarily
-            if issubclass(st, FileHasher):
-                ret[st.get_name()] = st.hash_from_file(path)
-    return ret
+        url_content_type = download_resp.headers["content-type"]
+
+        current_app.logger.debug("%s is type %s", media_url, url_content_type)
+
+        content_type = _parse_request_content_type(url_content_type)
+        signal_types = _parse_request_signal_type(content_type)
+
+        ret: dict[str, str] = {}
+
+        # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
+        with tempfile.NamedTemporaryFile("wb") as tmp:
+            current_app.logger.debug("Writing to %s", tmp.name)
+            with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
+                # Stream the content in chunks to avoid memory issues
+                for chunk in download_resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        temp_file.write(chunk)
+            path = Path(tmp.name)
+            for st in signal_types.values():
+                if issubclass(st, FileHasher):
+                    ret[st.get_name()] = st.hash_from_file(path)
+        return ret
+    except requests.exceptions.RequestException as e:
+        abort(400, f"Failed to fetch URL: {str(e)}")
 
 
 @bp.route("/hash", methods=["POST"])
