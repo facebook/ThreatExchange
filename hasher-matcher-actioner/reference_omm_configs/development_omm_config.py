@@ -56,3 +56,11 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 
 # Debugging stuff
 # SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO
+
+# URL validation configuration
+# ALLOWED_HOSTNAMES = {
+#     'example.com',
+#     'cdn.example.com',
+#     'media.example.com'
+# }
+# Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
