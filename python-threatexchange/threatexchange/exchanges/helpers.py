@@ -56,7 +56,9 @@ class _StateTracker:
             self._delta = value
         else:
             old = self._delta.updates
+
         self.api_cls.naive_fetch_merge(old, value.updates)
+
         self._delta.updates = old
         self._delta.checkpoint = value.checkpoint
         self.dirty = True
