@@ -34,7 +34,7 @@ jobs:
           python3 -m pip install -e .[all]
       - name: Check code format
         run: |
-          black --check ./src
+          black --check ./src --diff
   type-check:
     name: Type-Check python
     runs-on: ubuntu-latest
