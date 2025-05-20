@@ -296,6 +296,8 @@ class BankConfig:
     # 0.0-1.0 - what percentage of contents should be
     # considered a match? Seeded by target content
     matching_enabled_ratio: float
+    # Cache of content type counts
+    content_type_counts: t.Optional[t.Dict[str, int]] = None
 
     @property
     def enabled(self) -> bool:
@@ -349,6 +351,7 @@ class BankContentIterationItem:
     signal_val: str
     bank_content_id: int
     bank_content_timestamp: int
+    bank_name: str
 
 
 class IBankStore(metaclass=abc.ABCMeta):
