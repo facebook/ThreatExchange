@@ -90,34 +90,17 @@ def hash_media():
     if not is_valid_url(media_url):
         abort(400, "Invalid or unsafe URL provided")
 
-    # First make a HEAD request to check content length
     try:
-        head_resp = requests.head(media_url, allow_redirects=True, timeout=5)
-        head_resp.raise_for_status()
-
-        content_length = head_resp.headers.get("content-length")
-        if content_length and int(content_length) > MAX_CONTENT_LENGTH:
-            abort(
-                413,
-                f"Content too large. Maximum size is {MAX_CONTENT_LENGTH/1024/1024}MB",
-            )
-    except requests.exceptions.RequestException as e:
-        abort(400, f"Failed to fetch URL: {str(e)}")
-
-    # Now make the actual GET request with streaming to handle large files safely
-    try:
+        # Use a single GET request with body limiting
         download_resp = requests.get(
-            media_url, allow_redirects=True, timeout=30, stream=True
+            media_url,
+            allow_redirects=True,
+            timeout=30,
+            stream=True,
+            # Limit the response body to MAX_CONTENT_LENGTH
+            max_content_length=MAX_CONTENT_LENGTH
         )
         download_resp.raise_for_status()
-
-        # Check content length again from the actual response
-        content_length = download_resp.headers.get("content-length")
-        if content_length and int(content_length) > MAX_CONTENT_LENGTH:
-            abort(
-                413,
-                f"Content too large. Maximum size is {MAX_CONTENT_LENGTH/1024/1024}MB",
-            )
 
         url_content_type = download_resp.headers["content-type"]
 
