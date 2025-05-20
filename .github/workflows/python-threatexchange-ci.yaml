@@ -38,7 +38,7 @@ jobs:
           python3 -m pip install -e .[dev]
       - name: Check code format
         run: |
-          black --check .
+          black --check . --diff
       - name: Check python types
         run: |
           python -m mypy threatexchange
