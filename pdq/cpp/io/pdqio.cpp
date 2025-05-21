@@ -31,7 +31,7 @@ void showDecoderInfo() {
 // Returns matrix as num_rows x num_cols in row-major order.
 // The caller must free the return value.
 float* loadFloatLumaFromCImg(CImg<uint8_t>& img, int& numRows, int& numCols) {
-  if (img.spectrum() == 3) {
+  if (img.spectrum() >= 3) {
     // X,Y,Z,color -> column,row,zero,{R,G,B}
     uint8_t* pr = &img(0, 0, 0, 0);
     uint8_t* pg = &img(0, 0, 0, 1);
