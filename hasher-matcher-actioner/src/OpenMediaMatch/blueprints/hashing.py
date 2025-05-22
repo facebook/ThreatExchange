@@ -124,8 +124,12 @@ def hash_media() -> dict[str, str]:
 
     try:
         # Get response with content length tracking
-        max_content_length = current_app.config.get("MAX_CONTENT_LENGTH", DEFAULT_MAX_CONTENT_LENGTH)
-        with _check_content_length_stream_response(media_url, max_content_length) as download_resp:
+        max_content_length = int(
+            current_app.config.get("MAX_CONTENT_LENGTH", DEFAULT_MAX_CONTENT_LENGTH)
+        )
+        with _check_content_length_stream_response(
+            media_url, max_content_length
+        ) as download_resp:
             url_content_type = download_resp.headers["content-type"]
             current_app.logger.debug("%s is type %s", media_url, url_content_type)
 
@@ -143,7 +147,7 @@ def hash_media() -> dict[str, str]:
                         if chunk:
                             bytes_read += len(chunk)
                             # Check as we write the file to ensure we don't exceed the max content length
-                            if bytes_read > MAX_CONTENT_LENGTH:
+                            if bytes_read > max_content_length:
                                 abort(413, "Content too large")
                             temp_file.write(chunk)
                 path = Path(tmp.name)
