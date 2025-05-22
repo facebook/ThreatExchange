@@ -246,6 +246,7 @@ def lookup_get() -> t.Union[TMatchByBank, TBankMatchBySignalType]:
             abort(403, "Hashing is disabled, missing role")
 
         hashes = hashing.hash_media()
+
         for signal_type in hashes.keys():
             signal = hashes[signal_type]
             resp[signal_type] = lookup(signal, signal_type)
