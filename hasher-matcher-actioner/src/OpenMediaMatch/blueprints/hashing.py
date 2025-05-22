@@ -34,7 +34,7 @@ bp = Blueprint("hashing", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 # Add these constants at the top level
-MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
+DEFAULT_MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
 
 
 def is_valid_url(url: str) -> bool:
@@ -77,12 +77,12 @@ def is_valid_url(url: str) -> bool:
         return False
 
 
-def _get_and_check_content_length(
-    url: str, max_length: int = MAX_CONTENT_LENGTH
+def _check_content_length_stream_response(
+    url: str, max_length: int = DEFAULT_MAX_CONTENT_LENGTH
 ) -> requests.Response:
     """
-    Get URL content with explicit content length tracking.
-    Raises an exception if content length exceeds max_length.
+    Check for content length and raise an exception if it exceeds max_length.
+    Returns the response as a stream.
     """
     # First check content length with HEAD request
     head_resp = requests.head(url, timeout=30, allow_redirects=True)
@@ -105,7 +105,7 @@ def _get_and_check_content_length(
 
 
 @bp.route("/hash", methods=["GET"])
-def hash_media():
+def hash_media() -> dict[str, str]:
     """
     Fetch content and return its hash.
 
@@ -124,32 +124,33 @@ def hash_media():
 
     try:
         # Get response with content length tracking
-        download_resp = _get_and_check_content_length(media_url)
-        url_content_type = download_resp.headers["content-type"]
-        current_app.logger.debug("%s is type %s", media_url, url_content_type)
+        max_content_length = current_app.config.get("MAX_CONTENT_LENGTH", DEFAULT_MAX_CONTENT_LENGTH)
+        with _check_content_length_stream_response(media_url, max_content_length) as download_resp:
+            url_content_type = download_resp.headers["content-type"]
+            current_app.logger.debug("%s is type %s", media_url, url_content_type)
 
-        content_type = _parse_request_content_type(url_content_type)
-        signal_types = _parse_request_signal_type(content_type)
+            content_type = _parse_request_content_type(url_content_type)
+            signal_types = _parse_request_signal_type(content_type)
 
-        ret: dict[str, str] = {}
+            ret: dict[str, str] = {}
 
-        # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
-        with tempfile.NamedTemporaryFile("wb") as tmp:
-            current_app.logger.debug("Writing to %s", tmp.name)
-            bytes_read = 0
-            with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
-                for chunk in download_resp.iter_content(chunk_size=8192):
-                    if chunk:
-                        bytes_read += len(chunk)
-                        # Check as we write the file to ensure we don't exceed the max content length
-                        if bytes_read > MAX_CONTENT_LENGTH:
-                            abort(413, "Content too large")
-                        temp_file.write(chunk)
-            path = Path(tmp.name)
-            for st in signal_types.values():
-                if issubclass(st, FileHasher):
-                    ret[st.get_name()] = st.hash_from_file(path)
-        return ret
+            # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
+            with tempfile.NamedTemporaryFile("wb") as tmp:
+                current_app.logger.debug("Writing to %s", tmp.name)
+                bytes_read = 0
+                with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
+                    for chunk in download_resp.iter_content(chunk_size=8192):
+                        if chunk:
+                            bytes_read += len(chunk)
+                            # Check as we write the file to ensure we don't exceed the max content length
+                            if bytes_read > MAX_CONTENT_LENGTH:
+                                abort(413, "Content too large")
+                            temp_file.write(chunk)
+                path = Path(tmp.name)
+                for st in signal_types.values():
+                    if issubclass(st, FileHasher):
+                        ret[st.get_name()] = st.hash_from_file(path)
+            return ret
     except requests.exceptions.RequestException as e:
         abort(400, f"Failed to fetch URL: {str(e)}")
 
