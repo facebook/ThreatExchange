@@ -193,8 +193,8 @@ def main():
     # Find the OpenAPI spec file
     script_dir = Path(__file__).parent
     repo_root = script_dir.parent # This is 'hasher-matcher-actioner'
-    # New path to openapi.yaml within src/OpenMediaMatch/static/openapi/
-    spec_path = repo_root / "src" / "OpenMediaMatch" / "static" / "openapi" / "openapi.yaml"
+    # New path to openapi.yaml within the top-level openapi/ directory
+    spec_path = repo_root / "openapi" / "openapi.yaml"
     
     if not spec_path.exists():
         print(f"❌ OpenAPI spec file not found: {spec_path}")
@@ -217,6 +217,8 @@ def main():
         print("\n🎉 OpenAPI specification is valid!")
         
         # Generate/update openapi.json from the validated spec_data
+        # The spec_path is now, e.g., .../hasher-matcher-actioner/openapi/openapi.yaml
+        # .parent will be .../hasher-matcher-actioner/openapi/
         json_spec_path = spec_path.parent / "openapi.json"
         try:
             with open(json_spec_path, 'w') as f_json:
