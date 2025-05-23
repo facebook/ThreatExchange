@@ -37,10 +37,25 @@ all = [
     "types-psycopg2",
     "types-python-dateutil",
     "gunicorn",
-    "flask_apscheduler"
+    "flask_apscheduler",
+    "pyyaml"
 ]
 
-test = [ "pytest" ]
+test = [
+    "pytest",
+    "pyyaml"
+]
+
+dev = [
+    "pytest",
+    "pyyaml",
+    "mypy",
+    "black",
+    "types-Flask-Migrate",
+    "types-requests",
+    "types-psycopg2",
+    "types-python-dateutil"
+]
 
 prod = [ "gunicorn" ]
 
