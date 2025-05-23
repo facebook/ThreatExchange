@@ -5,8 +5,9 @@ OpenAPI specification and documentation endpoints for HMA.
 """
 
 import os
-import yaml
-from flask import Blueprint, jsonify, render_template_string, current_app
+# import yaml # PyYAML no longer needed for production
+import json # For loading the pre-generated JSON
+from flask import Blueprint, jsonify, render_template_string, current_app, render_template, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.utils.flask_utils import api_error_handler
@@ -14,101 +15,68 @@ from OpenMediaMatch.utils.flask_utils import api_error_handler
 bp = Blueprint("openapi", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
 
-
-def get_openapi_spec():
-    """
-    Load and return the OpenAPI specification.
-    
-    This function loads the openapi.yaml file and returns it as a dictionary.
-    It also dynamically updates the server URLs based on the current request.
-    """
-    # Get the path to the openapi.yaml file
-    openapi_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-        "..", "..", "openapi.yaml"
-    )
-    
-    try:
-        with open(openapi_path, 'r') as f:
-            spec = yaml.safe_load(f)
-        
-        # Update server URLs dynamically if needed
-        if hasattr(current_app, 'config') and current_app.config.get('SERVER_NAME'):
-            server_name = current_app.config['SERVER_NAME']
-            scheme = 'https' if current_app.config.get('PREFERRED_URL_SCHEME') == 'https' else 'http'
-            spec['servers'] = [
-                {
-                    'url': f'{scheme}://{server_name}',
-                    'description': 'Current server'
-                }
-            ]
-        
-        return spec
-    except FileNotFoundError:
-        current_app.logger.error(f"OpenAPI spec file not found at {openapi_path}")
-        return None
-    except yaml.YAMLError as e:
-        current_app.logger.error(f"Error parsing OpenAPI spec: {e}")
-        return None
+# Directory where openapi.json and openapi.yaml are stored
+# Adjust the path depth according to the new file location if it changes.
+# Assuming openapi.json and openapi.yaml are in the root of the 'hasher-matcher-actioner' directory
+OPENAPI_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+    "openapi_files" # Let's assume we'll place them in a dedicated folder
+)
+# Create this directory if it doesn't exist, or ensure files are placed here.
+# For now, let's assume the files will be directly in the project root for simplicity,
+# matching the 'openapi.yaml' location.
+# Revised path to project root where openapi.yaml and eventually openapi.json will reside.
+SPEC_FILES_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), # current blueprint's directory
+    "..", # up to src/OpenMediaMatch
+    "..", # up to src
+    "..", # up to hasher-matcher-actioner (project root)
+))
 
 
 @bp.route("/openapi.json")
 def openapi_json():
     """
-    Serve the OpenAPI specification as JSON.
-    
-    This endpoint returns the complete OpenAPI 3.0 specification for the HMA API
-    in JSON format, which can be consumed by various OpenAPI tools.
+    Serve the pre-generated OpenAPI specification as JSON.
     """
-    spec = get_openapi_spec()
-    if spec is None:
-        return jsonify({"error": "OpenAPI specification not available"}), 500
-    
-    return jsonify(spec)
-
+    try:
+        # Path to the pre-generated openapi.json file
+        # Ensure 'openapi.json' is in the root of 'hasher-matcher-actioner'
+        return send_from_directory(SPEC_FILES_DIR, "openapi.json", mimetype='application/json')
+    except FileNotFoundError:
+        current_app.logger.error(f"openapi.json not found in {SPEC_FILES_DIR}")
+        return jsonify({"error": "OpenAPI JSON specification not found"}), 500
 
 @bp.route("/openapi.yaml")
 def openapi_yaml():
     """
-    Serve the OpenAPI specification as YAML.
-    
-    This endpoint returns the complete OpenAPI 3.0 specification for the HMA API
-    in YAML format.
+    Serve the pre-generated OpenAPI specification as YAML.
     """
-    spec = get_openapi_spec()
-    if spec is None:
-        return "error: OpenAPI specification not available", 500
-    
-    return yaml.dump(spec, default_flow_style=False), 200, {'Content-Type': 'text/yaml'}
-
+    try:
+        # Path to the openapi.yaml file
+        # Ensure 'openapi.yaml' is in the root of 'hasher-matcher-actioner'
+        return send_from_directory(SPEC_FILES_DIR, "openapi.yaml", mimetype='text/yaml')
+    except FileNotFoundError:
+        current_app.logger.error(f"openapi.yaml not found in {SPEC_FILES_DIR}")
+        return jsonify({"error": "OpenAPI YAML specification not found"}), 500
 
 @bp.route("/docs")
 def swagger_ui():
     """
     Serve Swagger UI for interactive API documentation.
-    
-    This endpoint provides a web-based interface for exploring and testing
-    the HMA API endpoints using Swagger UI.
     """
+    # This HTML can remain as is, or be moved to a template if preferred.
+    # It correctly points to /api/openapi.json
     swagger_ui_html = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HMA API Documentation</title>
+    <title>HMA API Documentation - Swagger UI</title>
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css" />
     <style>
-        html {
-            box-sizing: border-box;
-            overflow: -moz-scrollbars-vertical;
-            overflow-y: scroll;
-        }
-        *, *:before, *:after {
-            box-sizing: inherit;
-        }
-        body {
-            margin:0;
-            background: #fafafa;
-        }
+        html { box-sizing: border-box; overflow: -moz-scrollbars-vertical; overflow-y: scroll; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin:0; background: #fafafa; }
     </style>
 </head>
 <body>
@@ -118,234 +86,56 @@ def swagger_ui():
     <script>
         window.onload = function() {
             const ui = SwaggerUIBundle({
-                url: '/api/openapi.json',
+                url: "/api/openapi.json", // Points to our static JSON
                 dom_id: '#swagger-ui',
                 deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
+                presets: [ SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset ],
+                plugins: [ SwaggerUIBundle.plugins.DownloadUrl ],
                 layout: "StandaloneLayout",
-                validatorUrl: null,
+                validatorUrl: null, // Disable validation, spec is pre-validated
                 docExpansion: "list",
                 filter: true,
                 showRequestHeaders: true,
                 showCommonExtensions: true,
-                tryItOutEnabled: true,
-                requestInterceptor: function(req) {
-                    // Add any request interceptors here if needed
-                    return req;
-                },
-                responseInterceptor: function(res) {
-                    // Add any response interceptors here if needed  
-                    return res;
-                }
+                tryItOutEnabled: true, // Enable "Try it out" feature
             });
         };
     </script>
 </body>
 </html>
     '''
-    
     return render_template_string(swagger_ui_html)
-
 
 @bp.route("/redoc")
 def redoc():
     """
     Serve ReDoc for alternative API documentation.
-    
-    This endpoint provides an alternative web-based interface for viewing
-    the HMA API documentation using ReDoc.
     """
+    # This HTML can remain as is, or be moved to a template if preferred.
+    # It correctly points to /api/openapi.json
     redoc_html = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HMA API Documentation</title>
+    <title>HMA API Documentation - ReDoc</title>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-    </style>
+    <style> body { margin: 0; padding: 0; } </style>
 </head>
 <body>
-    <redoc spec-url='/api/openapi.json'></redoc>
+    <redoc spec-url='/api/openapi.json'></redoc> {/* Points to our static JSON */}
     <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.3/bundles/redoc.standalone.js"></script>
 </body>
 </html>
     '''
-    
     return render_template_string(redoc_html)
-
 
 @bp.route("/")
 def api_home():
     """
     API documentation home page.
-    
     This provides links to different documentation formats and tools.
     """
-    home_html = '''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>HMA API Documentation</title>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: #f8f9fa;
-        }
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #1976d2;
-            border-bottom: 3px solid #1976d2;
-            padding-bottom: 0.5rem;
-        }
-        h2 {
-            color: #424242;
-            margin-top: 2rem;
-        }
-        .links {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
-            margin: 2rem 0;
-        }
-        .link-card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-        }
-        .link-card:hover {
-            border-color: #1976d2;
-            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.2);
-        }
-        .link-card h3 {
-            margin: 0 0 0.5rem 0;
-            color: #1976d2;
-        }
-        .link-card p {
-            margin: 0;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        .info-box {
-            background: #e3f2fd;
-            border-left: 4px solid #1976d2;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-        .role-info {
-            background: #fff3e0;
-            border-left: 4px solid #ff9800;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-        code {
-            background: #f5f5f5;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔒 Hasher-Matcher-Actioner (HMA) API</h1>
-        
-        <div class="info-box">
-            <strong>HMA</strong> is Meta's content moderation platform that provides content hashing, 
-            similarity matching, and curation capabilities for trust & safety applications.
-        </div>
-
-        <h2>📚 API Documentation</h2>
-        <div class="links">
-            <a href="/api/docs" class="link-card">
-                <h3>📖 Swagger UI</h3>
-                <p>Interactive API documentation with try-it-out functionality</p>
-            </a>
-            
-            <a href="/api/redoc" class="link-card">
-                <h3>📄 ReDoc</h3>
-                <p>Clean, responsive API documentation viewer</p>
-            </a>
-            
-            <a href="/api/openapi.json" class="link-card">
-                <h3>📋 OpenAPI JSON</h3>
-                <p>Machine-readable API specification in JSON format</p>
-            </a>
-            
-            <a href="/api/openapi.yaml" class="link-card">
-                <h3>📝 OpenAPI YAML</h3>
-                <p>Human-readable API specification in YAML format</p>
-            </a>
-        </div>
-
-        <h2>🛠️ API Endpoints</h2>
-        <div class="role-info">
-            <strong>Role Requirements:</strong> Different endpoints require specific roles to be enabled in your HMA configuration:
-            <ul>
-                <li><code>ROLE_HASHER</code> - Required for <code>/h/*</code> endpoints</li>
-                <li><code>ROLE_MATCHER</code> - Required for <code>/m/*</code> endpoints</li>
-                <li><code>ROLE_CURATOR</code> - Required for <code>/c/*</code> endpoints</li>
-                <li><code>UI_ENABLED</code> - Required for <code>/ui/*</code> endpoints</li>
-            </ul>
-        </div>
-
-        <h3>🔨 Key Endpoint Categories</h3>
-        <ul>
-            <li><strong>Hashing (<code>/h/*</code>)</strong> - Content hashing operations</li>
-            <li><strong>Matching (<code>/m/*</code>)</strong> - Content matching and lookup</li>
-            <li><strong>Curation (<code>/c/*</code>)</strong> - Bank and content management</li>
-            <li><strong>Development (<code>/dev/*</code>)</strong> - Testing and development tools</li>
-        </ul>
-
-        <h2>🚀 Quick Start</h2>
-        <div class="info-box">
-            <p><strong>Health Check:</strong> <code>GET /status</code></p>
-            <p><strong>Hash Content:</strong> <code>GET /h/hash?url=https://example.com/image.jpg</code></p>
-            <p><strong>Match Content:</strong> <code>GET /m/lookup?url=https://example.com/image.jpg</code></p>
-            <p><strong>List Banks:</strong> <code>GET /c/banks</code></p>
-        </div>
-
-        <h2>🔗 External Resources</h2>
-        <div class="links">
-            <a href="https://github.com/facebook/ThreatExchange" class="link-card">
-                <h3>🏠 ThreatExchange GitHub</h3>
-                <p>Main project repository and documentation</p>
-            </a>
-            
-            <a href="https://developers.facebook.com/docs/threat-exchange" class="link-card">
-                <h3>📖 ThreatExchange Docs</h3>
-                <p>Official documentation and best practices</p>
-            </a>
-        </div>
-    </div>
-</body>
-</html>
-    '''
-    
-    return render_template_string(home_html) 
+    # This should still work as api_home.html uses relative /api/... links
+    return render_template("api_home.html") 

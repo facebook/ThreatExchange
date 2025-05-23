@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HMA API Documentation</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 0.5rem;
+        }
+        h2 {
+            color: #424242;
+            margin-top: 2rem;
+        }
+        .links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+        .link-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+        }
+        .link-card:hover {
+            border-color: #1976d2;
+            box-shadow: 0 4px 15px rgba(25, 118, 210, 0.2);
+        }
+        .link-card h3 {
+            margin: 0 0 0.5rem 0;
+            color: #1976d2;
+        }
+        .link-card p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HMA API Documentation</h1>
+        <p>Welcome to the Hasher-Matcher-Actioner (HMA) API documentation. Below you'll find links to the interactive API documentation and the raw OpenAPI specification files.</p>
+
+        <h2><a id="interactive-documentation">Interactive Documentation</a></h2>
+        <div class="links">
+            <a href="/api/docs" class="link-card">
+                <h3>Swagger UI</h3>
+                <p>Explore and test API endpoints interactively in your browser.</p>
+            </a>
+            <a href="/api/redoc" class="link-card">
+                <h3>ReDoc</h3>
+                <p>View a clean, responsive, and user-friendly documentation.</p>
+            </a>
+        </div>
+
+        <h2><a id="openapi-specification">OpenAPI Specification</a></h2>
+        <div class="links">
+            <a href="/api/openapi.json" class="link-card">
+                <h3>openapi.json</h3>
+                <p>Download the machine-readable OpenAPI specification in JSON format.</p>
+            </a>
+            <a href="/api/openapi.yaml" class="link-card">
+                <h3>openapi.yaml</h3>
+                <p>Download the human-readable OpenAPI specification in YAML format.</p>
+            </a>
+        </div>
+        
+        <h2><a id="integration-guide">Integration Guide</a></h2>
+        <div class="links">
+             <a href="https://github.com/facebook/ThreatExchange/blob/main/hasher-matcher-actioner/OPENAPI_INTEGRATION.md" class="link-card" target="_blank">
+                <h3>OPENAPI_INTEGRATION.md</h3>
+                <p>View the comprehensive guide for integrating with the HMA API, including multi-language examples and best practices for handling dynamic responses.</p>
+            </a>
+        </div>
+
+        <h2><a id="api-details">API Details</a></h2>
+        <p>The HMA API provides endpoints for content hashing, similarity matching, content curation, and system configuration. Please refer to the interactive documentation or the OpenAPI specification for detailed information on each endpoint, request/response schemas, and authentication requirements.</p>
+        
+        <p>For challenges related to dynamic response structures and guidance for strongly-typed languages, please consult the <strong>OPENAPI_INTEGRATION.md</strong> guide.</p>
+    </div>
+</body>
+</html> 
