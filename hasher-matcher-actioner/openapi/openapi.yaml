@@ -11,7 +11,6 @@ info:
     - `/h/*` - Hashing endpoints (ROLE_HASHER required)
     - `/m/*` - Matching endpoints (ROLE_MATCHER required)  
     - `/c/*` - Curation endpoints (ROLE_CURATOR required)
-    - `/dev/*` - Development endpoints (non-production only)
     - `/ui/*` - User interface endpoints (UI_ENABLED required)
   version: "1.0.0"
   contact:
@@ -72,6 +71,58 @@ paths:
                 items:
                   type: string
                 example: ["/status", "/h/hash", "/m/lookup"]
+
+  # General System Information Endpoints
+  /content_types:
+    get:
+      tags: [Configuration]
+      summary: List Content Types
+      description: Get a list of all configured content types and their settings.
+      responses:
+        '200':
+          description: A map of content type names to their configurations.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/ContentTypeConfig'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signal_types:
+    get:
+      tags: [Configuration]
+      summary: List Signal Types
+      description: Get a list of all configured signal types and their basic settings (e.g., enabled status).
+      responses:
+        '200':
+          description: A map of signal type names to their configurations.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/SignalTypeConfig'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /signal_types/status:
+    get:
+      tags: [Configuration]
+      summary: Get Signal Type Index Status
+      description: Get indexing status for all signal types.
+      responses:
+        '200':
+          description: A map of signal type names to their indexing status.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/SignalTypeIndexStatus'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   # Hashing endpoints (/h/*)
   /h/hash:
@@ -848,23 +899,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/FetchStatus'
 
-  # Signal Type endpoints
-  /c/signal_type:
-    get:
-      tags: [Configuration]
-      summary: List signal types
-      description: Get list of all signal types and their configurations
-      responses:
-        '200':
-          description: Signal type configurations
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/SignalTypeConfig'
+  # Signal Type endpoints -- OLD SECTION TO BE MODIFIED/REMOVED
+  # /c/signal_type:
+  #   get:
+  #     tags: [Configuration]
+  #     summary: List signal types
+  #     description: Get list of all signal types and their configurations
+  #     responses:
+  #       '200':
+  #         description: Signal type configurations
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               additionalProperties:
+  #                 $ref: '#/components/schemas/SignalTypeConfig'
 
-  /c/signal_type/{signal_type_name}:
+  /c/signal_type/{signal_type_name}: # This PUT operation remains
     put:
       tags: [Configuration]
       summary: Update signal type config
@@ -894,73 +945,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/SignalTypeConfig'
 
-  /c/signal_type/index:
-    get:
-      tags: [Configuration]
-      summary: Signal type index status
-      description: Get indexing status for all signal types
-      responses:
-        '200':
-          description: Signal type index status
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/SignalTypeIndexStatus'
+  # /c/signal_type/index: # This GET path is removed
+  #   get:
+  #     tags: [Configuration]
+  #     summary: Signal type index status
+  #     description: Get indexing status for all signal types
+  #     responses:
+  #       '200':
+  #         description: Signal type index status
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               additionalProperties:
+  #                 $ref: '#/components/schemas/SignalTypeIndexStatus'
 
-  # Content Type endpoints
-  /c/content_type:
-    get:
-      tags: [Configuration]
-      summary: List content types
-      description: Get list of all content types and their configurations
-      responses:
-        '200':
-          description: Content type configurations
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/ContentTypeConfig'
-
-  # Development endpoints (/dev/*)
-  /dev/setup_sample_example:
-    post:
-      tags: [Development]
-      summary: Setup sample data
-      description: Seed the system with sample data for testing
-      responses:
-        '302':
-          description: Redirect to UI home
-
-  /dev/setup_tx_example:
-    post:
-      tags: [Development]
-      summary: Setup ThreatExchange example
-      description: Create example ThreatExchange collaboration
-      responses:
-        '302':
-          description: Redirect to UI home
-
-  /dev/seed_banks:
-    post:
-      tags: [Development]
-      summary: Seed random banks
-      description: Create random banks for testing
-      responses:
-        '302':
-          description: Redirect to UI home
-
-  /dev/factory_reset:
-    post:
-      tags: [Development]
-      summary: Factory reset
-      description: Reset all database tables (destructive operation)
-      responses:
-        '302':
-          description: Redirect to UI home
+  # Content Type endpoints -- OLD SECTION TO BE REMOVED
+  # /c/content_type:
+  #   get:
+  #     tags: [Configuration]
+  #     summary: List content types
+  #     description: Get list of all content types and their configurations
+  #     responses:
+  #       '200':
+  #         description: Content type configurations
+  #         content:
+  #           application/json:
+  #             schema:
+  #               type: object
+  #               additionalProperties:
+  #                 $ref: '#/components/schemas/ContentTypeConfig'
 
 components:
   parameters:
@@ -1576,8 +1590,6 @@ tags:
     description: Signal exchange/collaboration management
   - name: Configuration
     description: System configuration endpoints
-  - name: Development
-    description: Development and testing endpoints
 
 x-integration-patterns: |
   # Integration Patterns for Strongly-Typed Languages
