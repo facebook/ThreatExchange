@@ -31,7 +31,7 @@ from OpenMediaMatch.background_tasks import (
     development as dev_apscheduler,
 )
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui, openapi
+from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.utils import dev_utils
 
 
@@ -152,9 +152,6 @@ def create_app() -> flask.Flask:
         is_ui_enabled = app.config.get("UI_ENABLED", False)
         # Register Flask blueprints for whichever server roles are enabled...
         # URL prefixing facilitates easy Layer 7 routing :)
-
-        # Always register the OpenAPI documentation blueprint
-        app.register_blueprint(openapi.bp, url_prefix="/api")
 
         if is_ui_enabled:
             app.register_blueprint(ui.bp, url_prefix="/ui")
