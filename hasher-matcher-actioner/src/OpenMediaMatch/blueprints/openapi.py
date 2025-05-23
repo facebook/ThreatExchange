@@ -29,8 +29,8 @@ OPENAPI_DIR = os.path.join(
 SPEC_FILES_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), # current blueprint's directory
     "..", # up to src/OpenMediaMatch
-    "..", # up to src
-    "..", # up to hasher-matcher-actioner (project root)
+    "static", # into static
+    "openapi" # into openapi
 ))
 
 

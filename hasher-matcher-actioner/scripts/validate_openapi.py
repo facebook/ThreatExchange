@@ -192,47 +192,43 @@ def main():
     """Main validation function."""
     # Find the OpenAPI spec file
     script_dir = Path(__file__).parent
-    repo_root = script_dir.parent
-    spec_path = repo_root / "openapi.yaml"
+    repo_root = script_dir.parent # This is 'hasher-matcher-actioner'
+    # New path to openapi.yaml within src/OpenMediaMatch/static/openapi/
+    spec_path = repo_root / "src" / "OpenMediaMatch" / "static" / "openapi" / "openapi.yaml"
     
     if not spec_path.exists():
         print(f"❌ OpenAPI spec file not found: {spec_path}")
         sys.exit(1)
     
-    print(f"🔍 Validating OpenAPI specification: {spec_path}")
-    print("=" * 60)
+    print(f"Validating OpenAPI spec: {spec_path}")
+    spec_data = load_openapi_spec(str(spec_path))
     
-    # Load the specification
-    spec = load_openapi_spec(str(spec_path))
-    
-    # Run validation checks
-    checks = [
-        validate_openapi_structure(spec),
-        validate_paths(spec['paths']),
-        validate_components(spec),
-        validate_external_references(spec),
+    validations = [
+        validate_openapi_structure(spec_data),
+        validate_paths(spec_data.get('paths', {})),
+        validate_components(spec_data),
+        validate_external_references(spec_data)
     ]
     
-    # Optional online validation
-    if '--online' in sys.argv:
-        print("\n🌐 Running online validation...")
-        checks.append(validate_openapi_online(spec))
+    # Optional online validation (can be slow or fail due to network)
+    # validations.append(validate_openapi_online(spec_data))
     
-    print("\n" + "=" * 60)
-    
-    if all(checks):
-        print("🎉 OpenAPI specification is valid!")
-        print(f"   - {len(spec['paths'])} endpoints documented")
-        if 'components' in spec and 'schemas' in spec['components']:
-            print(f"   - {len(spec['components']['schemas'])} schemas defined")
-        print("\n💡 You can now use this specification with:")
-        print("   - Swagger UI: /api/docs")
-        print("   - ReDoc: /api/redoc") 
-        print("   - Postman: Import from /api/openapi.json")
-        print("   - SDK generators: Use /api/openapi.yaml")
-        sys.exit(0)
+    if all(validations):
+        print("\n🎉 OpenAPI specification is valid!")
+        
+        # Generate/update openapi.json from the validated spec_data
+        json_spec_path = spec_path.parent / "openapi.json"
+        try:
+            with open(json_spec_path, 'w') as f_json:
+                # Use compact separators to minimize file size, matching previous openapi.json
+                json.dump(spec_data, f_json, indent=None, separators=(",", ":"))
+            print(f"✅ Successfully generated/updated {json_spec_path}")
+            sys.exit(0)
+        except IOError as e:
+            print(f"❌ Error writing openapi.json: {e}")
+            sys.exit(1)
     else:
-        print("❌ OpenAPI specification has validation errors")
+        print("\n❌ OpenAPI specification has validation errors.")
         sys.exit(1)
 
 if __name__ == "__main__":
