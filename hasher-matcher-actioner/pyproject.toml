@@ -25,6 +25,7 @@ dependencies = [
     "flask_apscheduler",
     "python-dateutil",
     "python-json-logger",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]

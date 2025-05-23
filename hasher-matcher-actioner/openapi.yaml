@@ -1,0 +1,1767 @@
+openapi: 3.0.0
+info:
+  title: Hasher-Matcher-Actioner (HMA) API
+  description: >
+    OpenAPI specification for Meta's Hasher-Matcher-Actioner (HMA) system from ThreatExchange.
+    
+    HMA is a content moderation platform that provides content hashing, similarity matching,
+    and curation capabilities for trust & safety applications.
+    
+    ## Base URL Prefixes
+    - `/h/*` - Hashing endpoints (ROLE_HASHER required)
+    - `/m/*` - Matching endpoints (ROLE_MATCHER required)  
+    - `/c/*` - Curation endpoints (ROLE_CURATOR required)
+    - `/dev/*` - Development endpoints (non-production only)
+    - `/ui/*` - User interface endpoints (UI_ENABLED required)
+  version: "1.0.0"
+  contact:
+    name: ThreatExchange
+    url: https://github.com/facebook/ThreatExchange
+    email: threatexchange@meta.com
+  license:
+    name: BSD License
+    url: https://github.com/facebook/ThreatExchange/blob/main/LICENSE
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: https://your-hma-instance.com
+    description: Production server
+
+paths:
+  # Core status endpoints
+  /:
+    get:
+      summary: Home redirect
+      description: Redirects to UI if enabled, otherwise to status endpoint
+      responses:
+        '302':
+          description: Redirect to appropriate endpoint
+  
+  /status:
+    get:
+      summary: Health check
+      description: Liveness/readiness check endpoint for load balancers
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "I-AM-ALIVE"
+        '503':
+          description: Service unavailable (e.g., index is stale)
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "INDEX-STALE"
+  
+  /site-map:
+    get:
+      summary: Site map
+      description: Returns list of all available routes
+      responses:
+        '200':
+          description: List of available routes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["/status", "/h/hash", "/m/lookup"]
+
+  # Hashing endpoints (/h/*)
+  /h/hash:
+    get:
+      tags: [Hashing]
+      summary: Hash content from URL
+      description: |
+        Fetch content from a URL and return its hash signatures.
+        
+        **⚠️ Dynamic Response Structure**: Returns object with unpredictable keys (algorithm names).
+        **TypeScript Challenge**: Requires `Record<string, string>` - cannot use strict interfaces.
+        **Go Challenge**: Use `map[string]string` or `interface{}` for unknown keys.
+        **Swift Challenge**: Use `[String: String]` dictionary type.
+        
+        **Memory Allocation Note**: Strongly-typed languages cannot pre-allocate memory for unknown object shapes.
+        Runtime parsing and dynamic allocation required.
+        
+        **API Chaining Limitation**: Output cannot be directly piped to matching endpoints.
+        Manual transformation layer required.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: URL to the media content to hash
+        - name: content_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [photo, video]
+          description: Content type override if auto-detection fails
+        - name: types
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list of signal types to compute
+      responses:
+        '200':
+          description: |
+            Hash values computed successfully. 
+            
+            **Response Structure**: Dynamic object with algorithm names as keys.
+            **Available Algorithms**: Depends on content type and HMA configuration.
+            **TypeScript Type**: `Record<string, string>`
+            **Go Type**: `map[string]string`
+            **Swift Type**: `[String: String]`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HashResponse'
+              examples:
+                photo_hashes:
+                  summary: "Photo hashing response"
+                  description: "Typical response for image content"
+                  value:
+                    pdq: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+                    md5: "d41d8cd98f00b204e9800998ecf8427e"
+                    phash: "a1b2c3d4e5f6789a"
+                video_hashes:
+                  summary: "Video hashing response"
+                  description: "Typical response for video content"
+                  value:
+                    tmk: "1234567890abcdef1234567890abcdef"
+                    video_md5: "098f6bcd4621d373cade4e832627b4f6"
+                    frame_md5: "e99a18c428cb38d5f260853678922e03"
+                minimal_response:
+                  summary: "Single algorithm response"
+                  description: "When only one algorithm is available/enabled"
+                  value:
+                    pdq: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    
+    post:
+      tags: [Hashing]
+      summary: Hash uploaded content
+      description: |
+        Calculate hash signatures for uploaded file content.
+        
+        **⚠️ Dynamic Response Structure**: Same dynamic object limitations as GET endpoint.
+        **Strongly-Typed Languages**: Cannot predict response shape at compile time.
+        **Manual Transformation Required**: For use with matching endpoints.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: Photo file to hash
+                video:
+                  type: string
+                  format: binary
+                  description: Video file to hash
+              oneOf:
+                - required: [photo]
+                - required: [video]
+      responses:
+        '200':
+          description: |
+            Hash values computed successfully with dynamic algorithm keys.
+            See GET /h/hash for response structure details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HashResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Matching endpoints (/m/*)
+  /m/raw_lookup:
+    get:
+      tags: [Matching]
+      summary: Raw hash lookup
+      description: |
+        Look up a hash in the similarity index without enable/disable checks.
+        
+        **⚠️ Manual Input Required**: Cannot directly use hashing API output.
+        **Transformation Needed**: Extract `signal` and `signal_type` from HashResponse.
+        **Workflow**: Hash → Extract → Match (no direct chaining supported).
+      parameters:
+        - name: signal
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            The hash/signal value to look up.
+            **Source**: Must be extracted from HashResponse object.
+            **Example**: `hashResponse["pdq"]` or `hashResponse["md5"]`
+        - name: signal_type
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            The signal type (algorithm name).
+            **Source**: Must be a key from HashResponse object.
+            **Example**: "pdq", "md5", "sha256", etc.
+            **Available Values**: Depends on content type and HMA configuration.
+        - name: include_distance
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to include distance values in matches
+      responses:
+        '200':
+          description: Lookup results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    oneOf:
+                      - type: array
+                        items:
+                          type: integer
+                        description: Content IDs when include_distance=false
+                      - type: array
+                        items:
+                          $ref: '#/components/schemas/MatchWithDistance'
+                        description: Matches with distance when include_distance=true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          description: Index not ready
+  
+  /m/lookup:
+    get:
+      tags: [Matching]
+      summary: Content lookup with URL
+      description: |
+        Hash content from URL and find matches in banks.
+        
+        **Convenience Endpoint**: Combines hashing + matching in single call.
+        **Note**: Still returns dynamic structure in results organized by signal type.
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          description: URL to the content to match
+        - name: banks
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Comma-separated list of bank names to search in
+      responses:
+        '200':
+          description: |
+            Match results organized by bank and signal type.
+            **Structure**: Dynamic nested objects requiring Record types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResultsByBank'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    
+    post:
+      tags: [Matching]
+      summary: Content lookup with file upload
+      description: |
+        Hash uploaded content and find matches in banks.
+        
+        **Convenience Endpoint**: Combines hashing + matching in single call.
+        **Dynamic Results**: Returns nested dynamic objects by bank and signal type.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                video:
+                  type: string
+                  format: binary
+              oneOf:
+                - required: [photo]
+                - required: [video]
+      responses:
+        '200':
+          description: |
+            Match results organized by bank and signal type.
+            **TypeScript**: `Record<string, Record<string, MatchWithDistance[]>>`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResultsByBank'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /m/index/status:
+    get:
+      tags: [Matching]
+      summary: Index status
+      description: Get status of signal type indices
+      responses:
+        '200':
+          description: Index status information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexStatus'
+
+  /m/compare:
+    post:
+      tags: [Matching]
+      summary: Compare hash signatures
+      description: Compare two hash signatures for similarity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+                minItems: 2
+                maxItems: 2
+              example:
+                pdq: ["facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318", "facd8bcb2a49bcebdec1985228d5ae84bcd006c187c598c720c2b087b3fdb318"]
+      responses:
+        '200':
+          description: Comparison results
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    oneOf:
+                      - type: boolean
+                      - type: object
+                        properties:
+                          distance:
+                            type: integer
+                example:
+                  pdq: [true, {"distance": 9}]
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  # Curation endpoints (/c/*)
+  /c/banks:
+    get:
+      tags: [Curation]
+      summary: List banks
+      description: Get list of all content banks
+      responses:
+        '200':
+          description: List of banks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BankConfig'
+    
+    post:
+      tags: [Curation]
+      summary: Create bank
+      description: Create a new content bank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: Bank name
+                enabled:
+                  type: boolean
+                  description: Whether bank is enabled (deprecated, use enabled_ratio)
+                enabled_ratio:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                  description: Ratio of bank contents to consider for matching
+      responses:
+        '201':
+          description: Bank created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Bank already exists
+
+  /c/bank/{bank_name}:
+    get:
+      tags: [Curation]
+      summary: Get bank details
+      description: Get details of a specific bank
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+      responses:
+        '200':
+          description: Bank details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankConfig'
+        '404':
+          description: Bank not found
+    
+    put:
+      tags: [Curation]
+      summary: Update bank
+      description: Update bank configuration
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: New bank name
+                enabled:
+                  type: boolean
+                  description: Whether bank is enabled
+                enabled_ratio:
+                  type: number
+                  minimum: 0.0
+                  maximum: 1.0
+                  description: Ratio of bank contents to consider for matching
+      responses:
+        '200':
+          description: Bank updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Bank name already exists
+        '404':
+          description: Bank not found
+    
+    delete:
+      tags: [Curation]
+      summary: Delete bank
+      description: Delete a content bank
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+      responses:
+        '200':
+          description: Bank deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Done"
+
+  /c/bank/{bank_name}/content:
+    post:
+      tags: [Curation]
+      summary: Add content to bank
+      description: Add content to a bank via URL or file upload
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+        - name: url
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: URL to content to add to bank
+        - name: metadata
+          in: query
+          required: false
+          schema:
+            type: string
+          description: JSON metadata for the content
+      requestBody:
+        required: false
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                video:
+                  type: string
+                  format: binary
+                metadata:
+                  type: object
+                  $ref: '#/components/schemas/BankedContentMetadata'
+      responses:
+        '200':
+          description: Content added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Content ID
+                  signals:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Computed hash signatures
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Bank not found
+
+  /c/bank/{bank_name}/content/{content_id}:
+    get:
+      tags: [Curation]
+      summary: Get bank content
+      description: Get details of specific content in a bank
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+        - $ref: '#/components/parameters/ContentId'
+      responses:
+        '200':
+          description: Content details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankContentConfig'
+        '404':
+          description: Bank or content not found
+    
+    put:
+      tags: [Curation]
+      summary: Update bank content
+      description: Update metadata for bank content
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+        - $ref: '#/components/parameters/ContentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                disable_until_ts:
+                  type: integer
+                  description: Timestamp until which content is disabled
+                original_media_uri:
+                  type: string
+                  format: uri
+                  description: Original media URI
+      responses:
+        '200':
+          description: Content updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankContentConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Bank or content not found
+    
+    delete:
+      tags: [Curation]
+      summary: Delete bank content
+      description: Remove content from a bank
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+        - $ref: '#/components/parameters/ContentId'
+      responses:
+        '200':
+          description: Content deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Done"
+
+  /c/bank/{bank_name}/signal:
+    post:
+      tags: [Curation]
+      summary: Add signals to bank
+      description: Add hash signatures directly to a bank
+      parameters:
+        - $ref: '#/components/parameters/BankName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+              description: Mapping of signal type to signal value
+              example:
+                pdq: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+                md5: "d41d8cd98f00b204e9800998ecf8427e"
+      responses:
+        '200':
+          description: Signals added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  signals:
+                    type: object
+                    additionalProperties:
+                      type: string
+
+  # Exchange API endpoints
+  /c/exchanges/apis:
+    get:
+      tags: [Exchange APIs]
+      summary: List exchange APIs
+      description: Get list of available signal exchange APIs
+      responses:
+        '200':
+          description: List of exchange API names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: ["fb_threatexchange", "static_sample"]
+
+  /c/exchanges/api/{api_name}:
+    get:
+      tags: [Exchange APIs]
+      summary: Get exchange API config
+      description: Get configuration for a specific exchange API
+      parameters:
+        - $ref: '#/components/parameters/ApiName'
+      responses:
+        '200':
+          description: Exchange API configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeAPIConfig'
+    
+    post:
+      tags: [Exchange APIs]
+      summary: Update exchange API config
+      description: Update configuration for a specific exchange API
+      parameters:
+        - $ref: '#/components/parameters/ApiName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                credential_json:
+                  type: object
+                  description: API credentials (format depends on API type)
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeAPIConfig'
+
+  # Exchange/Collaboration endpoints
+  /c/exchanges:
+    get:
+      tags: [Exchanges]
+      summary: List exchanges
+      description: Get list of configured signal exchanges/collaborations
+      responses:
+        '200':
+          description: List of exchanges
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CollaborationConfig'
+    
+    post:
+      tags: [Exchanges]
+      summary: Create exchange
+      description: Create a new signal exchange/collaboration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [api, bank, api_json]
+              properties:
+                api:
+                  type: string
+                  description: Exchange API type
+                bank:
+                  type: string
+                  description: Associated bank name
+                api_json:
+                  type: object
+                  description: API-specific configuration
+      responses:
+        '201':
+          description: Exchange created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /c/exchange/{exchange_name}:
+    get:
+      tags: [Exchanges]
+      summary: Get exchange details
+      description: Get details of a specific exchange
+      parameters:
+        - $ref: '#/components/parameters/ExchangeName'
+      responses:
+        '200':
+          description: Exchange details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationConfig'
+        '404':
+          description: Exchange not found
+    
+    put:
+      tags: [Exchanges]
+      summary: Update exchange
+      description: Update exchange configuration
+      parameters:
+        - $ref: '#/components/parameters/ExchangeName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bank:
+                  type: string
+                  description: Associated bank name
+                api_json:
+                  type: object
+                  description: API-specific configuration
+      responses:
+        '200':
+          description: Exchange updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollaborationConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Exchange not found
+    
+    delete:
+      tags: [Exchanges]
+      summary: Delete exchange
+      description: Delete a signal exchange
+      parameters:
+        - $ref: '#/components/parameters/ExchangeName'
+      responses:
+        '200':
+          description: Exchange deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Exchange deleted"
+
+  /c/exchange/{exchange_name}/status:
+    get:
+      tags: [Exchanges]
+      summary: Get exchange fetch status
+      description: Get the fetch status for a signal exchange
+      parameters:
+        - $ref: '#/components/parameters/ExchangeName'
+      responses:
+        '200':
+          description: Exchange fetch status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchStatus'
+
+  # Signal Type endpoints
+  /c/signal_type:
+    get:
+      tags: [Configuration]
+      summary: List signal types
+      description: Get list of all signal types and their configurations
+      responses:
+        '200':
+          description: Signal type configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/SignalTypeConfig'
+
+  /c/signal_type/{signal_type_name}:
+    put:
+      tags: [Configuration]
+      summary: Update signal type config
+      description: Update configuration for a signal type
+      parameters:
+        - name: signal_type_name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Signal type name (e.g., 'pdq', 'md5')
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                  description: Whether signal type is enabled
+      responses:
+        '200':
+          description: Signal type updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignalTypeConfig'
+
+  /c/signal_type/index:
+    get:
+      tags: [Configuration]
+      summary: Signal type index status
+      description: Get indexing status for all signal types
+      responses:
+        '200':
+          description: Signal type index status
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/SignalTypeIndexStatus'
+
+  # Content Type endpoints
+  /c/content_type:
+    get:
+      tags: [Configuration]
+      summary: List content types
+      description: Get list of all content types and their configurations
+      responses:
+        '200':
+          description: Content type configurations
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/ContentTypeConfig'
+
+  # Development endpoints (/dev/*)
+  /dev/setup_sample_example:
+    post:
+      tags: [Development]
+      summary: Setup sample data
+      description: Seed the system with sample data for testing
+      responses:
+        '302':
+          description: Redirect to UI home
+
+  /dev/setup_tx_example:
+    post:
+      tags: [Development]
+      summary: Setup ThreatExchange example
+      description: Create example ThreatExchange collaboration
+      responses:
+        '302':
+          description: Redirect to UI home
+
+  /dev/seed_banks:
+    post:
+      tags: [Development]
+      summary: Seed random banks
+      description: Create random banks for testing
+      responses:
+        '302':
+          description: Redirect to UI home
+
+  /dev/factory_reset:
+    post:
+      tags: [Development]
+      summary: Factory reset
+      description: Reset all database tables (destructive operation)
+      responses:
+        '302':
+          description: Redirect to UI home
+
+components:
+  parameters:
+    BankName:
+      name: bank_name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Name of the bank
+    
+    ContentId:
+      name: content_id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: Content ID
+    
+    ApiName:
+      name: api_name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Exchange API name
+    
+    ExchangeName:
+      name: exchange_name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Exchange name
+
+  schemas:
+    HashResponse:
+      type: object
+      additionalProperties:
+        type: string
+      description: |
+        Dynamic object with algorithm names as keys and hash values as strings.
+        
+        **⚠️ CRITICAL LIMITATION FOR STRONGLY-TYPED LANGUAGES**:
+        
+        Keys are not predictable at compile-time and depend on:
+        - Content type (photo/video) 
+        - Enabled signal types in HMA configuration
+        - Available hashing algorithms
+        - Runtime detection capabilities
+        
+        **Memory Allocation Impact**: Strongly-typed languages cannot pre-allocate 
+        struct/object memory for unknown fields. Runtime allocation required.
+        
+        **JSON Parsing Challenges**: Standard JSON-to-struct mapping fails due to 
+        unknown field names. Dynamic parsing mechanisms required.
+      example:
+        pdq: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+        md5: "d41d8cd98f00b204e9800998ecf8427e"
+        sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        video_md5: "098f6bcd4621d373cade4e832627b4f6"
+      x-strongly-typed-languages: |
+        **TypeScript**: Record<string, string>
+        **Go**: map[string]string or interface{}
+        **Swift**: [String: String] or [String: Any]
+        **Rust**: HashMap<String, String> or serde_json::Value
+        **Java**: Map<String, String> or JsonObject
+        **C#**: Dictionary<string, string> or JObject
+      x-language-usage: |
+        // TypeScript - runtime parsing required due to dynamic keys
+        const hashResponse: Record<string, string> = await hashAPI();
+        const algorithms = Object.keys(hashResponse);
+        
+        // Go - use map or interface{} for unknown keys  
+        var hashResponse map[string]string
+        json.Unmarshal(data, &hashResponse)
+        // OR for safety:
+        var hashResponse interface{}
+        json.Unmarshal(data, &hashResponse)
+        
+        // Swift - dictionary with string keys
+        let hashResponse: [String: String] = try JSONDecoder().decode([String: String].self, from: data)
+        let algorithms = Array(hashResponse.keys)
+        
+        // Rust - HashMap for dynamic keys
+        use std::collections::HashMap;
+        let hash_response: HashMap<String, String> = serde_json::from_str(&response)?;
+        
+        // Java - Map interface for dynamic structure
+        Map<String, String> hashResponse = objectMapper.readValue(json, 
+            new TypeReference<Map<String, String>>() {});
+        
+        // C# - Dictionary for unknown keys
+        var hashResponse = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+      x-memory-allocation-notes: |
+        **Compile-Time Limitations**:
+        - Cannot determine struct size at compile time
+        - Field names unknown until runtime  
+        - Memory layout unpredictable
+        
+        **Runtime Requirements**:
+        - Dynamic memory allocation during JSON parsing
+        - Hash map / dictionary data structures required
+        - Cannot use fixed-size structs or stack allocation
+        
+        **Performance Impact**:
+        - Heap allocation overhead vs stack allocation  
+        - Hash map lookup costs vs direct field access
+        - Runtime type checking in some languages
+      x-typescript-usage: |
+        // Runtime parsing required due to dynamic keys
+        const hashResponse: Record<string, string> = await hashContent(file);
+        
+        // Cannot use strict Zod validation - keys unknown at compile time
+        const hashResponseSchema = z.record(z.string());
+        
+        // Manual extraction needed for matching API
+        const availableAlgorithms = Object.keys(hashResponse);
+        const firstAlgorithm = availableAlgorithms[0];
+        const matchingInput = {
+          signal: hashResponse[firstAlgorithm],
+          signal_type: firstAlgorithm
+        };
+      x-workflow-limitation: |
+        **API Chaining Limitation**: Direct chaining from hashing to matching is not supported.
+        Manual transformation is required to extract signal and signal_type from the dynamic response.
+        
+        **Transformation Required**:
+        1. Parse dynamic HashResponse 
+        2. Iterate/select algorithm from keys
+        3. Extract corresponding hash value
+        4. Construct MatchingRequest object
+        5. Submit to matching endpoint
+      x-workaround-examples: |
+        **Complete Multi-Language Transformation Examples**:
+        
+        ```typescript
+        // TypeScript: Hash → Transform → Match
+        async function hashAndMatch(file: File, preferredAlgorithm?: string) {
+          // 1. Hash content (returns dynamic object)
+          const hashResponse: Record<string, string> = await hashContent(file);
+          
+          // 2. Transform for matching (manual extraction)
+          const algorithms = Object.keys(hashResponse);
+          const algorithm = preferredAlgorithm && algorithms.includes(preferredAlgorithm) 
+            ? preferredAlgorithm 
+            : algorithms[0];
+            
+          const matchingRequest = {
+            signal: hashResponse[algorithm],
+            signal_type: algorithm
+          };
+          
+          // 3. Find matches
+          return await findMatches(matchingRequest);
+        }
+        ```
+        
+        ```go
+        // Go: Hash → Transform → Match
+        func hashAndMatch(file []byte, preferredAlgorithm string) (interface{}, error) {
+          // 1. Hash content (returns dynamic map)
+          var hashResponse map[string]string
+          if err := json.Unmarshal(hashData, &hashResponse); err != nil {
+            return nil, err
+          }
+          
+          // 2. Transform for matching (manual extraction)
+          var algorithm string
+          if _, exists := hashResponse[preferredAlgorithm]; exists {
+            algorithm = preferredAlgorithm
+          } else {
+            // Pick first available
+            for k := range hashResponse {
+              algorithm = k
+              break
+            }
+          }
+          
+          matchingRequest := map[string]string{
+            "signal":      hashResponse[algorithm],
+            "signal_type": algorithm,
+          }
+          
+          // 3. Find matches
+          return findMatches(matchingRequest)
+        }
+        ```
+        
+        ```swift
+        // Swift: Hash → Transform → Match
+        func hashAndMatch(data: Data, preferredAlgorithm: String? = nil) async throws -> Any {
+          // 1. Hash content (returns dynamic dictionary)
+          let hashResponse: [String: String] = try JSONDecoder().decode([String: String].self, from: hashData)
+          
+          // 2. Transform for matching (manual extraction)
+          let algorithms = Array(hashResponse.keys)
+          let algorithm = preferredAlgorithm.flatMap { algorithms.contains($0) ? $0 : nil } ?? algorithms.first!
+          
+          let matchingRequest = [
+            "signal": hashResponse[algorithm]!,
+            "signal_type": algorithm
+          ]
+          
+          // 3. Find matches  
+          return try await findMatches(matchingRequest)
+        }
+        ```
+
+    MatchingRequest:
+      type: object
+      required: [signal, signal_type]
+      properties:
+        signal:
+          type: string
+          description: |
+            Hash value extracted from HashResponse.
+            **Source**: Must be manually extracted from hashing API response.
+          example: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+        signal_type:
+          type: string
+          description: |
+            Algorithm name (key from HashResponse).
+            **Source**: Must match a key from the hashing API response.
+            
+            **Common Values**: pdq, md5, sha1, sha256, sha512, video_md5, phash, dhash, ahash
+            **Note**: Available types depend on content type and HMA configuration.
+          enum: [pdq, md5, sha1, sha256, sha512, video_md5, phash, dhash, ahash, tmk]
+          example: "pdq"
+      example:
+        signal: "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+        signal_type: "pdq"
+      x-transformation-example: |
+        // Step 1: Get hashing response
+        const hashResponse = await hashContent(file);
+        // Result: { "pdq": "...", "md5": "..." }
+        
+        // Step 2: Manual transformation for matching
+        const algorithm = "pdq"; // or Object.keys(hashResponse)[0]
+        const matchingRequest: MatchingRequest = {
+          signal: hashResponse[algorithm],
+          signal_type: algorithm
+        };
+        
+        // Step 3: Use in matching API
+        const matches = await findMatches(matchingRequest);
+
+    TypeScriptWorkflowExample:
+      type: object
+      description: |
+        **Complete TypeScript Workflow Example**
+        
+        Demonstrates the manual transformation required between hashing and matching APIs
+        due to the dynamic response structure.
+      x-typescript-example: |
+        // 1. Define types for dynamic responses
+        type HashResponse = Record<string, string>;
+        type MatchingRequest = { signal: string; signal_type: string };
+        
+        // 2. Hash content (returns dynamic object)
+        async function hashContent(file: File): Promise<HashResponse> {
+          const formData = new FormData();
+          formData.append('photo', file);
+          
+          const response = await fetch('/h/hash', {
+            method: 'POST',
+            body: formData
+          });
+          
+          return response.json(); // { "pdq": "...", "md5": "..." }
+        }
+        
+        // 3. Transform for matching (manual extraction required)
+        function prepareMatchingRequest(
+          hashResponse: HashResponse, 
+          preferredAlgorithm?: string
+        ): MatchingRequest {
+          const algorithms = Object.keys(hashResponse);
+          const algorithm = preferredAlgorithm && algorithms.includes(preferredAlgorithm) 
+            ? preferredAlgorithm 
+            : algorithms[0];
+            
+          if (!algorithm) {
+            throw new Error('No algorithms available in hash response');
+          }
+          
+          return {
+            signal: hashResponse[algorithm],
+            signal_type: algorithm
+          };
+        }
+        
+        // 4. Find matches
+        async function findMatches(request: MatchingRequest) {
+          const params = new URLSearchParams({
+            signal: request.signal,
+            signal_type: request.signal_type
+          });
+          
+          const response = await fetch(`/m/raw_lookup?${params}`);
+          return response.json();
+        }
+        
+        // 5. Complete workflow
+        async function hashAndMatch(file: File, algorithm?: string) {
+          try {
+            // Hash the content
+            const hashResponse = await hashContent(file);
+            console.log('Available algorithms:', Object.keys(hashResponse));
+            
+            // Transform for matching
+            const matchingRequest = prepareMatchingRequest(hashResponse, algorithm);
+            console.log('Using algorithm:', matchingRequest.signal_type);
+            
+            // Find matches
+            const matches = await findMatches(matchingRequest);
+            return { hashResponse, matches };
+          } catch (error) {
+            console.error('Workflow failed:', error);
+            throw error;
+          }
+        }
+      x-zod-limitations: |
+        // Zod validation limitations due to dynamic keys
+        
+        // ❌ Cannot do this (keys unknown at compile time):
+        const StrictHashResponseSchema = z.object({
+          pdq: z.string(),
+          md5: z.string()
+        });
+        
+        // ✅ Must use this instead:
+        const DynamicHashResponseSchema = z.record(z.string());
+        
+        // ✅ Validation at runtime:
+        function validateHashResponse(data: unknown): HashResponse {
+          const schema = z.record(z.string().min(1));
+          return schema.parse(data);
+        }
+        
+        // ✅ Type-safe extraction:
+        function extractSignal(
+          hashResponse: HashResponse, 
+          algorithm: string
+        ): { signal: string; signal_type: string } | null {
+          if (!(algorithm in hashResponse)) {
+            return null;
+          }
+          
+          return {
+            signal: hashResponse[algorithm],
+            signal_type: algorithm
+          };
+        }
+
+    MatchWithDistance:
+      type: object
+      required: [bank_content_id, distance]
+      properties:
+        bank_content_id:
+          type: integer
+          description: ID of matching content in bank
+        distance:
+          type: string
+          description: Distance/similarity score
+
+    MatchResultsByBank:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchWithDistance'
+      description: |
+        Match results organized by bank and signal type.
+        
+        **Structure**: `Record<BankName, Record<SignalType, MatchWithDistance[]>>`
+        **TypeScript Note**: Also requires Record types due to dynamic bank names and signal types.
+      example:
+        EXAMPLE_BANK:
+          pdq:
+            - bank_content_id: 123
+              distance: "0"
+            - bank_content_id: 456
+              distance: "5"
+          md5:
+            - bank_content_id: 789
+              distance: "0"
+      x-typescript-type: "Record<string, Record<string, MatchWithDistance[]>>"
+
+    IndexStatus:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          cache_type:
+            type: string
+            enum: [in_memory, build_on_query]
+          is_stale:
+            type: boolean
+          last_updated:
+            type: integer
+            description: Unix timestamp
+          items_count:
+            type: integer
+
+    BankConfig:
+      type: object
+      required: [name, matching_enabled_ratio]
+      properties:
+        name:
+          type: string
+          description: Bank name
+        matching_enabled_ratio:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Ratio of bank contents to consider for matching
+        enabled:
+          type: boolean
+          description: Whether bank is enabled (derived from matching_enabled_ratio > 0)
+
+    BankedContentMetadata:
+      type: object
+      properties:
+        content_id:
+          type: string
+          description: User-defined content identifier
+        content_uri:
+          type: string
+          format: uri
+          description: URI to the original content
+        json:
+          type: object
+          additionalProperties: true
+          description: Additional metadata as JSON object
+
+    BankContentConfig:
+      type: object
+      required: [id, disable_until_ts, bank]
+      properties:
+        id:
+          type: integer
+          description: Unique content ID
+        disable_until_ts:
+          type: integer
+          description: Timestamp until which content is disabled (0=disabled, 1=enabled)
+        collab_metadata:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Collaboration metadata
+        original_media_uri:
+          type: string
+          format: uri
+          description: URI to original media
+        bank:
+          $ref: '#/components/schemas/BankConfig'
+        enabled:
+          type: boolean
+          description: Whether content is currently enabled
+
+    ExchangeAPIConfig:
+      type: object
+      required: [supports_authentification, has_set_authentification]
+      properties:
+        supports_authentification:
+          type: boolean
+          description: Whether this API supports authentication
+        has_set_authentification:
+          type: boolean
+          description: Whether authentication has been configured
+
+    CollaborationConfig:
+      type: object
+      required: [name, api, bank]
+      properties:
+        name:
+          type: string
+          description: Exchange/collaboration name
+        api:
+          type: string
+          description: Exchange API type
+        bank:
+          type: string
+          description: Associated bank name
+        api_json:
+          type: object
+          description: API-specific configuration
+        enabled:
+          type: boolean
+          description: Whether exchange is enabled
+
+    FetchStatus:
+      type: object
+      properties:
+        checkpoint_ts:
+          type: integer
+          nullable: true
+          description: Last checkpoint timestamp
+        running_fetch_start_ts:
+          type: integer
+          nullable: true
+          description: Current fetch start timestamp
+        last_fetch_complete_ts:
+          type: integer
+          nullable: true
+          description: Last fetch completion timestamp
+        last_fetch_succeeded:
+          type: boolean
+          nullable: true
+          description: Whether last fetch succeeded
+        up_to_date:
+          type: boolean
+          description: Whether exchange is up to date
+        fetched_items:
+          type: integer
+          description: Number of items fetched
+        fetch_in_progress:
+          type: boolean
+          description: Whether fetch is currently in progress
+
+    SignalTypeConfig:
+      type: object
+      required: [signal_type, enabled]
+      properties:
+        signal_type:
+          type: string
+          description: Signal type class name
+        enabled:
+          type: boolean
+          description: Whether signal type is enabled
+
+    SignalTypeIndexStatus:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Signal type name
+        enabled:
+          type: boolean
+          description: Whether signal type is enabled
+        checkpoint:
+          type: object
+          properties:
+            last_item_timestamp:
+              type: integer
+            last_item_id:
+              type: integer
+            total_hash_count:
+              type: integer
+
+    ContentTypeConfig:
+      type: object
+      required: [content_type, enabled]
+      properties:
+        content_type:
+          type: string
+          description: Content type class name
+        enabled:
+          type: boolean
+          description: Whether content type is enabled
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Error message
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "url is required"
+
+    Forbidden:
+      description: Forbidden - required role not enabled
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "ROLE_HASHER is not enabled"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            message: "Internal server error"
+
+tags:
+  - name: Hashing
+    description: Content hashing operations
+  - name: Matching
+    description: Content matching and lookup operations
+  - name: Curation
+    description: Bank and content management operations
+  - name: Exchange APIs
+    description: Signal exchange API configuration
+  - name: Exchanges
+    description: Signal exchange/collaboration management
+  - name: Configuration
+    description: System configuration endpoints
+  - name: Development
+    description: Development and testing endpoints
+
+x-integration-patterns: |
+  # Integration Patterns for Strongly-Typed Languages
+  
+  ## Dynamic Response Challenge
+  
+  The HMA API returns dynamic objects where:
+  - **Keys are algorithm names** (pdq, md5, sha256, etc.)
+  - **Values are hash strings**
+  - **Available algorithms depend on runtime configuration**
+  
+  This creates challenges for strongly-typed languages that need known object shapes for:
+  - Memory allocation at compile time
+  - JSON deserialization to structs/classes
+  - Type safety and compile-time validation
+  
+  ## Required Workarounds
+  
+  ### 1. Use Dynamic Data Structures
+  ```
+  TypeScript: Record<string, string>
+  Go:         map[string]string  
+  Swift:      [String: String]
+  Rust:       HashMap<String, String>
+  Java:       Map<String, String>
+  C#:         Dictionary<string, string>
+  ```
+  
+  ### 2. Runtime Algorithm Discovery
+  ```typescript
+  // Discover available algorithms at runtime
+  const hashResponse = await hashContent(file);
+  const availableAlgorithms = Object.keys(hashResponse);
+  console.log('Available:', availableAlgorithms); // ["pdq", "md5", "sha256"]
+  ```
+  
+  ### 3. Algorithm Selection Strategy
+  ```typescript
+  // Strategy 1: Use preferred algorithm if available
+  function selectAlgorithm(hashResponse: Record<string, string>, preferred: string): string {
+    const available = Object.keys(hashResponse);
+    return available.includes(preferred) ? preferred : available[0];
+  }
+  
+  // Strategy 2: Use algorithm priority list
+  function selectBestAlgorithm(hashResponse: Record<string, string>): string {
+    const priority = ['pdq', 'sha256', 'md5']; // Most to least preferred
+    const available = Object.keys(hashResponse);
+    return priority.find(alg => available.includes(alg)) || available[0];
+  }
+  ```
+  
+  ### 4. Type-Safe Extraction
+  ```typescript
+  interface MatchingInput {
+    signal: string;
+    signal_type: string;
+  }
+  
+  function extractMatchingInput(
+    hashResponse: Record<string, string>, 
+    algorithm?: string
+  ): MatchingInput | null {
+    const selected = algorithm || Object.keys(hashResponse)[0];
+    
+    if (!(selected in hashResponse)) {
+      return null; // Algorithm not available
+    }
+    
+    return {
+      signal: hashResponse[selected],
+      signal_type: selected
+    };
+  }
+  ```
+  
+  ## Memory Allocation Strategies
+  
+  ### Compile-Time Limitations
+  - Cannot pre-allocate struct memory for unknown fields
+  - Field names not known until API response received  
+  - Memory layout unpredictable
+  
+  ### Runtime Solutions
+  - Use hash maps/dictionaries for dynamic key-value storage
+  - Allocate memory during JSON parsing
+  - Accept heap allocation overhead vs stack allocation
+  
+  ### Performance Considerations
+  ```
+  Hash Map Lookup:     O(1) average, O(n) worst case
+  Direct Field Access: O(1) guaranteed
+  Memory Overhead:     Hash map > struct/class
+  ```
+  
+  ## Error Handling Patterns
+  
+  ### Graceful Algorithm Fallback
+  ```typescript
+  async function robustHashAndMatch(file: File) {
+    try {
+      const hashResponse = await hashContent(file);
+      const algorithms = Object.keys(hashResponse);
+      
+      if (algorithms.length === 0) {
+        throw new Error('No hashing algorithms available');
+      }
+      
+      // Try preferred algorithms in order
+      const preferred = ['pdq', 'sha256', 'md5'];
+      const algorithm = preferred.find(alg => algorithms.includes(alg)) || algorithms[0];
+      
+      const matchingInput = {
+        signal: hashResponse[algorithm],
+        signal_type: algorithm
+      };
+      
+      return await findMatches(matchingInput);
+    } catch (error) {
+      console.error('Hash and match failed:', error);
+      throw error;
+    }
+  }
+  ```
+  
+  ### Response Validation
+  ```typescript
+  import { z } from 'zod';
+  
+  // Validate dynamic hash response structure
+  const HashResponseSchema = z.record(z.string().min(1));
+  
+  function validateHashResponse(data: unknown): Record<string, string> {
+    try {
+      return HashResponseSchema.parse(data);
+    } catch (error) {
+      throw new Error(`Invalid hash response structure: ${error.message}`);
+    }
+  }
+  ```
+  
+  ## SDK Generation Considerations
+  
+  ### Code Generator Limitations
+  Most OpenAPI code generators struggle with:
+  - `additionalProperties` schemas
+  - Dynamic object shapes  
+  - Runtime type determination
+  
+  ### Generated Code Patterns
+  ```typescript
+  // Typical generated interface (limited usefulness)
+  interface HashResponse {
+    [key: string]: string;
+  }
+  
+  // Better custom wrapper
+  class HashResponseWrapper {
+    constructor(private data: Record<string, string>) {}
+    
+    getAvailableAlgorithms(): string[] {
+      return Object.keys(this.data);
+    }
+    
+    getHash(algorithm: string): string | undefined {
+      return this.data[algorithm];
+    }
+    
+    hasAlgorithm(algorithm: string): boolean {
+      return algorithm in this.data;
+    }
+    
+    toMatchingInput(algorithm?: string): MatchingInput {
+      const selected = algorithm || this.getAvailableAlgorithms()[0];
+      if (!this.hasAlgorithm(selected)) {
+        throw new Error(`Algorithm ${selected} not available`);
+      }
+      
+      return {
+        signal: this.data[selected],
+        signal_type: selected
+      };
+    }
+  }
+  ```
+
+security: [] 
