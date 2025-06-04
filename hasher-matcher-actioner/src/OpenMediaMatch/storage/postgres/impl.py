@@ -523,14 +523,44 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def bank_content_get(
-        self, ids: t.Iterable[int]
+        self, ids: t.Iterable[int], signal_type: t.Optional[str] = None
     ) -> t.Sequence[interface.BankContentConfig]:
-        return [
-            b.as_storage_iface_cls()
-            for b in database.db.session.query(database.BankContent)
-            .filter(database.BankContent.id.in_(ids))
-            .all()
-        ]
+        query = database.db.session.query(database.BankContent)
+
+        if signal_type is not None:
+            query = query.outerjoin(
+                database.ContentSignal,
+                (database.ContentSignal.content_id == database.BankContent.id)
+                & (database.ContentSignal.signal_type == signal_type),
+            )
+            query = query.options(
+                joinedload(database.BankContent.signals).load_only(
+                    database.ContentSignal.signal_type,
+                    database.ContentSignal.signal_val,
+                )
+            )
+
+        query = query.filter(database.BankContent.id.in_(ids))
+        bank_contents = query.all()
+
+        result = []
+        for bc in bank_contents:
+            content_config = bc.as_storage_iface_cls(include_signals=False)
+
+            if signal_type is not None:
+                # If there's matching signals, add them to the content config
+                content_config.signals = {}
+                matching_signals = [
+                    s for s in bc.signals if s.signal_type == signal_type
+                ]
+                if matching_signals:
+                    content_config.signals = {
+                        signal_type: matching_signals[0].signal_val
+                    }
+
+            result.append(content_config)
+
+        return result
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         sesh = database.db.session
