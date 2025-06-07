@@ -209,6 +209,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                     signal_val=signal,
                     bank_content_timestamp=1,
                     bank_content_id=fake_id,
+                    bank_name="mock_bank_pdq",
                 )
         elif signal_type in (None, VideoMD5Signal):
             for fake_id, signal in enumerate(VideoMD5Signal.get_examples()):
@@ -217,4 +218,5 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                     signal_val=signal,
                     bank_content_timestamp=1,
                     bank_content_id=1000 + fake_id,
+                    bank_name="mock_bank_video_md5",
                 )

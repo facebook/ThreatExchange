@@ -14,6 +14,7 @@
             <tr>
                 <th scope="col">#</th>
                 <th scope="col">Bank Name</th>
+                <th scope="col">Content Counts</th>
                 <th scope="col">Matching Enabled Ratio</th>
                 <th scope="col">Actions</th>
             </tr>
@@ -23,6 +24,15 @@
             <tr id="bank_item_{{bank['name']}}">
                 <th scope="row" style="background-color: transparent;">{{ loop.index }}</th>
                 <td style="background-color: transparent;">{{ bank['name'] }}</td>
+                <td style="background-color: transparent;">
+                    {% if bank['content_type_counts'] %}
+                        {% for content_type, count in bank['content_type_counts'].items() %}
+                            <span class="badge bg-primary me-1">{{ content_type }}: {{ count }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="badge bg-secondary">No content</span>
+                    {% endif %}
+                </td>
                 <td style="background-color: transparent;">{{ bank['matching_enabled_ratio'] }}</td>
                 <td style="background-color: transparent;">
                     {% with bank_title=bank['name'] %}
