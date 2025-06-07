@@ -40,6 +40,7 @@ UI_ENABLED = True
 TASK_FETCHER = True
 TASK_INDEXER = True
 TASK_INDEX_CACHE = True
+MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
 
 # Core functionality configuration
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
@@ -56,3 +57,11 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 
 # Debugging stuff
 # SQLALCHEMY_ENGINE_LOG_LEVEL = logging.INFO
+
+# URL validation configuration
+# ALLOWED_HOSTNAMES = {
+#     'example.com',
+#     'cdn.example.com',
+#     'media.example.com'
+# }
+# Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
