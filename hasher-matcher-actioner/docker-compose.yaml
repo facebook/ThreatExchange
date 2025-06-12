@@ -1,13 +1,42 @@
-version: "3"
-
 x-postgres-variables: &postgres-variables
-  POSTGRES_USER: media_match
+  POSTGRES_USER: postgres
   # TODO: Use a secret instead.
-  POSTGRES_PASSWORD: hunter2
-  POSTGRESS_HOST: db
-  POSTGRESS_DBNAME: media_match
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_HOST: postgresql
+  POSTGRES_DB: media_match
 
 services:
+  postgresql:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      <<: *postgres-variables
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 1s
+      retries: 5
+      start_period: 5s
+      timeout: 10s
+    networks:
+      - backend
+
+  migrations:
+    build: .
+    restart: no
+    environment:
+      <<: *postgres-variables
+      OMM_CONFIG: /reference_configs/development_omm_config.py
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    networks:
+      - backend
+    command: /app/scripts/db-migrate.sh
+
   app:
     build: .
     restart: unless-stopped
@@ -15,23 +44,12 @@ services:
       - 5100:5100
     environment:
       <<: *postgres-variables
-      OMM_CONFIG: /build/reference_omm_configs/development_omm_config.py
+      OMM_CONFIG: /reference_configs/development_omm_config.py
     depends_on:
-      - db
-    networks:
-      - backend
-
-  db:
-    image: postgres:latest
-    restart: unless-stopped
-    volumes:
-      - ./.devcontainer/pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - 5432:5432
-    environment:
-      <<: *postgres-variables
-      POSTGRES_MULTIPLE_DATABASES: media_match
+      postgresql:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     networks:
       - backend
 

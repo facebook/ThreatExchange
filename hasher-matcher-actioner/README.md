@@ -52,10 +52,10 @@ HMA requires a configuration file passed as an environment variable, `OMM_CONFIG
 To run HMA in a development environment using Docker, use the following command:
 
 ```bash
-$ docker run -e OMM_CONFIG='/build/reference_omm_configs/development_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma flask --app OpenMediaMatch.app run --host=0.0.0.0
+$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma
 ```
 
-This command sets the necessary environment variable and exposes the app on port 5000 of your host machine, making the API accessible locally.
+This command sets the necessary environment variable and exposes the app on port 5100 of your host machine, making the API accessible locally.
 
 #### Running the Application in Production
 
@@ -64,7 +64,7 @@ For production environments, it is recommended to use a more robust server like 
 Here is an example command to run the application with Gunicorn:
 
 ```bash
-$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
+$ docker run -v 'config:/config:ro' -e OMM_CONFIG='/config/production.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
 ```
 
 #### Notes:
