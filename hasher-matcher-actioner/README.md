@@ -49,7 +49,14 @@ HMA requires a configuration file passed as an environment variable, `OMM_CONFIG
 
 #### Running the Application in Development
 
-To run HMA in a development environment using Docker, use the following command:
+To run HMA in a development environment using Docker, we first need to run the database migrations:
+
+```bash
+$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
+```
+
+
+Then we can start the server with:
 
 ```bash
 $ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma
