@@ -64,7 +64,7 @@ For production environments, it is recommended to use a more robust server like 
 Here is an example command to run the application with Gunicorn:
 
 ```bash
-$ docker run -e OMM_CONFIG='/build/reference_omm_configs/production_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma gunicorn --bind 0.0.0.0:5000 "OpenMediaMatch.app:create_app()"
+$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
 ```
 
 #### Notes:

@@ -12,7 +12,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - 5000:5000
+      - 5100:5100
     environment:
       <<: *postgres-variables
       OMM_CONFIG: /build/reference_omm_configs/development_omm_config.py
@@ -20,16 +20,13 @@ services:
       - db
     networks:
       - backend
-    command: >
-      bash -c "MIGRATION_COMMAND=1 flask --app OpenMediaMatch.app db upgrade --directory OpenMediaMatch/migrations 
-      && MIGRATION_COMMAND=0 flask --app OpenMediaMatch.app run --host=0.0.0.0 --debug"
 
   db:
     image: postgres:latest
     restart: unless-stopped
     volumes:
-        - ./.devcontainer/pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
-        - postgres-data:/var/lib/postgresql/data
+      - ./.devcontainer/pg-scripts/init-multiple-pg-dbs.sh:/docker-entrypoint-initdb.d/init-multiple-pg-dbs.sh
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     environment:
