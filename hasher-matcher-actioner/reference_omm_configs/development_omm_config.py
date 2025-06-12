@@ -8,7 +8,8 @@ which runs in the dev container by default. Every config field is present
 to make it easier to copy the file as a template for others.
 """
 
-import logging
+import os
+from logging.config import dictConfig
 
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from OpenMediaMatch.utils.fetch_benchmarking import InfiniteRandomExchange
@@ -24,10 +25,10 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 )
 
 # Database configuration
-DBUSER = "media_match"
-DBPASS = "hunter2"
-DBHOST = "db"
-DBNAME = "media_match"
+DBUSER = os.environ.get("POSTGRES_USER", "media_match")
+DBPASS = os.environ.get("POSTGRES_PASSWORD", "hunter2")
+DBHOST = os.environ.get("POSTGRES_HOST", "db")
+DBNAME = os.environ.get("POSTGRES_DB", "media_match")
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
 # Role configuration
@@ -65,3 +66,23 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 #     'media.example.com'
 # }
 # Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
+
+# We always want some logging by default, otherwise it's hard to tell whats happening inside the container:
+FLASK_LOGGING_CONFIG = dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "default": {
+                "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+            }
+        },
+        "handlers": {
+            "wsgi": {
+                "class": "logging.StreamHandler",
+                "stream": "ext://flask.logging.wsgi_errors_stream",
+                "formatter": "default",
+            }
+        },
+        "root": {"level": "INFO", "handlers": ["wsgi"]},
+    }
+)
