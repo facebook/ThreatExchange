@@ -117,10 +117,10 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 
 #### **Database Structure**
 
-* Database: media\_match  
-* Tables: bank, bank\_content, content\_signal  
-* Host: localhost:5432 (inside the dev container)  
-* Credentials: media\_match/hunter2
+* Database: `media_match`  
+* Tables: `bank`, `bank_content`, `content_signal`  
+* Host: `localhost:5432` (inside the dev container)  
+* Credentials: `media_match/hunter2`
 
 #### **Data Organization**
 
