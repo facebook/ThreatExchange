@@ -1,6 +1,6 @@
 # Introduction to Hasher-Matcher-Actioner UI
 
-Hasher-Matcher-Actioner (aka HMA) includes a web app where users can configure their signal banks, connect to exchanges like NCMEC, StopNCII, GIFCT, ThreatExchange, and others, and debug matches. These features are available as demos to show the features and functionality of HMA.  
+Hasher-Matcher-Actioner (aka HMA) includes a web app where users can configure their signal banks, connect to exchanges like NCMEC, StopNCII, GIFCT, ThreatExchange, and others, and debug matches. These features are available as demos to show the features and functionality of HMA, and for curation, if desired.
 
 There are 4 pages in the app:
 
@@ -30,7 +30,7 @@ The Sample API (StaticSampleSignalExchangeAPI) is a testing and demonstration to
 
 When you click "Setup Sample API" it:
 
-1. Creates the Exchange: Sets up `SEED_SAMPLE` exchange configuration  
+1. Creates the Exchange: Sets up SEED_SAMPLE exchange configuration  
 1. Provides Sample Hashes: Returns a fixed set of example hashes for both PDQ (images) and MD5 (videos)  
 1. Populates the System: Gives you 18 sample records initially (as seen in logs: "fetch\_iter() with 18 new records")  
 1. Enables Matching: Allows you to test the matching functionality immediately
