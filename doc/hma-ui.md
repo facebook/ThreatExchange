@@ -149,10 +149,8 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 
 #### **Technical Details**
 
-* **Authentication Required:** Needs valid Facebook App credentials for production (more info [here](https://developers.facebook.com/docs/threat-exchange/getting-access/))  
-* **Background Fetching:** Automatic periodic synchronization  
-* **Bank Integration:** Imported data goes into dedicated bank  
-* **API Limits:** Subject to ThreatExchange rate limiting
+* **Authentication Required:** Needs valid Facebook App credentials for production (more info [here](https://developers.facebook.com/docs/threat-exchange/getting-access/))   
+* **API Limits:** Subject to (quite high) ThreatExchange rate limiting 
 
 #### **Important Caveats**
 
@@ -234,15 +232,14 @@ curl http://localhost:5000/c/bank/SEED_BANK_0/content/1
 
 ## **Exchanges (`/ui/exchanges`)**
 
-The Exchanges page lets users configure external hash exchanges that are API based.
+The Exchanges page lets users configure external hash exchanges that are API based. Some might requrie authentication and additional configuration. All exchanges support automatic periodic synchronization to keep the bank fresh; imported data goes into dedicated banks.
 
 
-### Default Signal Exchanges
+### [Default Hash Exchanges](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions)
 
 **NCMEC (National Center for Missing & Exploited Children)**
 
 * Child safety hash sharing program  
-* Requires authentication credentials  
 * Automated hash synchronization
 
 **GIFCT (Global Internet Forum to Counter Terrorism)**
@@ -265,11 +262,27 @@ The Exchanges page lets users configure external hash exchanges that are API bas
 
 ### Exchange Configuration
 
-Several of the hash exchanges supported require credentials, provided in the form of a JSON blob:
+Several of the hash exchanges supported require credentials, provided in the form of a JSON blob. The JSON represents the [CollabConfig](https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/exchanges/collab_config.py#L12) for the exchange. The keys and data types must match the structure data. For example, here's the [exchange config for NMCEC](https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/exchanges/impl/ncmec_api.py#L101-L119). Using it as an example, it has two fields: 
+
+* \[Required\] A field named environment which is a string enum for the API endpoint   
+* An optional field only\_esp\_ids, which accepts a container of ints So one valid json blob would be
+
+```json
+{ 'environment': 'https://hashsharing.ncmec.org/npo' } 
+```
+
+And one that filled out the optional field would be:
+
+```json
+{ 'environment': 'https://hashsharing.ncmec.org/npo', 'only_esp_ids': [1] }
+```
+
+Users can use this configuration to:
 
 1. Configure authentication credentials (API keys, certificates)  
 2. Select signal types to synchronize  
 3. Set fetch frequency and retry policies  
+4. Monitor connection health and data flow
 4. Monitor connection health and data flow
 
 
