@@ -91,7 +91,7 @@ Based on the code analysis and logs, the Seed Banks button:
 
 ### Creates Test Banks
 
-* 2 Banks: SEED\_BANK\_0 and SEED\_BANK\_1  
+* Creates two Banks: `SEED_BANK_0` and `SEED_BANK_1`  
 * Full Matching: Both set to 100% matching enabled
 
 ### Generates Massive Sample Data
