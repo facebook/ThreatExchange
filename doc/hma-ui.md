@@ -30,7 +30,7 @@ The Sample API (StaticSampleSignalExchangeAPI) is a testing and demonstration to
 
 When you click "Setup Sample API" it:
 
-1. Creates the Exchange: Sets up SEED\_SAMPLE exchange configuration  
+1. Creates the Exchange: Sets up `SEED_SAMPLE` exchange configuration  
 1. Provides Sample Hashes: Returns a fixed set of example hashes for both PDQ (images) and MD5 (videos)  
 1. Populates the System: Gives you 18 sample records initially (as seen in logs: "fetch\_iter() with 18 new records")  
 1. Enables Matching: Allows you to test the matching functionality immediately
