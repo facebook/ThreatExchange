@@ -1,6 +1,6 @@
 # Introduction to Hasher-Matcher-Actioner UI
 
-Open Media Match (aka Hasher-Matcher-Actioner) includes a web app where users can configure their hash banks, connect to hash exchanges like NCMEC, Stop NCII, GIFCT, and ThreatExchange, and debug matches. These features are available as demos to show the features and functionality of HMA.  
+Hasher-Matcher-Actioner (aka HMA) includes a web app where users can configure their signal banks, connect to exchanges like NCMEC, StopNCII, GIFCT, ThreatExchange, and others, and debug matches. These features are available as demos to show the features and functionality of HMA.  
 
 There are 4 pages in the app:
 
