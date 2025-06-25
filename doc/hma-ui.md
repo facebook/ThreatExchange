@@ -195,6 +195,7 @@ You can also connect to PostgreSQL directly to browse the data:
 ```shell
 # Connect to database  
 psql -h localhost -p 5432 -U media_match -d media_match
+# Enter password: hunter2
 # List all banks 
 SELECT * FROM bank;
 # See all content in a specific bank 
