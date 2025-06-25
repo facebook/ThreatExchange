@@ -135,7 +135,7 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 
 #### **Integration Details**
 
-* **Exchange Name:** TX\_EXAMPLE\_COLLAB  
+* **Exchange Name:** `TX_EXAMPLE_COLLAB`
 * **API Type:** Facebook's ThreatExchange API (FBThreatExchangeSignalExchangeAPI)  
 * **Target**: Privacy group ID 1012185296055235 (demo/test group)  
 * **Real Connection**: Unlike Sample API, this API connects to actual ThreatExchange infrastructure (albeit a demo one)
