@@ -237,7 +237,7 @@ curl http://localhost:5000/c/bank/SEED_BANK_0/content/1
 The Exchanges page lets users configure external hash exchanges that are API based.
 
 
-### Supported Hash Exchanges
+### Default Signal Exchanges
 
 **NCMEC (National Center for Missing & Exploited Children)**
 
