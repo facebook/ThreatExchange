@@ -162,7 +162,7 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 
 ## **Banks (`/ui/banks`)**
 
-* See your test banks: `SEED_BANK_0` and `SEED_BANK_1`  
+* See your content banks, e.g., the `SEED_BANK_0` and `SEED_BANK_1` that are created using the demo buttons.
 * Each contains 5,000 sample hashes  
 * Try uploading images to test matching for content in hash banks
 
