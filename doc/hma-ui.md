@@ -10,7 +10,7 @@ There are 4 pages in the app:
 * See signal types and content types  
 * Check index statistics
 
-There are 3 demo buttons and an option to do a factory reset:
+If the environment is set to "development", there are 3 demo buttons and an option to do a factory reset:
 
 1. **Sample API**: Creates synthetic/mock data for testing  
 2. **Seed Banks:**: Generates 10,000 random hashes for performance testing  
@@ -232,7 +232,9 @@ curl http://localhost:5000/c/bank/SEED_BANK_0/content/1
 
 ## **Exchanges (`/ui/exchanges`)**
 
-The Exchanges page lets users configure external hash exchanges that are API based. Some might requrie authentication and additional configuration. All exchanges support automatic periodic synchronization to keep the bank fresh; imported data goes into dedicated banks.
+The Exchanges page lets users configure external hash exchanges that are API based. Some might requrie authentication and additional configuration. All exchanges support automatic periodic synchronization to keep the bank fresh; imported data goes into dedicated banks. Exchanges can be added to HMA by [adding an extension](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions)
+
+
 
 
 ### [Default Hash Exchanges](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions)
