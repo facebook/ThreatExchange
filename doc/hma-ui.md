@@ -124,7 +124,7 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 
 #### **Data Organization**
 
-* 2 Banks: SEED\_BANK\_0 and SEED\_BANK\_1  
+* 2 Banks: `SEED_BANK_0` and `SEED_BANK_1`  
 * \~10,000 Total Hashes: 5,004 PDQ \+ 5,000 MD5  
 * Each Content Item: Has a unique ID and associated signal/hash values
 
