@@ -32,7 +32,7 @@ When you click "Setup Sample API" it:
 
 1. Creates the Exchange: Sets up SEED_SAMPLE exchange configuration  
 1. Provides Sample Hashes: Returns a fixed set of example hashes for both PDQ (images) and MD5 (videos)  
-1. Populates the System: Gives you 18 sample records initially (as seen in logs: "fetch\_iter() with 18 new records")  
+1. Populates the System: Gives you 18 sample records initially (as seen in logs: `fetch_iter()` with 18 new records")  
 1. Enables Matching: Allows you to test the matching functionality immediately
 
 ##### Fetching Simulation
@@ -71,7 +71,7 @@ INFO in fetcher: SEED_SAMPLE[sample] Fetched all data! Up to date!
 
 1. **Before Setup:** Button shows "Setup Sample API"  
 2. **After Setup:** Button shows "✅ Sample API created" and is disabled  
-3. **Exchange Status:** Shows SEED\_SAMPLE exchange in the exchanges page  
+3. **Exchange Status:** Shows SEED_SAMPLE exchange in the exchanges page  
 4. **Index Building:** Triggers automatic background indexing of the sample data  
 5. **Matching Ready:** System now has data to match against
 
@@ -84,6 +84,11 @@ The StaticSampleSignalExchangeAPI is essentially a hardcoded data source that:
 * Provides metadata and signal data that the system can index and match against  
 * Requires no external network calls or authentication
 
+More information is in [StaticSample](https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/exchanges/impl/static_sample.py#L3-L9)
+
+And inline in the various signal types: [https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/signal\_type/pdq/signal.py\#L93-L114](https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/signal_type/pdq/signal.py#L93-L114)
+
+Different SignalTypes might use different sources of samples.
 
 ## **"Seed Banks"**
 
@@ -150,7 +155,7 @@ The seeded data is stored in a PostgreSQL database that runs inside the dev cont
 #### **Technical Details**
 
 * **Authentication Required:** Needs valid Facebook App credentials for production (more info [here](https://developers.facebook.com/docs/threat-exchange/getting-access/))   
-* **API Limits:** Subject to (quite high) ThreatExchange rate limiting 
+
 
 #### **Important Caveats**
 
