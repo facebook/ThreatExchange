@@ -82,6 +82,9 @@ $ docker compose up
 
 This will spin up both a postgresql db as well as an instance of the app running all the configurations ready for testing.
 
+### Demo UI and Walkthrough
+Please see [hma-ui.md](hma-ui.md) for a walkthrough of the UI!
+
 # Architecture
 
 ## The Stack
