@@ -523,14 +523,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
         database.db.session.commit()
 
     def bank_content_get(
-        self, ids: t.Iterable[int]
+        self, ids: t.Iterable[int], *, include_signals: bool = False
     ) -> t.Sequence[interface.BankContentConfig]:
-        return [
-            b.as_storage_iface_cls()
-            for b in database.db.session.query(database.BankContent)
+        contents = [
+            b for b in database.db.session.query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .all()
         ]
+        results = []
+        for b in contents:
+            cfg = b.as_storage_iface_cls()
+            if include_signals:
+                # Fetch signals for this content
+                signals = {s.signal_type: s.signal_val for s in b.signals}
+                setattr(cfg, "_signals", signals)
+            results.append(cfg)
+        return results
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         sesh = database.db.session

@@ -140,10 +140,19 @@ def bank_get_content(bank_name: str, content_id: int):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    content = storage.bank_content_get([content_id])
+    include_signals = request.args.get("include_signals", "false").lower() == "true"
+    content = storage.bank_content_get([content_id], include_signals=include_signals)
     if not content:
         abort(404, f"content '{content_id}' not found")
-    return jsonify(content[0])
+    resp = content[0]
+    # If signals were requested and present, add them to the response dict
+    if include_signals and hasattr(resp, "_signals"):
+        resp_dict = resp.__dict__.copy()
+        resp_dict["signals"] = getattr(resp, "_signals")
+        # Remove private/protected keys
+        resp_dict = {k: v for k, v in resp_dict.items() if not k.startswith("_")}
+        return jsonify(resp_dict)
+    return jsonify(resp)
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
