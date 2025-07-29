@@ -305,9 +305,10 @@ class BankConfig:
 @dataclass
 class BankContentConfig:
     """
-    Represents all the signals (hashes) for one piece of content.
+    Represents the configuration for one piece of banked content.
 
-    Signals are NOT included by default. If signals are needed (e.g., for API responses), they may be attached as a '_signals' attribute at runtime if requested.
+    Signals are only included in this object when explicitly requested via
+    include_signals parameter in bank_content_get().
     """
 
     ENABLED: t.ClassVar[int] = 1
@@ -408,8 +409,12 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     # Bank content
     @abc.abstractmethod
-    def bank_content_get(self, id: t.Iterable[int], *, include_signals: bool = False) -> t.Sequence[BankContentConfig]:
-        """Get the content config for a bank. If include_signals is True, signals will be fetched and should be included in the API response."""
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
+        """Get the content config for a bank."""
+
+    @abc.abstractmethod
+    def bank_content_get_signals(self, id: t.Iterable[int]) -> t.Dict[int, t.Dict[str, str]]:
+        """Get signals for the given content IDs. Returns mapping of content_id -> signal_type -> signal_value."""
 
     @abc.abstractmethod
     def bank_content_update(self, val: BankContentConfig) -> None:

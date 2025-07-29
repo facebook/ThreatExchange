@@ -172,10 +172,10 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self.banks.pop(name, None)
 
     def bank_content_get(
-        self, id: t.Iterable[int], *, include_signals: bool = False
+        self, id: t.Iterable[int]
     ) -> t.Sequence[interface.BankContentConfig]:
-        # For the mock, just return a config and signals if requested
-        results = []
+        # For the mock, just return a config
+        content_configs = []
         for content_id in id:
             cfg = interface.BankContentConfig(
                 id=content_id,
@@ -184,10 +184,17 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                 original_media_uri=None,
                 bank=interface.BankConfig(name="MOCK_BANK", matching_enabled_ratio=1.0),
             )
-            if include_signals:
-                setattr(cfg, "_signals", {"pdq": "facefacefacefacefacefaceface", "vmd5": "ecafecafecafecafecafecafecaf"})
-            results.append(cfg)
-        return results
+            content_configs.append(cfg)
+        return content_configs
+
+    def bank_content_get_signals(
+        self, id: t.Iterable[int]
+    ) -> t.Dict[int, t.Dict[str, str]]:
+        # For the mock, return fake signals
+        signals_dict = {}
+        for content_id in id:
+            signals_dict[content_id] = {"pdq": "facefacefacefacefacefaceface", "vmd5": "ecafecafecafecafecafecafecaf"}
+        return signals_dict
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         # TODO

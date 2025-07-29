@@ -19,6 +19,15 @@ import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
 
 
+class BankContentResponse(t.TypedDict):
+    id: int
+    disable_until_ts: int
+    collab_metadata: t.Dict[str, t.List[str]]
+    original_media_uri: t.Optional[str]
+    bank: iface.BankConfig
+    signals: t.NotRequired[t.Dict[str, str]]
+
+
 def five_years_from_now() -> int:
     return int(time.mktime((datetime.now() + timedelta(days=365 * 5)).timetuple()))
 
@@ -141,18 +150,34 @@ def bank_get_content(bank_name: str, content_id: int):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
     include_signals = request.args.get("include_signals", "false").lower() == "true"
-    content = storage.bank_content_get([content_id], include_signals=include_signals)
+    content = storage.bank_content_get([content_id])
     if not content:
         abort(404, f"content '{content_id}' not found")
-    resp = content[0]
-    # If signals were requested and present, add them to the response dict
-    if include_signals and hasattr(resp, "_signals"):
-        resp_dict = resp.__dict__.copy()
-        resp_dict["signals"] = getattr(resp, "_signals")
-        # Remove private/protected keys
-        resp_dict = {k: v for k, v in resp_dict.items() if not k.startswith("_")}
-        return jsonify(resp_dict)
-    return jsonify(resp)
+    content_config = content[0]
+    
+    # If signals were requested, fetch them separately and include in response
+    if include_signals:
+        signals = storage.bank_content_get_signals([content_id])
+        if content_id in signals:
+            response: BankContentResponse = {
+                "id": content_config.id,
+                "disable_until_ts": content_config.disable_until_ts,
+                "collab_metadata": content_config.collab_metadata,
+                "original_media_uri": content_config.original_media_uri,
+                "bank": content_config.bank,
+                "signals": signals[content_id],
+            }
+            return jsonify(response)
+    
+    # Return content without signals
+    response: BankContentResponse = {
+        "id": content_config.id,
+        "disable_until_ts": content_config.disable_until_ts,
+        "collab_metadata": content_config.collab_metadata,
+        "original_media_uri": content_config.original_media_uri,
+        "bank": content_config.bank,
+    }
+    return jsonify(response)
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
