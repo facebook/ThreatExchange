@@ -190,7 +190,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def bank_content_get_signals(
         self, id: t.Iterable[int]
     ) -> t.Dict[int, t.Dict[str, str]]:
-        # For the mock, return fake signals
+        # For the mock, return sample signals
         signals_dict = {}
         for content_id in id:
             signals_dict[content_id] = {"pdq": "facefacefacefacefacefaceface", "vmd5": "ecafecafecafecafecafecafecaf"}
