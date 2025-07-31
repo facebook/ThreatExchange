@@ -143,7 +143,7 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     return t.cast(BankedContentMetadata, metadata)
 
 
-@bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
+@bp.route("/bank/<bank_name>/content/<int:content_id>", methods=["GET"])
 def bank_get_content(bank_name: str, content_id: int):
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
