@@ -17,6 +17,7 @@ from OpenMediaMatch.storage.interface import (
     SignalTypeIndexBuildCheckpoint,
 )
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
+from OpenMediaMatch.utils.memory_utils import trim_process_memory
 
 logger = logging.getLogger(__name__)
 
@@ -117,8 +118,8 @@ def build_index(
         if 'built_index' in locals() and built_index is not None:
             built_index = None
         
-        # Force garbage collection to reclaim memory
-        gc.collect()
+        # Force garbage collection to reclaim memory and attempt to free pages
+        trim_process_memory(logger, "Indexer")
     
     logger.info(
         "Indexed %d signals for %s - %s",

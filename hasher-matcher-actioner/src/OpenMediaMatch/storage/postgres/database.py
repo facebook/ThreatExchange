@@ -456,6 +456,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         self.serialized_index_large_object_oid = l_obj.oid
         db.session.add(self)
         raw_conn.commit()
+        # Ensure raw connection is closed to avoid resource leaks
+        try:
+            raw_conn.close()
+        except Exception:
+            pass
 
         try:
             os.unlink(tmpfile.name)
@@ -499,6 +504,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 "deserialized - %s",
                 duration_to_human_str(int(time.time() - deserialize_start)),
             )
+        # Ensure raw connection is closed to avoid resource leaks
+        try:
+            raw_conn.close()
+        except Exception:
+            pass
         return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
