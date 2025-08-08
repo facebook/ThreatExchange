@@ -74,26 +74,26 @@ def build_index(
         for_signal_type.get_name(),
         0 if bank_checkpoint is None else bank_checkpoint.total_hash_count,
     )
-    
+
     # Use try/finally to ensure cleanup happens even on exceptions
     signal_list = []
     built_index: Optional[t.Any] = None
     last_cs = None
     signal_count = 0
-    
+
     try:
         # Collect signals
         for last_cs in bank_store.bank_yield_content(for_signal_type):
             signal_list.append((last_cs.signal_val, last_cs.bank_content_id))
             signal_count += 1
-        
+
         # Build index
         index_cls = for_signal_type.get_index_cls()
         built_index = index_cls.build(signal_list)
-        
+
         # Clear signal_list early to reduce memory peak during storage
         signal_list.clear()
-        
+
         # Create checkpoint
         checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
         if last_cs is not None:
@@ -102,29 +102,30 @@ def build_index(
                 last_item_id=last_cs.bank_content_id,
                 total_hash_count=signal_count,
             )
-            
+
         # Store the index
         if built_index is not None:
-            index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
-        
+            index_store.store_signal_type_index(
+                for_signal_type, built_index, checkpoint
+            )
+
     finally:
         # Guaranteed cleanup even if exceptions occur
-        # Explicitly clear large objects to help with memory management  
-        if 'signal_list' in locals():
+        # Explicitly clear large objects to help with memory management
+        if "signal_list" in locals():
             signal_list.clear()
             del signal_list
-        
+
         # Clear reference to built_index after storage
-        if 'built_index' in locals() and built_index is not None:
+        if "built_index" in locals() and built_index is not None:
             built_index = None
-        
+
         # Force garbage collection to reclaim memory and attempt to free pages
         trim_process_memory(logger, "Indexer")
-    
+
     logger.info(
         "Indexed %d signals for %s - %s",
         signal_count,
         for_signal_type.get_name(),
         duration_to_human_str(int(time.time() - start)),
     )
-

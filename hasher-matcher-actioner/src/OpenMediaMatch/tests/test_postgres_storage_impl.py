@@ -51,7 +51,8 @@ def make_collab(
     api: TSignalExchangeAPICls = StaticSampleSignalExchangeAPI,
     retain_data_with_unknown_signal_types: bool = False,
 ) -> CollaborationConfigBase:
-    cfg = CollaborationConfigBase(name="SAMPLE", api=api.get_name(), enabled=True)
+    cfg = CollaborationConfigBase(
+        name="SAMPLE", api=api.get_name(), enabled=True)
     storage.exchange_update(cfg, create=True)
     if retain_data_with_unknown_signal_types:
         sesh = database.db.session
@@ -94,7 +95,8 @@ def test_fetch_to_match_e2e(storage: DefaultOMMStore) -> None:
     assert fetch_status.fetched_items == expected_fetch_count
     md5_index_status = storage.get_last_index_build_checkpoint(VideoMD5Signal)
     assert md5_index_status is not None
-    assert md5_index_status.total_hash_count == len(VideoMD5Signal.get_examples())
+    assert md5_index_status.total_hash_count == len(
+        VideoMD5Signal.get_examples())
     pdq_index_status = storage.get_last_index_build_checkpoint(PdqSignal)
     assert pdq_index_status is not None
     assert pdq_index_status.total_hash_count == len(PdqSignal.get_examples())
@@ -161,7 +163,8 @@ def test_sequential_fetch_updates(storage: DefaultOMMStore) -> None:
         target = storage.get_current_index_build_target(VideoMD5Signal)
         assert target is not None
         assert target.total_hash_count == maker.count
-        signals = {s.signal_val for s in storage.bank_yield_content(VideoMD5Signal)}
+        signals = {
+            s.signal_val for s in storage.bank_yield_content(VideoMD5Signal)}
         assert signals == maker.signals
 
     storage.exchange_commit_fetch(cfg, None, update_1, checkpoint)
@@ -220,7 +223,8 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     ).scalar_one()
     assert index_record.index_lobj_exists() is True
     raw_conn = database.db.engine.raw_connection()
-    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+    old_obj = raw_conn.lobject(
+        index_record.serialized_index_large_object_oid, "n")
     old_obj.unlink()
     raw_conn.commit()
 

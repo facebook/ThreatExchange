@@ -4,7 +4,9 @@ import platform
 from typing import Optional
 
 
-def trim_process_memory(logger: Optional[logging.Logger] = None, label: str = "") -> bool:
+def trim_process_memory(
+    logger: Optional[logging.Logger] = None, label: str = ""
+) -> bool:
     """
     Aggressively attempt to return freed memory to the OS.
 
@@ -20,7 +22,9 @@ def trim_process_memory(logger: Optional[logging.Logger] = None, label: str = ""
     system = platform.system().lower()
     if system != "linux":
         if logger:
-            logger.debug("%s trim_process_memory: malloc_trim not supported on %s", label, system)
+            logger.debug(
+                "%s trim_process_memory: malloc_trim not supported on %s", label, system
+            )
         return False
 
     try:
@@ -36,7 +40,7 @@ def trim_process_memory(logger: Optional[logging.Logger] = None, label: str = ""
             logger.debug("%s trim_process_memory: libc has no malloc_trim", label)
     except Exception as exc:  # pragma: no cover — platform specific
         if logger:
-            logger.debug("%s trim_process_memory: malloc_trim not available: %s", label, str(exc))
+            logger.debug(
+                "%s trim_process_memory: malloc_trim not available: %s", label, str(exc)
+            )
     return False
-
-
