@@ -42,7 +42,7 @@ extensions = [
     "pytesseract",
 ]
 dev = [
-    "pytest",
+    "pytest == 8.3.5",
     "black",
     "mypy",
     "types-python-dateutil",
