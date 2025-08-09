@@ -44,6 +44,10 @@ class PDQIndex(SignalTypeIndex[IndexT]):
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
 
+    def reset(self) -> None:
+        self.local_id_to_entry: t.List[t.Tuple[str, IndexT]] = []
+        self.index.reset()
+
     def query(self, hash: str) -> t.Sequence[PDQIndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the max supported distance.

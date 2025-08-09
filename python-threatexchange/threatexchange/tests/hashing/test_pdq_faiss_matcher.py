@@ -105,6 +105,13 @@ class TestPDQFlatHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCase
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
+    def test_reset_index(self):
+        assert self.index.faiss_index.ntotal > 0
+
+        self.index.reset()
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == 0
+
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(2)
 
@@ -130,6 +137,13 @@ class TestPDQFlatHashIndexWithCustomIds(
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
 
+    def test_reset_index(self):
+        assert self.index.faiss_index.ntotal > 0
+
+        self.index.reset()
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == 0
+
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])
 
@@ -152,6 +166,14 @@ class TestPDQMultiHashIndex(MixinTests.PDQHashIndexCommonTests, unittest.TestCas
 
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
+
+    def test_reset_index(self):
+        assert self.index.faiss_index.ntotal > 0
+
+        self.index.reset()
+        assert self.index.index_rev_map is None
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == 0
 
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(2)
@@ -177,6 +199,14 @@ class TestPDQMultiHashIndexWithCustomIds(
 
         assert self.index.faiss_index is not None
         assert self.index.faiss_index.ntotal == len(test_hashes)
+
+    def test_reset_index(self):
+        assert self.index.faiss_index.ntotal > 0
+
+        self.index.reset()
+        assert self.index.index_rev_map is None
+        assert self.index.faiss_index is not None
+        assert self.index.faiss_index.ntotal == 0
 
     def test_hash_at(self):
         assert test_hashes[2] == self.index.hash_at(self.custom_ids[2])

@@ -113,6 +113,9 @@ class TrendQueryIndex(index.SignalTypeIndex[index.T]):
     def __init__(self) -> None:
         self.state: t.Dict[str, t.Tuple[TrendQuery, t.List[index.T]]] = {}
 
+    def reset(self) -> None:
+        self.state: t.Dict[str, t.Tuple[TrendQuery, t.List[index.T]]] = {}
+
     # TODO - Figure out how to properly capture hash vs search
     def query(self, hash: str) -> t.List[index.IndexMatch[index.T]]:
         ret: t.List[index.IndexMatch[index.T]] = []

@@ -128,3 +128,10 @@ def test_supports_pickling(index):
             PDQIndexMatch(SignalSimilarityInfoWithIntDistance(16), test_entries[0][1]),
         ],
     )
+
+
+def test_reset_index(index):
+    index.reset()
+
+    assert len(index.local_id_to_entry) == 0
+    assert index.index.faiss_index.ntotal == 0

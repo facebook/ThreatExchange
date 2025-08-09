@@ -96,6 +96,19 @@ def test_simple():
     assert res[0] == IndexMatch(VPDQSimilarityInfo(100.0, 100.0), EXAMPLE_META_DATA)
 
 
+def test_reset():
+    index = VPDQIndex.build([[HASH, EXAMPLE_META_DATA]])
+    assert index._entry_idx_to_features_and_entries[0][0] == FEATURES
+    assert len(index._index_idx_to_vpdqHex_and_entry) == len(FEATURES)
+
+    index.reset()
+
+    assert index.index.faiss_index is not None
+    assert index.index.faiss_index.ntotal == 0
+    assert len(index._entry_idx_to_features_and_entries) == 0
+    assert len(index._index_idx_to_vpdqHex_and_entry) == 0
+
+
 def test_half_match():
     index = VPDQIndex.build([[HASH, EXAMPLE_META_DATA]], query_match_threshold_pct=0)
     half_hash = FEATURES[0 : int(len(FEATURES) / 2)]

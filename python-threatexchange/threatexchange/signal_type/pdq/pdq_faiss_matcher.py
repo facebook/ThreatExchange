@@ -48,6 +48,9 @@ class PDQHashIndex(ABC):
         """
         pass
 
+    def reset(self) -> None:
+        self.faiss_index.reset()
+
     def search(
         self,
         queries: t.Sequence[PDQ_HASH_TYPE],
@@ -164,6 +167,9 @@ class PDQFlatHashIndex(PDQHashIndex):
         )
         super().__init__(faiss_index)
 
+    def reset(self) -> None:
+        super().reset()
+
     def add(self, hashes: t.Iterable[PDQ_HASH_TYPE], custom_ids: t.Iterable[int]):
         """
         Parameters
@@ -210,6 +216,10 @@ class PDQMultiHashIndex(PDQHashIndex):
         )
         super().__init__(faiss_index)
         self.__construct_index_rev_map()
+
+    def reset(self) -> None:
+        super().reset()
+        self.index_rev_map = None
 
     def add(
         self,

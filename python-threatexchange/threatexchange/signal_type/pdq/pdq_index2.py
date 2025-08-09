@@ -57,6 +57,11 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
     def __len__(self) -> int:
         return len(self._idx_to_entries)
 
+    def reset(self) -> None:
+        self._deduper: t.Dict[str, int] = {}
+        self._idx_to_entries: t.List[t.List[IndexT]] = []
+        self._index.reset()
+
     def query(self, hash: str) -> t.Sequence[PDQIndexMatch[IndexT]]:
         """
         Look up entries against the index, up to the threshold.
@@ -101,6 +106,9 @@ class _PDQFaissIndex:
 
     def __init__(self, faiss_index: faiss.Index) -> None:
         self.faiss_index = faiss_index
+
+    def reset(self) -> None:
+        self.faiss_index.reset()
 
     def add(self, pdq_strings: t.Sequence[str]) -> None:
         """

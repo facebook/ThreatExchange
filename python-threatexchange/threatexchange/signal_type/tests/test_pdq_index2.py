@@ -178,3 +178,8 @@ def test_one_entry_sample_index():
 
     results = index.query(unmatching_test_hash)
     assert len(results) == 0
+
+
+def test_reset_index(index):
+    # FIXME: There problem needs to be a test case here, though I can't get one working
+    pass

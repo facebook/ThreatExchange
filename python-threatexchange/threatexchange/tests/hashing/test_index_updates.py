@@ -68,6 +68,12 @@ class TestTrivialTypeIndexUpdates(TestIndexUpdates):
             ("420e238441fb34901697f02f086ff466", {"meta_data": 12}),
         ]
 
+    def test_index_resets(self):
+        index: TrivialSignalTypeIndex = self.get_index(self.get_first_set())
+        index.reset()
+
+        self.assertDictEqual(index.state, {})
+
 
 class TestPdqIndexUpdates(TestIndexUpdates):
     __test__ = True
@@ -188,3 +194,10 @@ class TestPdqIndexUpdates(TestIndexUpdates):
                 {"meta_data": 12},
             ),
         ]
+
+    def test_index_resets(self):
+        index: PDQIndex = self.get_index(self.get_first_set())
+        index.reset()
+
+        self.assertListEqual(index.local_id_to_entry, [])
+        self.assertEqual(index.index.faiss_index.ntotal, 0)
