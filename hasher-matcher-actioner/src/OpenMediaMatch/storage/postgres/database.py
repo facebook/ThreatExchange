@@ -148,8 +148,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     # Should we store the content type as well?
 
-    disable_until_ts: Mapped[int] = mapped_column(
-        default=BankContentConfig.ENABLED)
+    disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
 
     signals: Mapped[t.List["ContentSignal"]] = relationship(
@@ -214,8 +213,7 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
     api_cls: Mapped[str] = mapped_column(String(255))
     retain_api_data: Mapped[bool] = mapped_column(default=False)
     fetching_enabled: Mapped[bool] = mapped_column(default=True)
-    retain_data_with_unknown_signal_types: Mapped[bool] = mapped_column(
-        default=False)
+    retain_data_with_unknown_signal_types: Mapped[bool] = mapped_column(default=False)
     # Someday, we want writeback columns
     # report_seen: Mapped[bool] = mapped_column(default=False)
     # report_true_positive = mapped_column(default=False)
@@ -320,8 +318,7 @@ class ExchangeFetchStatus(db.Model):  # type: ignore[name-defined]
     # Storing the ts separately means we can check the timestamp without deserializing
     # the checkpoint
     checkpoint_ts: Mapped[t.Optional[int]] = mapped_column(BigInteger)
-    checkpoint_json: Mapped[t.Optional[t.Dict[str, t.Any]]
-                            ] = mapped_column(JSON)
+    checkpoint_json: Mapped[t.Optional[t.Dict[str, t.Any]]] = mapped_column(JSON)
 
     def as_checkpoint(
         self, api_cls: t.Optional[TSignalExchangeAPICls]
@@ -364,8 +361,7 @@ class ExchangeData(db.Model):  # type: ignore[name-defined]
     pickled_fetch_signal_metadata: Mapped[t.Optional[bytes]] = mapped_column(
         LargeBinary
     )
-    fetched_metadata_summary: Mapped[t.List[t.Any]
-                                     ] = mapped_column(JSON, default=list)
+    fetched_metadata_summary: Mapped[t.List[t.Any]] = mapped_column(JSON, default=list)
 
     bank_content: Mapped[t.Optional[BankContent]] = relationship(
         back_populates="imported_from",
@@ -390,8 +386,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
     """
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    signal_type: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True)
+    signal_type: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     signal_count: Mapped[int]
     updated_to_id: Mapped[int]
     updated_to_ts: Mapped[int] = mapped_column(BigInteger)
@@ -448,8 +443,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         )
         if self.serialized_index_large_object_oid is not None:
             if self.index_lobj_exists():
-                old_obj = raw_conn.lobject(
-                    self.serialized_index_large_object_oid, "n")
+                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")
                 self._log("deallocating old lobject %d", old_obj.oid)
                 old_obj.unlink()
             else:
@@ -462,11 +456,6 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         self.serialized_index_large_object_oid = l_obj.oid
         db.session.add(self)
         raw_conn.commit()
-        # Ensure raw connection is closed to avoid resource leaks
-        try:
-            raw_conn.close()
-        except Exception:
-            pass
 
         try:
             os.unlink(tmpfile.name)
@@ -491,8 +480,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         l_obj = raw_conn.lobject(oid, "rb")
 
         with tempfile.NamedTemporaryFile("rb") as tmpfile:
-            self._log("importing lobject oid %d to tmpfile %s",
-                      l_obj.oid, tmpfile.name)
+            self._log("importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name)
             l_obj.export(tmpfile.name)
             tmpfile.seek(0, io.SEEK_END)
             self._log(
@@ -511,11 +499,6 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 "deserialized - %s",
                 duration_to_human_str(int(time.time() - deserialize_start)),
             )
-        # Ensure raw connection is closed to avoid resource leaks
-        try:
-            raw_conn.close()
-        except Exception:
-            pass
         return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
@@ -526,8 +509,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         )
 
     def _log(self, msg: str, *args: t.Any, level: int = logging.DEBUG) -> None:
-        current_app.logger.log(
-            level, f"Index[%s] {msg}", self.signal_type, *args)
+        current_app.logger.log(level, f"Index[%s] {msg}", self.signal_type, *args)
 
 
 @event.listens_for(SignalIndex, "after_delete")
@@ -536,8 +518,7 @@ def _remove_large_object_after_delete(_, connection, signal_index: SignalIndex) 
     Hopefully we don't need to rely on this, but attempt to prevent orphaned large objects.
     """
     raw_connection = connection.connection
-    l_obj = raw_connection.lobject(
-        signal_index.serialized_index_large_object_oid, "n")
+    l_obj = raw_connection.lobject(signal_index.serialized_index_large_object_oid, "n")
     l_obj.unlink()
     raw_connection.commit()
 
@@ -575,8 +556,7 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
         if creds is None:
             self.default_credentials_json = {}
         else:
-            self.default_credentials_json = dataclass_json.dataclass_dump_dict(
-                creds)
+            self.default_credentials_json = dataclass_json.dataclass_dump_dict(creds)
 
     def as_storage_iface_cls(
         self, api_cls: TSignalExchangeAPICls

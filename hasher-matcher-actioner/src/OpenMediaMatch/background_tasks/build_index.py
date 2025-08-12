@@ -2,9 +2,7 @@
 
 import logging
 import time
-import gc
 import typing as t
-from typing import Optional
 
 from threatexchange.signal_type.signal_base import SignalType
 
@@ -75,51 +73,21 @@ def build_index(
         0 if bank_checkpoint is None else bank_checkpoint.total_hash_count,
     )
 
-    # Use try/finally to ensure cleanup happens even on exceptions
-    signal_list = []
-    built_index: Optional[t.Any] = None
-    last_cs = None
+    # Use try/finally to ensure aggressive memory trim after build
     signal_count = 0
+    built_index: t.Any | None = None  # keep in locals per review nit
+    checkpoint: SignalTypeIndexBuildCheckpoint | None = None
 
     try:
-        # Collect signals
-        for last_cs in bank_store.bank_yield_content(for_signal_type):
-            signal_list.append((last_cs.signal_val, last_cs.bank_content_id))
-            signal_count += 1
-
-        # Build index
-        index_cls = for_signal_type.get_index_cls()
-        built_index = index_cls.build(signal_list)
-
-        # Clear signal_list early to reduce memory peak during storage
-        signal_list.clear()
-
-        # Create checkpoint
-        checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
-        if last_cs is not None:
-            checkpoint = SignalTypeIndexBuildCheckpoint(
-                last_item_timestamp=last_cs.bank_content_timestamp,
-                last_item_id=last_cs.bank_content_id,
-                total_hash_count=signal_count,
-            )
-
-        # Store the index
-        if built_index is not None:
-            index_store.store_signal_type_index(
-                for_signal_type, built_index, checkpoint
-            )
-
+        built_index, checkpoint, signal_count = _prepare_index(
+            for_signal_type, bank_store
+        )
+        index_store.store_signal_type_index(
+            for_signal_type,
+            built_index,
+            t.cast(SignalTypeIndexBuildCheckpoint, checkpoint),
+        )
     finally:
-        # Guaranteed cleanup even if exceptions occur
-        # Explicitly clear large objects to help with memory management
-        if "signal_list" in locals():
-            signal_list.clear()
-            del signal_list
-
-        # Clear reference to built_index after storage
-        if "built_index" in locals() and built_index is not None:
-            built_index = None
-
         # Force garbage collection to reclaim memory and attempt to free pages
         trim_process_memory(logger, "Indexer")
 
@@ -129,3 +97,36 @@ def build_index(
         for_signal_type.get_name(),
         duration_to_human_str(int(time.time() - start)),
     )
+
+
+def _prepare_index(
+    for_signal_type: t.Type[SignalType],
+    bank_store: IBankStore,
+) -> tuple[t.Any, SignalTypeIndexBuildCheckpoint, int]:
+    """
+    Collect signals for the given type, build the index, and compute checkpoint.
+    Returns a tuple of (built_index, checkpoint, signal_count).
+    """
+    signal_list: list[tuple[str, int]] = []
+    signal_count = 0
+    last_cs = None
+
+    # Collect signals
+    for last_cs in bank_store.bank_yield_content(for_signal_type):
+        signal_list.append((last_cs.signal_val, last_cs.bank_content_id))
+        signal_count += 1
+
+    # Build index
+    index_cls = for_signal_type.get_index_cls()
+    built_index = index_cls.build(signal_list)
+
+    # Create checkpoint
+    checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
+    if last_cs is not None:
+        checkpoint = SignalTypeIndexBuildCheckpoint(
+            last_item_timestamp=last_cs.bank_content_timestamp,
+            last_item_id=last_cs.bank_content_id,
+            total_hash_count=signal_count,
+        )
+
+    return built_index, checkpoint, signal_count

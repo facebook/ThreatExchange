@@ -38,9 +38,18 @@ def trim_process_memory(
             return True
         if logger:
             logger.debug("%s trim_process_memory: libc has no malloc_trim", label)
-    except Exception as exc:  # pragma: no cover — platform specific
+    except OSError as exc:  # pragma: no cover — platform specific (lib load)
         if logger:
             logger.debug(
-                "%s trim_process_memory: malloc_trim not available: %s", label, str(exc)
+                "%s trim_process_memory: failed to load libc: %s", label, str(exc)
             )
+        return False
+    except AttributeError as exc:  # pragma: no cover — platform specific (symbol)
+        if logger:
+            logger.debug(
+                "%s trim_process_memory: malloc_trim symbol not available: %s",
+                label,
+                str(exc),
+            )
+        return False
     return False

@@ -92,26 +92,11 @@ class _SignalIndexInMemoryCache:
                 )
                 return
 
-            # Replace index with aggressive cleanup for FAISS indices
-            old_index = self.index
-
             self.index = new_index
             self.checkpoint = curr_checkpoint
 
-            if old_index is not None:
-                # Try to explicitly cleanup FAISS internals
-                if hasattr(old_index, "_index") and hasattr(
-                    old_index._index, "faiss_index"
-                ):
-                    try:
-                        faiss_idx = old_index._index.faiss_index
-                        if hasattr(faiss_idx, "reset"):
-                            faiss_idx.reset()
-                    except Exception:
-                        pass
-
-                del old_index
-                trim_process_memory()
+            # Force garbage collection to reclaim memory and attempt to free pages
+            trim_process_memory()
 
         self.last_check_ts = now
 
