@@ -76,17 +76,12 @@ def build_index(
     # Use try/finally to ensure aggressive memory trim after build
     signal_count = 0
     built_index: t.Any | None = None  # keep in locals per review nit
-    checkpoint: SignalTypeIndexBuildCheckpoint | None = None
 
     try:
         built_index, checkpoint, signal_count = _prepare_index(
             for_signal_type, bank_store
         )
-        index_store.store_signal_type_index(
-            for_signal_type,
-            built_index,
-            t.cast(SignalTypeIndexBuildCheckpoint, checkpoint),
-        )
+        index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
     finally:
         # Force garbage collection to reclaim memory and attempt to free pages
         trim_process_memory(logger, "Indexer")
