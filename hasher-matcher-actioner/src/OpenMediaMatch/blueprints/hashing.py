@@ -124,9 +124,18 @@ def hash_media() -> dict[str, str]:
 
     try:
         # Get response with content length tracking
-        max_content_length = int(
-            current_app.config.get("MAX_CONTENT_LENGTH", DEFAULT_MAX_CONTENT_LENGTH)
-        )
+        max_content_length = current_app.config.get("MAX_CONTENT_LENGTH")
+        if max_content_length is None:
+            max_content_length = DEFAULT_MAX_CONTENT_LENGTH
+        
+        # cast to integer if necessary (the value could have come from an environment variable)
+        if isinstance(max_content_length, str):
+            if not max_content_length.isdigit():
+                logger.error(f"MAX_CONTENT_LENGTH misconfigured, expected integer, received: {max_content_length}")
+                abort(500, "Service misconfigured, see logs for details")
+
+            max_content_length = int(max_content_length)
+
         with _check_content_length_stream_response(
             media_url, max_content_length
         ) as download_resp:
