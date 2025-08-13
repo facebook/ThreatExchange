@@ -156,10 +156,11 @@ def test_content_length_validation(mock_get, mock_head, client):
     response = client.get("/h/hash?url=https://example.com/image.jpg")
     assert response.status_code != 413
 
+
 @patch("requests.head")
 def test_content_length_validation_default(mock_head, client, app):
     with app.app_context():
-        # Override MAX_CONTENT_LENGTH to None, simulating it not 
+        # Override MAX_CONTENT_LENGTH to None, simulating it not
         # being present in an OMM_CONFIG file:
         app.config["MAX_CONTENT_LENGTH"] = None
 
@@ -176,14 +177,24 @@ def test_content_length_validation_default(mock_head, client, app):
         assert response.status_code == 413
         assert "Content too large" in response.get_data(as_text=True)
 
+
 @patch("requests.head")
-def test_content_length_validation_misconfiguration(client, app):
+def test_content_length_validation_misconfiguration(mock_head, client, app):
     with app.app_context():
-        # Override MAX_CONTENT_LENGTH to a non-integer value, simulating it 
+        # Override MAX_CONTENT_LENGTH to a non-integer value, simulating it
         # being set from the environment variables incorrectly:
         app.config["MAX_CONTENT_LENGTH"] = "not-an-integer"
+
+        mock_head_resp = Mock()
+        mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_CONTENT_LENGTH + 1)}
+        mock_head_resp.raise_for_status = (
+            Mock()
+        )  # Add this to prevent the raise_for_status() call from failing
+        mock_head.return_value = mock_head_resp
 
         # Test with large content length
         response = client.get("/h/hash?url=https://example.com/image.jpg")
         assert response.status_code == 500
-        assert "Service misconfigured, see logs for details" in response.get_data(as_text=True)
+        assert "Service misconfigured, see logs for details" in response.get_data(
+            as_text=True
+        )

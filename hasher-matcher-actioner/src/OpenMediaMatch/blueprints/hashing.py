@@ -127,11 +127,13 @@ def hash_media() -> dict[str, str]:
         max_content_length = current_app.config.get("MAX_CONTENT_LENGTH")
         if max_content_length is None:
             max_content_length = DEFAULT_MAX_CONTENT_LENGTH
-        
+
         # cast to integer if necessary (the value could have come from an environment variable)
         if isinstance(max_content_length, str):
             if not max_content_length.isdigit():
-                logger.error(f"MAX_CONTENT_LENGTH misconfigured, expected integer, received: {max_content_length}")
+                logger.error(
+                    f"MAX_CONTENT_LENGTH misconfigured, expected integer, received: {max_content_length}"
+                )
                 abort(500, "Service misconfigured, see logs for details")
 
             max_content_length = int(max_content_length)
