@@ -305,10 +305,7 @@ class BankConfig:
 @dataclass
 class BankContentConfig:
     """
-    Represents the configuration for one piece of banked content.
-
-    Signals are only included in this object when explicitly requested via
-    include_signals parameter in bank_content_get().
+    Configuration for a piece of content in a bank, representing both the content metadata and its associated signals.
     """
 
     ENABLED: t.ClassVar[int] = 1

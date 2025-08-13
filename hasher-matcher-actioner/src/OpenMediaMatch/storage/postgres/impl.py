@@ -525,7 +525,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def bank_content_get(
         self, ids: t.Iterable[int]
     ) -> t.Sequence[interface.BankContentConfig]:
-        contents = list(
+        contents = (
             database.db.session.query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .all()
@@ -535,7 +535,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def bank_content_get_signals(
         self, ids: t.Iterable[int]
     ) -> t.Dict[int, t.Dict[str, str]]:
-        contents = list(
+        contents = (
             database.db.session.query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .options(joinedload(database.BankContent.signals))
