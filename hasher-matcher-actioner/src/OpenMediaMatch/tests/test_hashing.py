@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import Mock, patch
 
-from OpenMediaMatch.blueprints.hashing import DEFAULT_MAX_CONTENT_LENGTH, is_valid_url
+from OpenMediaMatch.blueprints.hashing import DEFAULT_MAX_REMOTE_FILE_SIZE, is_valid_url
 from OpenMediaMatch.tests.utils import app, client
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
@@ -126,7 +126,7 @@ def test_content_length_validation(mock_get, mock_head, client):
     """Test content length validation."""
     # Mock successful HEAD response with large content length
     mock_head_resp = Mock()
-    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_CONTENT_LENGTH + 1)}
+    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)}
     mock_head_resp.raise_for_status = (
         Mock()
     )  # Add this to prevent the raise_for_status() call from failing
@@ -138,13 +138,13 @@ def test_content_length_validation(mock_get, mock_head, client):
     assert "Content too large" in response.get_data(as_text=True)
 
     # Mock successful HEAD response with acceptable content length
-    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_CONTENT_LENGTH - 1)}
+    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE - 1)}
 
     # Mock successful GET response
     mock_get_resp = Mock()
     mock_get_resp.headers = {
         "content-type": "image/jpeg",
-        "content-length": str(DEFAULT_MAX_CONTENT_LENGTH - 1),
+        "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE - 1),
     }
     mock_get_resp.iter_content.return_value = [b"fake image data"]
     mock_get_resp.raise_for_status = (
@@ -160,13 +160,15 @@ def test_content_length_validation(mock_get, mock_head, client):
 @patch("requests.head")
 def test_content_length_validation_default(mock_head, client, app):
     with app.app_context():
-        # Override MAX_CONTENT_LENGTH to None, simulating it not
+        # Override MAX_REMOTE_FILE_SIZE to None, simulating it not
         # being present in an OMM_CONFIG file:
-        app.config["MAX_CONTENT_LENGTH"] = None
+        app.config["MAX_REMOTE_FILE_SIZE"] = None
 
         # Mock successful HEAD response with large content length
         mock_head_resp = Mock()
-        mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_CONTENT_LENGTH + 1)}
+        mock_head_resp.headers = {
+            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)
+        }
         mock_head_resp.raise_for_status = (
             Mock()
         )  # Add this to prevent the raise_for_status() call from failing
@@ -181,12 +183,14 @@ def test_content_length_validation_default(mock_head, client, app):
 @patch("requests.head")
 def test_content_length_validation_misconfiguration(mock_head, client, app):
     with app.app_context():
-        # Override MAX_CONTENT_LENGTH to a non-integer value, simulating it
+        # Override MAX_REMOTE_FILE_SIZE to a non-integer value, simulating it
         # being set from the environment variables incorrectly:
-        app.config["MAX_CONTENT_LENGTH"] = "not-an-integer"
+        app.config["MAX_REMOTE_FILE_SIZE"] = "not-an-integer"
 
         mock_head_resp = Mock()
-        mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_CONTENT_LENGTH + 1)}
+        mock_head_resp.headers = {
+            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)
+        }
         mock_head_resp.raise_for_status = (
             Mock()
         )  # Add this to prevent the raise_for_status() call from failing

@@ -34,7 +34,7 @@ bp = Blueprint("hashing", __name__)
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 # Add these constants at the top level
-DEFAULT_MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
+DEFAULT_MAX_REMOTE_FILE_SIZE = 100 * 1024 * 1024  # 100MB max file size
 
 
 def is_valid_url(url: str) -> bool:
@@ -78,7 +78,7 @@ def is_valid_url(url: str) -> bool:
 
 
 def _check_content_length_stream_response(
-    url: str, max_length: int = DEFAULT_MAX_CONTENT_LENGTH
+    url: str, max_length: int = DEFAULT_MAX_REMOTE_FILE_SIZE
 ) -> requests.Response:
     """
     Check for content length and raise an exception if it exceeds max_length.
@@ -124,22 +124,22 @@ def hash_media() -> dict[str, str]:
 
     try:
         # Get response with content length tracking
-        max_content_length = current_app.config.get("MAX_CONTENT_LENGTH")
-        if max_content_length is None:
-            max_content_length = DEFAULT_MAX_CONTENT_LENGTH
+        max_file_size = current_app.config.get("MAX_REMOTE_FILE_SIZE")
+        if max_file_size is None:
+            max_file_size = DEFAULT_MAX_REMOTE_FILE_SIZE
 
         # cast to integer if necessary (the value could have come from an environment variable)
-        if isinstance(max_content_length, str):
-            if not max_content_length.isdigit():
+        if isinstance(max_file_size, str):
+            if not max_file_size.isdigit():
                 logger.error(
-                    f"MAX_CONTENT_LENGTH misconfigured, expected integer, received: {max_content_length}"
+                    f"MAX_REMOTE_FILE_SIZE misconfigured, expected integer, received: {max_file_size}"
                 )
                 abort(500, "Service misconfigured, see logs for details")
 
-            max_content_length = int(max_content_length)
+            max_file_size = int(max_file_size)
 
         with _check_content_length_stream_response(
-            media_url, max_content_length
+            media_url, max_file_size
         ) as download_resp:
             url_content_type = download_resp.headers["content-type"]
             current_app.logger.debug("%s is type %s", media_url, url_content_type)
@@ -158,7 +158,7 @@ def hash_media() -> dict[str, str]:
                         if chunk:
                             bytes_read += len(chunk)
                             # Check as we write the file to ensure we don't exceed the max content length
-                            if bytes_read > max_content_length:
+                            if bytes_read > max_file_size:
                                 abort(413, "Content too large")
                             temp_file.write(chunk)
                 path = Path(tmp.name)
