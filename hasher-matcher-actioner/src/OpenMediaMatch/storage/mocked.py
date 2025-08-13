@@ -193,7 +193,10 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         # For the mock, return sample signals
         signals_dict = {}
         for content_id in id:
-            signals_dict[content_id] = {"pdq": "facefacefacefacefacefaceface", "vmd5": "ecafecafecafecafecafecafecaf"}
+            signals_dict[content_id] = {
+                "pdq": "facefacefacefacefacefaceface",
+                "vmd5": "ecafecafecafecafecafecafecaf",
+            }
         return signals_dict
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:

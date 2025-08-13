@@ -303,7 +303,9 @@ def test_bank_get_content_with_signals(client: FlaskClient):
     content_id = add_response.json.get("id")
 
     # Get content by id with signals
-    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}?include_signals=true")
+    get_response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?include_signals=true"
+    )
     assert get_response.status_code == 200, str(get_response.get_json())
     assert get_response.json
     assert get_response.json.get("id") == content_id

@@ -541,11 +541,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
             .options(joinedload(database.BankContent.signals))
             .all()
         )
-        
+
         signals_dict = {}
         for b in contents:
             signals_dict[b.id] = {s.signal_type: s.signal_val for s in b.signals}
-        
+
         return signals_dict
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:

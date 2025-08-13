@@ -154,7 +154,7 @@ def bank_get_content(bank_name: str, content_id: int):
     if not content:
         abort(404, f"content '{content_id}' not found")
     content_config = content[0]
-    
+
     # Create base response
     response: BankContentResponse = {
         "id": content_config.id,
@@ -163,13 +163,13 @@ def bank_get_content(bank_name: str, content_id: int):
         "original_media_uri": content_config.original_media_uri,
         "bank": content_config.bank,
     }
-    
+
     # If signals were requested, fetch them separately and include in response
     if include_signals:
         signals = storage.bank_content_get_signals([content_id])
         if content_id in signals:
             response["signals"] = signals[content_id]
-    
+
     return jsonify(response)
 
 

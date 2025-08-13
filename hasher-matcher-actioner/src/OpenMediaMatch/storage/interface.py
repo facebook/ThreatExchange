@@ -413,7 +413,9 @@ class IBankStore(metaclass=abc.ABCMeta):
         """Get the content config for a bank."""
 
     @abc.abstractmethod
-    def bank_content_get_signals(self, id: t.Iterable[int]) -> t.Dict[int, t.Dict[str, str]]:
+    def bank_content_get_signals(
+        self, id: t.Iterable[int]
+    ) -> t.Dict[int, t.Dict[str, str]]:
         """Get signals for the given content IDs. Returns mapping of content_id -> signal_type -> signal_value."""
 
     @abc.abstractmethod
