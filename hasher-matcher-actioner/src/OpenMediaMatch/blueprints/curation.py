@@ -22,7 +22,7 @@ from OpenMediaMatch.blueprints import hashing
 class BankContentResponse(t.TypedDict):
     id: int
     disable_until_ts: int
-    collab_metadata: t.Dict[str, t.List[str]]
+    collab_metadata: dict[str, list[str]]
     original_media_uri: t.Optional[str]
     bank: iface.BankConfig
     signals: t.NotRequired[t.Dict[str, str]]
