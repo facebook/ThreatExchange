@@ -178,3 +178,15 @@ def test_one_entry_sample_index():
 
     results = index.query(unmatching_test_hash)
     assert len(results) == 0
+
+
+def test_reset_index():
+    get_random_hashes = _get_hash_generator()
+    base_hashes = get_random_hashes(100)
+    index = PDQIndex2(entries=[(h, base_hashes.index(h)) for h in base_hashes])
+
+    assert len(index) == len(base_hashes)
+
+    index.reset()
+
+    assert len(index) == 0

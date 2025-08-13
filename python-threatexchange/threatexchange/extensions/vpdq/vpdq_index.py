@@ -72,6 +72,14 @@ class VPDQIndex(SignalTypeIndex[IndexT]):
         ret.add_all(entries)
         return ret
 
+    def reset(self) -> None:
+        self.index.reset()
+        self._entry_idx_to_features_and_entries: t.List[
+            t.Tuple[t.List[VpdqCompactFeature], IndexT]
+        ] = []
+        self._index_idx_to_vpdqHex_and_entry: t.List[t.Tuple[int, t.List[int]]] = []
+        self._unique_vpdqHex_to_index_idx: t.Dict[str, int] = {}
+
     def add(self, signal_str: str, entry: IndexT) -> None:
         entry_id = len(self._entry_idx_to_features_and_entries)
         features = prepare_vpdq_feature(signal_str, self.quality_threshold)
