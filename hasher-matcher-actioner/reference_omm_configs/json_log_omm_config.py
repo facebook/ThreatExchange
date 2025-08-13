@@ -8,7 +8,6 @@ enables json log formatting.
 
 """
 
-import os
 from logging.config import dictConfig
 
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
@@ -26,10 +25,10 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 )
 
 # Database configuration
-DBUSER = os.environ.get("POSTGRES_USER", "media_match")
-DBPASS = os.environ.get("POSTGRES_PASSWORD", "hunter2")
-DBHOST = os.environ.get("POSTGRES_HOST", "db")
-DBNAME = os.environ.get("POSTGRES_DB", "media_match")
+DBUSER = "media_match"
+DBPASS = "hunter2"
+DBHOST = "db"
+DBNAME = "media_match"
 
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
