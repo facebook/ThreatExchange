@@ -220,7 +220,7 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     ).scalar_one()
     assert index_record.index_lobj_exists() is True
     raw_conn = database.db.engine.raw_connection()
-    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")
     old_obj.unlink()
     raw_conn.commit()
 

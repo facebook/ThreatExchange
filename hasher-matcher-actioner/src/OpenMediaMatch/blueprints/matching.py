@@ -31,6 +31,7 @@ from OpenMediaMatch.utils.flask_utils import (
     str_to_bool,
 )
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.utils.memory_utils import trim_process_memory
 
 bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
@@ -90,8 +91,13 @@ class _SignalIndexInMemoryCache:
                     curr_checkpoint,
                 )
                 return
+
             self.index = new_index
             self.checkpoint = curr_checkpoint
+
+            # Force garbage collection to reclaim memory and attempt to free pages
+            trim_process_memory()
+
         self.last_check_ts = now
 
     def periodic_task(self) -> None:

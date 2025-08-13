@@ -435,7 +435,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         store_start_time = time.time()
         # Deep dark magic - direct access postgres large object API
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)  # type: ignore[attr-defined]
+        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)
         self._log(
             "imported tmpfile as lobject oid %d - %s",
             l_obj.oid,
@@ -443,7 +443,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         )
         if self.serialized_index_large_object_oid is not None:
             if self.index_lobj_exists():
-                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")
                 self._log("deallocating old lobject %d", old_obj.oid)
                 old_obj.unlink()
             else:
@@ -477,7 +477,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # I'm sorry future debugger finding this comment.
         load_start_time = time.time()
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(oid, "rb")  # type: ignore[attr-defined]
+        l_obj = raw_conn.lobject(oid, "rb")
 
         with tempfile.NamedTemporaryFile("rb") as tmpfile:
             self._log("importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name)
