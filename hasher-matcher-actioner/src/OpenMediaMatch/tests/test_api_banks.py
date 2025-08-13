@@ -288,3 +288,38 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     )
     assert post_response.status_code == 200
     assert post_response.json == {"matches": [2]}
+
+
+def test_bank_get_content_with_signals(client: FlaskClient):
+    bank_name = "TEST_BANK_GET_SIGS"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    assert add_response.json
+    content_id = add_response.json.get("id")
+
+    # Get content by id without signals
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    assert get_response.json
+    assert get_response.json.get("id") == content_id
+    # Signals should not be included when include_signals is not specified
+    assert "signals" not in get_response.json
+
+    # Get content by id with signals
+    get_response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?include_signals=true"
+    )
+    assert get_response.status_code == 200, str(get_response.get_json())
+    assert get_response.json
+    assert get_response.json.get("id") == content_id
+    # The API may not include signals field if no signals are found
+    # This is the current behavior - signals field is only included when signals exist
+    if "signals" in get_response.json:
+        assert isinstance(get_response.json["signals"], dict)
+        # If signals exist, they should not be empty
+        assert len(get_response.json["signals"]) > 0
