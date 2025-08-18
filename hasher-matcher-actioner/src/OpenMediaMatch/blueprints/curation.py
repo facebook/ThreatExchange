@@ -22,10 +22,10 @@ from OpenMediaMatch.blueprints import hashing
 class BankContentResponse(t.TypedDict):
     id: int
     disable_until_ts: int
-    collab_metadata: dict[str, list[str]]
+    collab_metadata: t.Mapping[str, t.Sequence[str]]
     original_media_uri: t.Optional[str]
     bank: iface.BankConfig
-    signals: t.NotRequired[t.Dict[str, str]]
+    signals: t.NotRequired[t.Mapping[str, str]]
 
 
 def five_years_from_now() -> int:
