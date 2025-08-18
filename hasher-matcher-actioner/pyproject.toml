@@ -29,8 +29,8 @@ dependencies = [
 
 [project.optional-dependencies]
 all = [
-    "mypy",
-    "black",
+    "mypy>=1.17.1",
+    "black>=25.1.0",
     "pytest",
     "types-Flask-Migrate",
     "types-requests",

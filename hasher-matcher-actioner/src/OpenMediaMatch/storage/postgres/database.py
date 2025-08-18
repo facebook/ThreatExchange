@@ -21,7 +21,6 @@ import os
 
 from flask import current_app
 import flask_sqlalchemy
-import psycopg2
 from sqlalchemy import (
     String,
     Text,
