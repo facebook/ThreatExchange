@@ -220,7 +220,7 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     ).scalar_one()
     assert index_record.index_lobj_exists() is True
     raw_conn = database.db.engine.raw_connection()
-    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
+    old_obj = raw_conn.lobject(index_record.serialized_index_large_object_oid, "n")
     old_obj.unlink()
     raw_conn.commit()
 
@@ -303,9 +303,9 @@ def test_exchange_get_data(storage: DefaultOMMStore):
     cfg = make_collab(storage)
     fetch(storage)
     patched_signal_types = dict(storage.exchange_types)
-    patched_signal_types[_UnknownSampleExchangeAPI.get_name()] = (
-        _UnknownSampleExchangeAPI
-    )
+    patched_signal_types[
+        _UnknownSampleExchangeAPI.get_name()
+    ] = _UnknownSampleExchangeAPI
     storage.exchange_types = patched_signal_types
 
     signal_types = list(storage.get_enabled_signal_types().values())
