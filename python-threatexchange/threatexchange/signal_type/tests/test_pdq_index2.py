@@ -178,3 +178,31 @@ def test_one_entry_sample_index():
 
     results = index.query(unmatching_test_hash)
     assert len(results) == 0
+
+
+def test_flat_index_selection():
+    """Test flat index selection for small datasets"""
+    get_random_hashes = _get_hash_generator()
+    base_hashes = get_random_hashes(100)
+    index = PDQIndex2.build([(h, i) for i, h in enumerate(base_hashes)])
+    assert isinstance(index._index.faiss_index, faiss.IndexFlatL2)
+
+
+def test_ivf_index_selection():
+    """Test IVF index selection for large datasets"""
+    get_random_hashes = _get_hash_generator()
+    base_hashes = get_random_hashes(2000)
+    index = PDQIndex2.build([(h, i) for i, h in enumerate(base_hashes)])
+    assert isinstance(index._index.faiss_index, faiss.IndexIVFFlat)
+
+
+def test_build_method():
+    """Test build method creates valid index"""
+    get_random_hashes = _get_hash_generator()
+    base_hashes = get_random_hashes(500)
+    index = PDQIndex2.build([(h, i) for i, h in enumerate(base_hashes)])
+
+    query_hash = base_hashes[0]
+    results = index.query(query_hash)
+    assert len(results) >= 1
+    assert any(r.metadata == 0 for r in results)

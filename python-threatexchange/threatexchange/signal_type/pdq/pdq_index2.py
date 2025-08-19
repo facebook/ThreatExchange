@@ -8,7 +8,6 @@ import typing as t
 import faiss
 import numpy as np
 
-
 from threatexchange.signal_type.index import (
     IndexMatchUntyped,
     SignalSimilarityInfoWithIntDistance,
@@ -32,6 +31,29 @@ class PDQIndex2(SignalTypeIndex[IndexT]):
     designed to be simpler and fix hard-to-squash bugs in the existing implementation.
     Purpose of this class: to replace the original index in pytx 2.0
     """
+
+    IVF_THRESHOLD = 1000
+
+    @classmethod
+    def build(
+        cls: t.Type["PDQIndex2"], entries: t.Iterable[t.Tuple[str, IndexT]]
+    ) -> "PDQIndex2":
+        """
+        Build an index from a set of entries.
+        Selects between flat and IVF index based on number of entries.
+        """
+        entries_list = list(entries)
+
+        index = faiss.IndexFlatL2(BITS_IN_PDQ)
+        if len(entries_list) >= cls.IVF_THRESHOLD:
+            nlist = len(entries_list) // 2
+            index = faiss.IndexIVFFlat(index, BITS_IN_PDQ, nlist)
+            vectors = convert_pdq_strings_to_ndarray([h for h, _ in entries_list])
+            index.train(vectors)
+        else:
+            index = faiss.IndexFlatL2(BITS_IN_PDQ)
+
+        return cls(index=index, entries=entries_list)
 
     def __init__(
         self,
