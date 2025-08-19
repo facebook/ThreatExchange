@@ -10,6 +10,7 @@ import logging
 
 from abc import ABC, abstractmethod
 import typing as t
+import warnings
 
 from threatexchange import common
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
@@ -167,6 +168,10 @@ class SignalExchangeAPI(
         """
         Merge a new update produced by fetch.
 
+        DEPRECATED: This method will be removed in version 2.x.x.
+        Any implementations that convert records into None to signal a deletion
+        should instead move that logic into the fetch() method.
+
         Returning a value of None indicates that the entry should be deleted.
 
         Most implementations will probably prefer the default, which is to
@@ -174,6 +179,14 @@ class SignalExchangeAPI(
 
         It is safe to mutate `new` inline and return it, if needed.
         """
+        warnings.warn(
+            "fetch_value_merge() is deprecated and will be removed in version 2.x.x. "
+            "Any implementations that convert records into None to signal a deletion "
+            "should instead move that logic into the fetch() method.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
         # Default implementation is replace
         return new
 
@@ -197,11 +210,10 @@ class SignalExchangeAPI(
         together keyed by ID will eventually get you an entire copy of the database.
         """
         for k, v in new.items():
-            new_v = cls.fetch_value_merge(old.get(k), v)
-            if new_v is None:
+            if v is None:
                 old.pop(k, None)
             else:
-                old[k] = new_v
+                old[k] = v
 
     # TODO - rename this to make it more clear what it's doing
     #        and consider making it one-key-at-a-time
