@@ -19,6 +19,15 @@ import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
 
 
+class BankContentResponse(t.TypedDict):
+    id: int
+    disable_until_ts: int
+    collab_metadata: t.Mapping[str, t.Sequence[str]]
+    original_media_uri: t.Optional[str]
+    bank: iface.BankConfig
+    signals: t.NotRequired[t.Mapping[str, str]]
+
+
 def five_years_from_now() -> int:
     return int(time.mktime((datetime.now() + timedelta(days=365 * 5)).timetuple()))
 
@@ -134,16 +143,34 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     return t.cast(BankedContentMetadata, metadata)
 
 
-@bp.route("/bank/<bank_name>/content/<content_id>", methods=["GET"])
+@bp.route("/bank/<bank_name>/content/<int:content_id>", methods=["GET"])
 def bank_get_content(bank_name: str, content_id: int):
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
+    include_signals = request.args.get("include_signals", "false").lower() == "true"
     content = storage.bank_content_get([content_id])
     if not content:
         abort(404, f"content '{content_id}' not found")
-    return jsonify(content[0])
+    content_config = content[0]
+
+    # Create base response
+    response: BankContentResponse = {
+        "id": content_config.id,
+        "disable_until_ts": content_config.disable_until_ts,
+        "collab_metadata": content_config.collab_metadata,
+        "original_media_uri": content_config.original_media_uri,
+        "bank": content_config.bank,
+    }
+
+    # If signals were requested, fetch them separately and include in response
+    if include_signals:
+        signals = storage.bank_content_get_signals([content_id])
+        if content_id in signals:
+            response["signals"] = signals[content_id]
+
+    return jsonify(response)
 
 
 @bp.route("/bank/<bank_name>/content", methods=["POST"])
