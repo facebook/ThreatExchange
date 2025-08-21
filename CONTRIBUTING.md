@@ -59,6 +59,16 @@ messages and update documentation accordingly (see the next section).
 
 [wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
 
+## Keeping python dependencies up to date
+We don't pin dependency version numbers in order to build with the latest security updates. However, that means that some dependency changes may be breaking (most common are `black` - the code formatter, and `mypy` - the typechecker, which cause CI to turn red), and require some action to fix trunk.
+
+If you keep working on HMA over a long period of time, the versions of your first install or first devcontainer build tend to be the ones preferred by `pip` due to it's upgrade strategy, which can cause the CI and your local copy of dependencies to go out of sync.
+
+You have a few options for managing this:
+1. [Simplest] If you are using the devcontainer, rebuild the devcontainer if your development environment is a few weeks old. The CI will use the same base image as the devcontainer.
+2. You can use `pip --upgrade-strategy eager` to get it to more aggressively upgrade dependencies
+3. You can bump the minimum versions in pyroject.toml using `>=` as the version CI is using, and then pip --upgrade with the default strategy wil pick up the new version. 
+
 ## Making Big Changes
 If you are considering making a larger change, consider reaching out via an issue first.
 If your change will add a new API, new functionality, or refactor a large section of code,
@@ -128,6 +138,15 @@ Reviewers will know not to merge your changes but may still send you an Accept i
 ### Continuous Integration
 If you are a new contributor, the continuous integration (CI) won't run until it's triggered by a maintainer of the repo.
 If there is CI failure, we usually won't merge the change!
+
+#### CI is disagreeing with my local run!
+Your python dependencies are out of date, see [Keeping dependencies up to date](#keeping-python-dependencies-up-to-date) above.
+
+#### CI was broken when I got here!
+We try and keep the CI green, but work tends to follow when there is PRs and upstream changes can be breaking. The most common reason for CI failure is a dependency version increase (especially `black` and `mypy`). You have two options:
+1. Ask the maintainers to fix the CI, and then rebase on top of the fix.
+2. Make a stab at fixing the issue as part of your PR or a new PR - the changes are usually very minor, running `black` on the whole repo, or removing `type: ignore` for mypy.
+3. [Only as a last resort] After you have proven that the changes are significant, such as a major version change that significantly changes a dependency interface, we can pin the major version in the pyproject.toml using `>=major-version-that-works` and `<major-version-that-needs-significant-changes`
 
 ### Review
 Once you’ve submitted a PR you're waiting on us for review. We aim to check the repo every business day, but sometimes we are slow, especially if there aren't new changes.
