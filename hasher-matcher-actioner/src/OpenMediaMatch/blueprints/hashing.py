@@ -124,7 +124,10 @@ def hash_media() -> dict[str, str]:
 
     try:
         # Get response with content length tracking
-        max_file_size = current_app.config.get("MAX_REMOTE_FILE_SIZE") or DEFAULT_MAX_REMOTE_FILE_SIZE
+        max_file_size = (
+            current_app.config.get("MAX_REMOTE_FILE_SIZE")
+            or DEFAULT_MAX_REMOTE_FILE_SIZE
+        )
 
         # cast to integer if necessary (the value could have come from an environment variable)
         if isinstance(max_file_size, str):
