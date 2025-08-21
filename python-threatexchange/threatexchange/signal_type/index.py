@@ -239,9 +239,17 @@ class SignalTypeIndex(t.Generic[T]):
 
         Could also be premature optimization, you decide!
         """
-        fout.write(pickle.dumps(self))
+        pickle.dump(self, fout, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
     def deserialize(cls: t.Type[Self], fin: t.BinaryIO) -> Self:
         """Instantiate an index from a previous call to serialize"""
-        return pickle.loads(fin.read())
+        return pickle.load(fin)
+
+    def dispose(self) -> None:
+        """
+        Release any native resources or large auxiliary structures held by the
+        index implementation. Default is a no-op; implementations that wrap
+        native libraries (e.g., FAISS) should override.
+        """
+        return None
