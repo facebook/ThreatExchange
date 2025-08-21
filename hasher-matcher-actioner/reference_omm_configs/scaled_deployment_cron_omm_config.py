@@ -26,3 +26,7 @@ PRODUCTION = True
 # APScheduler
 TASK_FETCHER = True
 TASK_INDEXER = True
+# Optional: configure background task intervals (in seconds)
+# Defaults: fetcher=240, indexer=60
+TASK_FETCHER_INTERVAL_SECONDS = 60 * 4
+TASK_INDEXER_INTERVAL_SECONDS = 60

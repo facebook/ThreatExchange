@@ -41,6 +41,11 @@ ROLE_CURATOR = True
 TASK_FETCHER = True
 TASK_INDEXER = True
 TASK_INDEX_CACHE = True
+# Optional: configure background task intervals (in seconds)
+# Defaults: fetcher=240, indexer=60, index cache refresh=30
+TASK_FETCHER_INTERVAL_SECONDS = 60 * 4
+TASK_INDEXER_INTERVAL_SECONDS = 60
+TASK_INDEX_CACHE_INTERVAL_SECONDS = 30
 
 # Core functionality configuration
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(

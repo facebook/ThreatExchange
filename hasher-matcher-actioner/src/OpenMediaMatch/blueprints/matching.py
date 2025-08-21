@@ -439,7 +439,7 @@ def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
                 f"Match Index Refresh[{name}]",
                 entry.periodic_task,
                 trigger="interval",
-                seconds=30,
+                seconds=int(app.config.get("TASK_INDEX_CACHE_INTERVAL_SECONDS", 30)),
                 start_date=datetime.datetime.now() - datetime.timedelta(seconds=29),
             )
         scheduler.app.logger.info(
