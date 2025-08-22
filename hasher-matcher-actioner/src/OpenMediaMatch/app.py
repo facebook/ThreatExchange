@@ -132,7 +132,7 @@ def create_app() -> flask.Flask:
                     "Fetcher",
                     fetcher.apscheduler_fetch_all,
                     trigger="interval",
-                    seconds=60 * 4,
+                    seconds=int(app.config.get("TASK_FETCHER_INTERVAL_SECONDS", 60)),
                     start_date=now + datetime.timedelta(seconds=30),
                 )
             if app.config.get("TASK_INDEXER", False):
@@ -141,7 +141,7 @@ def create_app() -> flask.Flask:
                     "Indexer",
                     build_index.apscheduler_build_all_indices,
                     trigger="interval",
-                    seconds=60,
+                    seconds=int(app.config.get("TASK_INDEXER_INTERVAL_SECONDS", 60)),
                     start_date=now + datetime.timedelta(seconds=15),
                 )
             app.logger.info("Started Apscheduler, initial tasks: %s", tasks)
