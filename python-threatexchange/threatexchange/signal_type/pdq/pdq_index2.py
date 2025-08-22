@@ -7,6 +7,7 @@ Implementation of SignalTypeIndex abstraction for PDQ
 import typing as t
 import faiss
 import numpy as np
+import weakref
 
 
 from threatexchange.signal_type.index import (
@@ -101,6 +102,9 @@ class _PDQFaissIndex:
 
     def __init__(self, faiss_index: faiss.Index) -> None:
         self.faiss_index = faiss_index
+        self._finalizer = weakref.finalize(
+            self, _PDQFaissIndex._finalize_faiss, self.faiss_index
+        )
 
     def add(self, pdq_strings: t.Sequence[str]) -> None:
         """
@@ -133,3 +137,23 @@ class _PDQFaissIndex:
 
     def __setstate__(self, data):
         self.faiss_index = faiss.deserialize_index(data)
+        self._finalizer = weakref.finalize(
+            self, _PDQFaissIndex._finalize_faiss, self.faiss_index
+        )
+
+    def dispose(self) -> None:
+        try:
+            reset_fn = getattr(self.faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _finalize_faiss(faiss_index: faiss.Index) -> None:
+        try:
+            reset_fn = getattr(faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass

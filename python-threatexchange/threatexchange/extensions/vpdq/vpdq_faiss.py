@@ -7,6 +7,7 @@ from threatexchange.signal_type.pdq.pdq_utils import BITS_IN_PDQ
 import typing as t
 import numpy
 import binascii
+import weakref
 
 
 class VPDQHashIndex:
@@ -18,6 +19,9 @@ class VPDQHashIndex:
         """
         self.faiss_index = (
             faiss.IndexBinaryFlat(BITS_IN_PDQ) if faiss_index is None else faiss_index
+        )
+        self._finalizer = weakref.finalize(
+            self, VPDQHashIndex._finalize_faiss, self.faiss_index
         )
 
     def add_single_video(self, hashes: t.List[VpdqCompactFeature]) -> None:
@@ -83,3 +87,24 @@ class VPDQHashIndex:
 
     def __setstate__(self, data):
         self.faiss_index = faiss.deserialize_index_binary(data)
+        # Re-register finalizer after unpickling
+        self._finalizer = weakref.finalize(
+            self, VPDQHashIndex._finalize_faiss, self.faiss_index
+        )
+
+    def dispose(self) -> None:
+        try:
+            reset_fn = getattr(self.faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _finalize_faiss(faiss_index: faiss.Index) -> None:
+        try:
+            reset_fn = getattr(faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass
