@@ -20,6 +20,9 @@ class VPDQHashIndex:
             faiss.IndexBinaryFlat(BITS_IN_PDQ) if faiss_index is None else faiss_index
         )
 
+    def reset(self) -> None:
+        self.faiss_index.reset()
+
     def add_single_video(self, hashes: t.List[VpdqCompactFeature]) -> None:
         """
         Args:

@@ -215,6 +215,14 @@ class SignalTypeIndex(t.Generic[T]):
         ret.add_all(entries)
         return ret
 
+    def reset(cls: t.Type[Self]) -> None:
+        """
+        Reset the index to an empty state.
+
+        Used to correctly handling garbage collection when an index is no longer needed.
+        """
+        raise NotImplementedError
+
     # TODO - probably move add() methods to a mixin instead
     def add(self, signal_str: str, entry: T) -> None:
         """

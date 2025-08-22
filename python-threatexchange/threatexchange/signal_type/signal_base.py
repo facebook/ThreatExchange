@@ -215,6 +215,9 @@ class TrivialSignalTypeIndex(index.SignalTypeIndex[index.T]):
     def __init__(self) -> None:
         self.state: t.Dict[str, t.List[index.T]] = {}
 
+    def reset(self) -> None:
+        self.state: t.Dict[str, t.List[index.T]] = {}
+
     def query(self, query: str) -> t.List[index.IndexMatch[index.T]]:
         return [
             index.IndexMatch(index.SignalSimilarityInfo(), meta)
@@ -243,6 +246,9 @@ class TrivialLinearSearchHashIndex(index.SignalTypeIndex[index.T]):
     def __init__(self) -> None:
         self.state: t.List[t.Tuple[str, index.T]] = []
 
+    def reset(self) -> None:
+        self.state: t.Dict[str, t.List[index.T]] = {}
+
     def query(self, query_hash: str) -> t.List[index.IndexMatch[index.T]]:
         ret = []
         for hash, payload in self.state:
@@ -268,6 +274,9 @@ class TrivialLinearSearchMatchIndex(index.SignalTypeIndex[index.T]):
     def __init__(self) -> None:
         self.state: t.List[t.Tuple[str, index.T]] = []
         assert issubclass(self._SIGNAL_TYPE, MatchesStr)
+
+    def reset(self) -> None:
+        self.state: t.Dict[str, t.List[index.T]] = {}
 
     def query(self, query_hash: str) -> t.List[index.IndexMatch[index.T]]:
         ret = []
