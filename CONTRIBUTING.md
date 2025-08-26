@@ -21,7 +21,7 @@ Here's an easy way to get started:
 
    git clone git@github.com:your-username/ThreatExchange
 
-Next, [fork]([fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo.
+Next, [fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo.
 Here's where you'll push development branches. Note the name, we'll need it in the next step.
 
 Next, we'll add your forked copy as a remote.
