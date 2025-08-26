@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import typing as t
+import weakref
 import faiss
 import binascii
 import numpy
@@ -32,6 +33,11 @@ class PDQHashIndex(ABC):
     def __init__(self, faiss_index: faiss.IndexBinary) -> None:
         self.faiss_index = faiss_index
         super().__init__()
+        # Ensure native resources are released when the wrapper is GC'd, even if
+        # callers forget to dispose explicitly. Do not capture `self`.
+        self._finalizer = weakref.finalize(
+            self, PDQHashIndex._finalize_faiss, self.faiss_index
+        )
 
     @abstractmethod
     def hash_at(self, idx: int) -> str:
@@ -148,6 +154,27 @@ class PDQHashIndex(ABC):
 
     def __setstate__(self, data):
         self.faiss_index = faiss.deserialize_index_binary(data)
+        # Re-register finalizer after unpickling
+        self._finalizer = weakref.finalize(
+            self, PDQHashIndex._finalize_faiss, self.faiss_index
+        )
+
+    def dispose(self) -> None:
+        try:
+            reset_fn = getattr(self.faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass
+
+    @staticmethod
+    def _finalize_faiss(faiss_index: faiss.IndexBinary) -> None:
+        try:
+            reset_fn = getattr(faiss_index, "reset", None)
+            if callable(reset_fn):
+                reset_fn()
+        except Exception:
+            pass
 
 
 class PDQFlatHashIndex(PDQHashIndex):
@@ -294,3 +321,12 @@ class PDQMultiHashIndex(PDQHashIndex):
     def __setstate__(self, data):
         super().__setstate__(data)
         self.__construct_index_rev_map()
+
+    def dispose(self) -> None:
+        try:
+            super().dispose()
+        finally:
+            try:
+                self.index_rev_map = None
+            except Exception:
+                pass
