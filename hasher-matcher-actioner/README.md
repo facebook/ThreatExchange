@@ -52,7 +52,7 @@ HMA requires a configuration file passed as an environment variable, `OMM_CONFIG
 HMA requires configuration for the database connection to postgresql, if you're not using the `docker-compose` approach described above, you will need to set the database URI for HMA to connect to. For the docker commands below, you may need to specify the network on which the postgresql database is available, in which case the commands may look something like the following:
 
 ```sh
-docker run --net development_default -p 5100:5100 -e OMM_CONFIG="/reference_configs/development_omm_config.py" -e OMM_DATABASE_URI="postgresql://postgres:@postgresql/hma" ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
+docker run --rm --net development_default -p 5100:5100 -e OMM_CONFIG="/reference_configs/development_omm_config.py" -e OMM_DATABASE_URI="postgresql://postgres:@postgresql/hma" ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
 ```
 
 #### Running the Application in Development
@@ -60,14 +60,14 @@ docker run --net development_default -p 5100:5100 -e OMM_CONFIG="/reference_conf
 To run HMA in a development environment using Docker, we first need to run the database migrations:
 
 ```bash
-$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
+$ docker run --rm -e OMM_CONFIG='/reference_configs/development_omm_config.py' ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
 ```
 
 
 Then we can start the server with:
 
 ```bash
-$ docker run -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma
+$ docker run --rm -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma
 ```
 
 This command sets the necessary environment variable and exposes the app on port 5100 of your host machine, making the API accessible locally.
@@ -79,7 +79,7 @@ For production environments, you'll usually end up with specific configuration f
 The `ghcr.io/facebook/threatexchange/hma` uses Gunicorn by default, if we had our own configuration file in a `config` directory named `config/production.py`, in docker we can use that as follows:
 
 ```bash
-$ docker run -v 'config:/config:ro' -e OMM_CONFIG='/config/production.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
+$ docker run --rm -v 'config:/config:ro' -e OMM_CONFIG='/config/production.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
 ```
 
 #### Notes:
