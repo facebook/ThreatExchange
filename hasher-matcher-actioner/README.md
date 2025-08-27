@@ -1,6 +1,6 @@
 # Hasher Matcher Actioner (HMA)
 
-_Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](#hma-10-aws-hma---hma-20-open-media-match). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)_
+_Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](./docs/history.md). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)_
 
 # Project Introduction
 
