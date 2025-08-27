@@ -47,6 +47,14 @@ You can see a complete example using Docker Compose in the provided [docker-comp
 
 HMA requires a configuration file passed as an environment variable, `OMM_CONFIG`, which specifies various operational parameters. An [example configuration file](./reference_omm_configs/development_omm_config.py) can be found in the repository for you to customize according to your needs.
 
+#### Database Connection
+
+HMA requires configuration for the database connection to postgresql, if you're not using the `docker-compose` approach described above, you will need to set the database URI for HMA to connect to. For the docker commands below, you may need to specify the network on which the postgresql database is available, in which case the commands may look something like the following:
+
+```sh
+docker run --net development_default -p 5100:5100 -e OMM_CONFIG="/reference_configs/development_omm_config.py" -e OMM_DATABASE_URI="postgresql://postgres:@postgresql/hma" ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
+```
+
 #### Running the Application in Development
 
 To run HMA in a development environment using Docker, we first need to run the database migrations:
