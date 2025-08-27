@@ -74,9 +74,9 @@ This command sets the necessary environment variable and exposes the app on port
 
 #### Running the Application in Production
 
-For production environments, it is recommended to use a more robust server like Gunicorn instead of Flask's built-in server. Also, ensure that only a single instance of the curator role is active at any time to manage the indexing and download of hash bank data effectively.
+For production environments, you'll usually end up with specific configuration for your environment, for instance, only running certain roles (curator, hasher, matcher) or including specific signal types or exchanges. You should ensure that only a single instance of the curator role is active at any time to manage the indexing and download of hash bank data effectively.
 
-Here is an example command to run the application with Gunicorn:
+The `ghcr.io/facebook/threatexchange/hma` uses Gunicorn by default, if we had our own configuration file in a `config` directory named `config/production.py`, in docker we can use that as follows:
 
 ```bash
 $ docker run -v 'config:/config:ro' -e OMM_CONFIG='/config/production.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
