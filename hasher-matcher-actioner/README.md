@@ -21,6 +21,7 @@ We have documentation on the following aspects of the HMA project:
 - [Architecture](./docs/architecture.md)
 - [Goals & Non-Goals](./docs/goals.md)
 - [Project History](./docs/history.md)
+- [User Interface](./docs/user-interface.md)
 - [API](./docs/api.md) (work in progress)
 
 ## Configurability
