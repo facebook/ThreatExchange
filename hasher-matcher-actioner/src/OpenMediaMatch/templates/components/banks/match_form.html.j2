@@ -130,13 +130,14 @@
         const banksList = result.banks.map(bankName => {
             const bank = bankData[bankName];
             const enabledRatio = bank ? (bank.matching_enabled_ratio * 100).toFixed(1) : 'Unknown';
-            const badgeClass = bank && bank.matching_enabled_ratio > 0.8 ? 'bg-success' : 
-                              bank && bank.matching_enabled_ratio > 0.5 ? 'bg-warning' : 'bg-danger';
+            // Only tooltip if not 100% enabled, use warning color for partial rollouts
+            const badgeClass = bank && bank.matching_enabled_ratio < 1.0 ? 'bg-warning' : 'bg-success';
+            const showBadge = bank && bank.matching_enabled_ratio < 1.0;
             
             return `
                 <li class="list-group-item">
                     <span class="fw-bold">${bankName}</span>
-                    <span class="badge ${badgeClass} rounded-pill ms-2" title="Matching Enabled Ratio">
+                    <span class="badge ${badgeClass} rounded-pill ms-2" title="${showBadge ? `Partial rollout: Only ${enabledRatio}% chance this bank will match in production` : ''}">
                         ${enabledRatio}%
                     </span>
                 </li>
