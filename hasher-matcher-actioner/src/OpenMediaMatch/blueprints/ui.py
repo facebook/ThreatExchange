@@ -109,10 +109,8 @@ def home():
 
     # Check if SEED_BANK_0 and SEED_BANK_1 exist yet
     bank_list = curation.banks_index()
-    contains_seed_bank_0 = any(
-        bank.name == "SEED_BANK_0" for bank in bank_list)
-    contains_seed_bank_1 = any(
-        bank.name == "SEED_BANK_1" for bank in bank_list)
+    contains_seed_bank_0 = any(bank.name == "SEED_BANK_0" for bank in bank_list)
+    contains_seed_bank_1 = any(bank.name == "SEED_BANK_1" for bank in bank_list)
 
     template_vars = {
         "signal": curation.get_all_signal_types(),
@@ -174,10 +172,10 @@ def upload():
     signals = hashing.hash_media_from_form_data()
 
     # Get bypass parameter from form data (default to True for backward compatibility)
-    bypass_enabled_ratio = request.form.get(
-        'bypass_enabled_ratio', 'true').lower() == 'true'
-    current_app.logger.debug(
-        f"[query] bypass_enabled_ratio: {bypass_enabled_ratio}")
+    bypass_enabled_ratio = (
+        request.form.get("bypass_enabled_ratio", "true").lower() == "true"
+    )
+    current_app.logger.debug(f"[query] bypass_enabled_ratio: {bypass_enabled_ratio}")
 
     current_app.logger.debug("[query] performing lookup")
     banks = {

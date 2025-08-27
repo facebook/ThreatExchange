@@ -79,8 +79,7 @@ class _SignalIndexInMemoryCache:
     def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
         now = time.time()
         # There's a race condition here, but it's unclear if we should solve it
-        curr_checkpoint = store.get_last_index_build_checkpoint(
-            self.signal_type)
+        curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             new_index = store.get_signal_type_index(self.signal_type)
             if new_index is None:
@@ -140,8 +139,7 @@ def raw_lookup():
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    include_distance = str_to_bool(
-        request.args.get("include_distance", "false"))
+    include_distance = str_to_bool(request.args.get("include_distance", "false"))
     lookup_signal_func = (
         lookup_signal_with_distance if include_distance else lookup_signal
     )
@@ -153,8 +151,7 @@ def query_index(
     signal: str, signal_type_name: str
 ) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
-    signal_type = _validate_and_transform_signal_type(
-        signal_type_name, storage)
+    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
     try:
         signal = signal_type.validate_signal_str(signal)
@@ -297,7 +294,9 @@ def lookup_post() -> TBankMatchBySignalType:
     return resp
 
 
-def lookup(signal: str, signal_type_name: str, bypass_coinflip: bool = False) -> TMatchByBank:
+def lookup(
+    signal: str, signal_type_name: str, bypass_coinflip: bool = False
+) -> TMatchByBank:
     current_app.logger.debug("performing lookup")
     results_by_bank_content_id = {
         r.metadata: r for r in query_index(signal, signal_type_name)
@@ -316,16 +315,13 @@ def lookup(signal: str, signal_type_name: str, bypass_coinflip: bool = False) ->
     # Always allow all banks, whether matching is enabled or not if bypass_coinflip is True
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random() if not bypass_coinflip else 0
-    current_app.logger.debug(
-        "coinflip: %s", coinflip)
+    current_app.logger.debug("coinflip: %s", coinflip)
     enabled_banks = {
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     }
+    current_app.logger.debug("enabled_banks: %s", enabled_banks)
     current_app.logger.debug(
-        "enabled_banks: %s", enabled_banks)
-    current_app.logger.debug(
-        "lookup matches %d banks (%d enabled_banks)", len(
-            banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_banks)", len(banks), len(enabled_banks)
     )
     results = defaultdict(list)
     for content in enabled_content:
@@ -423,12 +419,10 @@ def compare():
     for signal_type_str in request_data.keys():
         hashes_to_compare = request_data.get(signal_type_str)
         if type(hashes_to_compare) != list:
-            abort(
-                400, f"Comparison hashes for {signal_type_str} was not a list")
+            abort(400, f"Comparison hashes for {signal_type_str} was not a list")
         if hashes_to_compare.__len__() != 2:
             abort(400, f"Comparison hash list lenght must be exactly 2")
-        signal_type = _validate_and_transform_signal_type(
-            signal_type_str, storage)
+        signal_type = _validate_and_transform_signal_type(signal_type_str, storage)
         try:
             left = signal_type.validate_signal_str(hashes_to_compare[0])
             right = signal_type.validate_signal_str(hashes_to_compare[1])
@@ -452,8 +446,7 @@ def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
                 f"Match Index Refresh[{name}]",
                 entry.periodic_task,
                 trigger="interval",
-                seconds=int(app.config.get(
-                    "TASK_INDEX_CACHE_INTERVAL_SECONDS", 30)),
+                seconds=int(app.config.get("TASK_INDEX_CACHE_INTERVAL_SECONDS", 30)),
                 start_date=datetime.datetime.now() - datetime.timedelta(seconds=29),
             )
         scheduler.app.logger.info(
