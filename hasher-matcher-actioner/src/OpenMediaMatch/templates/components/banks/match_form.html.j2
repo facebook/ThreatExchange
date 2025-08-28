@@ -6,28 +6,125 @@
         <small><strong>Note:</strong> Bypass enabled ratio is checked - this will search all banks regardless of their matching enabled ratio.</small>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <form id="match_file" class="card-body">
-        <div class="row">
-            <div class="col">
-                <input class="form-control" type="file" name="file" required />
+    <div class="card-body">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="match-content-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="file-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#file-match-pane" type="button" role="tab">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload File
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="url-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#url-match-pane" type="button" role="tab">
+                    <i class="bi bi-link-45deg me-2"></i>Match by URL
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hash-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#hash-match-pane" type="button" role="tab">
+                    <i class="bi bi-hash me-2"></i>Match by Hash
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="match-content-tab-content">
+            <!-- File Upload Tab -->
+            <div class="tab-pane fade show active" id="file-match-pane" role="tabpanel">
+                <form id="match_file">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">File</label>
+                            <input class="form-control" type="file" name="file" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" name="media" id="content-type" required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                    {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div class="col">
-                <select class="form-select" name="media" id="content-type" required>
-                    <option selected disabled value="">Select content type</option>
-                    {% for c in content %}
-                        {% if c['enabled'] %}
-                            <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
+
+            <!-- URL Tab -->
+            <div class="tab-pane fade" id="url-match-pane" role="tabpanel">
+                <form id="match_url">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">URL</label>
+                            <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" name="media" required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                    {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
-            <div class="col">
-                <button type="submit" class="btn btn-primary">Find</button>
-            </div>
-            <div class="col">
-                <!-- for spacing -->
+
+            <!-- Hash Tab -->
+            <div class="tab-pane fade" id="hash-match-pane" role="tabpanel">
+                <form id="match_hash">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Signal Type</label>
+                            <select class="form-select" name="signal_type" required>
+                                <option selected disabled value="">Select signal type</option>
+                                {% for s in signal %}
+                                    <option value="{{s['name']}}">{{s['name']}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hash Value</label>
+                            <input class="form-control" type="text" name="signal_value" 
+                                   placeholder="Enter hash value (e.g., PDQ hash, MD5 hash)" 
+                                   pattern="[a-fA-F0-9]+" 
+                                   title="Please enter a valid hexadecimal hash value"
+                                   required />
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Enter the exact hash value you want to search for.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col d-flex align-items-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
+
+        <!-- Bypass Option (applies to both tabs) -->
         <div class="row mt-3">
             <div class="col">
                 <div class="form-check">
@@ -38,148 +135,10 @@
                 </div>
             </div>
         </div>
-    </form>
+    </div>
     <div id="matches">
         <!-- Added to by javascript -->
     </div>
 </div>
 
-<script>
-    const match_form = document.getElementById("match_file");
-    const matches = document.getElementById("matches");
-    const bypassCheckbox = document.getElementById("bypass-enabled-ratio");
-    const bypassWarning = document.getElementById("bypass-warning");
-    let banks = [];
-    
-    // Toggle warning visibility based on checkbox state
-    const toggleWarning = () => {
-        if (bypassCheckbox.checked) {
-            bypassWarning.style.display = 'block';
-        } else {
-            bypassWarning.style.display = 'none';
-        }
-    };
-    
-    // Initialize warning state
-    toggleWarning();
-    
-    // Listen for checkbox changes
-    bypassCheckbox.addEventListener('change', toggleWarning);
-    match_form.addEventListener("submit", (event) => {
-        event.preventDefault();
-        const formData = new FormData();
-
-        // Append the selected file and content type to the FormData
-        formData.append(event.target.media.value, event.target.file.files[0]);
-        
-        // Append the bypass enabled ratio parameter
-        formData.append('bypass_enabled_ratio', event.target.bypass_enabled_ratio.checked);
-
-        fetch('/ui/query', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(async (data) => {
-                // Handle the response from the server here
-                banks = data.banks;
-                await renderMatchResult(data);
-                highlightMatchedResults(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-    })
-
-    
-    const clearMatches = () => {
-        matches.innerHTML = "";
-        banks.forEach((bankName) => {
-            document.getElementById(`bank_item_${bankName}`).classList.remove("bg-light");
-        })
-    }
-    
-    // Function to fetch bank data including enabled ratios
-    const fetchBankData = async (bankNames) => {
-        try {
-            const bankPromises = bankNames.map(bankName => 
-                fetch(`/c/bank/${bankName}`)
-                    .then(response => response.json())
-                    .catch(error => {
-                        console.error(`Error fetching bank ${bankName}:`, error);
-                        return { name: bankName, matching_enabled_ratio: 'Unknown' };
-                    })
-            );
-            
-            const bankDataArray = await Promise.all(bankPromises);
-            return bankDataArray.reduce((acc, bankData) => {
-                acc[bankData.name] = bankData;
-                return acc;
-            }, {});
-        } catch (error) {
-            console.error('Error fetching bank data:', error);
-            return {};
-        }
-    };
-
-    const renderMatchResult = async (result) => {
-        // Fetch bank data with enabled ratios
-        const bankData = await fetchBankData(result.banks);
-        
-        // Render matched banks with enabled ratios
-        const banksList = result.banks.map(bankName => {
-            const bank = bankData[bankName];
-            const enabledRatio = bank ? (bank.matching_enabled_ratio * 100).toFixed(1) : 'Unknown';
-            // Only tooltip if not 100% enabled, use warning color for partial rollouts
-            const badgeClass = bank && bank.matching_enabled_ratio < 1.0 ? 'bg-warning' : 'bg-success';
-            const showBadge = bank && bank.matching_enabled_ratio < 1.0;
-            
-            return `
-                <li class="list-group-item">
-                    <span class="fw-bold">${bankName}</span>
-                    <span class="badge ${badgeClass} rounded-pill ms-2" title="${showBadge ? `This bank is only partially enabled, and may not count as matching in production based on coinflip. Enable the bank at 100% to ensure it matches consistently.` : ''}">
-                        ${enabledRatio}%
-                    </span>
-                </li>
-            `;
-        }).join('');
-        
-        const content = `
-                <div class="card-body">
-                    <h5 class="card-title">Matched Banks</h5>
-                    <ul class="list-group list-group-flush mb-3">${banksList}</ul>
-                    <h5 class="card-title">Hash Values:</h5>
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                        <table class="table table-hover table-sm">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th>Key</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${Object.entries(result.hashes).map(([key, value]) => `
-                                    <tr>
-                                        <td class="fw-medium">${key}</td>
-                                        <td class="font-monospace text-truncate" style="max-width: 200px;" title="${value}">${value}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <button type="button" class="btn btn-secondary mt-3" onclick="clearMatches()">Clear</button>
-                </div>
-        `
-        // Append both the banks and hashes sections to the "matches" element
-        matches.innerHTML = content;
-    }
-
-    const highlightMatchedResults = (result) => {
-        // Render matched banks
-        result.banks.forEach((bankName) => {
-            document.getElementById(`bank_item_${bankName}`).classList.add("bg-light");
-        })
-    }
-    
-    
-</script>
+<script src="{{ url_for('static', filename='js/match-form.js') }}"></script>

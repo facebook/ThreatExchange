@@ -119,6 +119,25 @@ def hash_media() -> dict[str, str]:
     if media_url is None:
         abort(400, "Missing required parameter: url")
 
+    try:
+        return hash_url_content(media_url)
+    except ValueError as e:
+        abort(400, str(e))
+
+
+def hash_url_content(media_url: str) -> dict[str, str]:
+    """
+    Utility function to hash content from a URL.
+
+    Args:
+        media_url: URL to the media content
+
+    Returns:
+        Mapping of signal types to hash values
+
+    Raises:
+        ValueError: If URL is invalid or content cannot be hashed
+    """
     if not is_valid_url(media_url):
         abort(400, "Invalid or unsafe URL provided")
 

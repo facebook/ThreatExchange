@@ -37,110 +37,23 @@
                 <td style="background-color: transparent;">
                     {% with bank_title=bank['name'] %}
                     {% include 'components/banks/add_to_bank_form.html.j2' %}
+                    {% include 'components/banks/remove_content_modal.html.j2' %}
                     {% endwith %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
-
     </table>
 </div>
+
+<script src="{{ url_for('static', filename='js/bank-management.js') }}"></script>
 <script>
-    const banksData = [
+    // Make banksData available globally for the bank management script
+    window.banksData = [
         {% for bank in bankList %}
     {
         name: "{{ bank.name|e }}"
     } {% if not loop.last %}, {% endif %}
     {% endfor %}
     ];
-
-    banksData.forEach(function (bank) {
-        const bankTitle = bank.name;
-        const addContentModal = document.getElementById("add-content-modal-" + bankTitle);
-        const addContentToBankForm = document.getElementById("add_content_to_bank_" + bankTitle);
-        const formContent = addContentToBankForm.innerHTML;
-        addContentToBankForm.addEventListener("submit", (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            formData.append(event.target.content_type.value, event.target.file.files[0]);
-            formData.delete("file");
-
-            fetch(`/c/bank/${bankTitle}/content`, {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(data => {
-                    // Handle the response from the server here
-                    renderAddBankResult(data);
-
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-        })
-
-        // add file type listener
-        addContentModal.addEventListener('shown.bs.modal', function () {
-            const fileInput = document.getElementById('bank-add-file-input-' + bankTitle);
-            document.addEventListener('change', (e) => {
-                if (e.target.id === 'bank-add-content-type-' + bankTitle) {
-                    // Special case selections for our well known types
-                    if (e.target.value === 'photo') {
-                        fileInput.accept = "image/*";
-                    } else if (e.target.value === 'video') {
-                        fileInput.accept = "video/*";
-                    } else {
-                        fileInput.accept = "file";
-                    }
-                }
-            });
-        });
-
-        // reset modal innerHTML on close
-        addContentModal.addEventListener('hidden.bs.modal', function () {
-            addContentToBankForm.innerHTML = formContent;
-        });
-
-        const renderAddBankResult = (result) => {
-            // Render hashes table
-            const hashTable = HashTable(result);
-
-            // render on HTML
-            addContentToBankForm.innerHTML = hashTable;
-        }
-
-        const HashTable = (result) => {
-            return `
-<div class="modal-header">
-    <h3 class="text-success">Success!</h3>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-</div>
-<div class="modal-body">
-    <h4>Added Hashes:</h4>
-    <p>Content ID: ${result.id}</p>
-    <h4>Hash Values:</h4>
-    <table class="table table-hover"=>
-        <thead>
-            <tr>
-                <th>Key</th>
-                <th>Value</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${Object.entries(result.signals).map(([key, value]) => `
-            <tr>
-                <td>${key}</td>
-                <td style="overflow: scroll; max-width: 200px; white-space: no-wrap;">${value}</td>
-            </tr>
-            `).join('')}
-        </tbody>
-
-    </table>
-</div>
-`;
-        }
-
-    });
-
 </script>

@@ -1,41 +1,132 @@
 {# Copyright (c) Meta Platforms, Inc. and affiliates. #}
-<button type="button" class="btn btn-light" data-bs-toggle="modal"
-    data-bs-target="#add-content-modal-{{bank_title}}">Add content</button>
-<!-- Modal -->
+<div class="btn-group" role="group">
+    <button type="button" class="btn btn-light" data-bs-toggle="modal"
+        data-bs-target="#add-content-modal-{{bank_title}}">Add Content</button>
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal"
+        data-bs-target="#remove-content-modal-{{bank_title}}">Remove Content</button>
+</div>
+
+<!-- Add Content Modal -->
 <div class="modal fade" id="add-content-modal-{{bank_title}}" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 60%; max-width: none;">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 70%; max-width: none;">
         <div class="modal-content modal-xl" style="padding: 20px">
-            <form id="add_content_to_bank_{{ bank_title }}">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5">Add Content: {{ bank_title }}</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col">
-                            <select id="bank-add-content-type-{{ bank_title }}" class="form-select" name="content_type"
-                                required>
-                                <option selected disabled value="">Select content type</option>
-                                {% for c in content %}
-                                {% if c['enabled'] %}
-                                <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col">
-                            <input id="bank-add-file-input-{{ bank_title }}" class="form-control" type="file"
-                                name="file" required>
-                        </div>
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Add Content to {{ bank_title }}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs" id="add-content-tabs-{{bank_title}}" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="file-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#file-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload File
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="url-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#url-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-link-45deg me-2"></i>Add by URL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="hash-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#hash-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-hash me-2"></i>Add by Hash
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content mt-3" id="add-content-tab-content-{{bank_title}}">
+                    <!-- File Upload Tab -->
+                    <div class="tab-pane fade show active" id="file-pane-{{bank_title}}" role="tabpanel">
+                        <form id="add_content_file_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Content Type</label>
+                                    <select id="bank-add-content-type-{{ bank_title }}" class="form-select" name="content_type" required>
+                                        <option selected disabled value="">Select content type</option>
+                                        {% for c in content %}
+                                        {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">File</label>
+                                    <input id="bank-add-file-input-{{ bank_title }}" class="form-control" type="file" name="file" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Content
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- URL Tab -->
+                    <div class="tab-pane fade" id="url-pane-{{bank_title}}" role="tabpanel">
+                        <form id="add_content_url_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Content Type</label>
+                                    <select class="form-select" name="content_type" required>
+                                        <option selected disabled value="">Select content type</option>
+                                        {% for c in content %}
+                                        {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">URL</label>
+                                    <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Add from URL
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Hash Tab -->
+                    <div class="tab-pane fade" id="hash-pane-{{bank_title}}" role="tabpanel">
+                        <form id="add_content_hash_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Signal Type</label>
+                                    <select class="form-select" name="signal_type" required>
+                                        <option selected disabled value="">Select signal type</option>
+                                        {% for s in signal %}
+                                        <option value="{{s['name']}}">{{s['name']}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Hash Value</label>
+                                    <input class="form-control font-monospace" type="text" name="signal_value" 
+                                           placeholder="Enter hash value" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Add Hash
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Add</button>
-                </div>
-            </form>
-            <div id="hash_result_{{ bank_title }}">
-                <!-- Added to by javascript -->
+            </div>
+            <div id="add_result_{{ bank_title }}">
+                <!-- Results added by JavaScript -->
             </div>
         </div>
     </div>
 </div>
+
