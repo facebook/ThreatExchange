@@ -7,6 +7,7 @@ from flask import Blueprint, abort, render_template, current_app
 from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
+from OpenMediaMatch.blueprints.matching import MatchWithDistance
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
@@ -247,38 +248,47 @@ def query_hash():
     return _perform_lookup_with_details(signals, bypass_enabled_ratio)
 
 
-def _perform_lookup_with_details(signals: dict[str, str], bypass_enabled_ratio: bool) -> dict:
+def _perform_lookup_with_details(
+    signals: dict[str, str], bypass_enabled_ratio: bool
+) -> dict:
     """
     Common lookup function that returns detailed match information including
     content IDs and distances for all query types.
     """
     current_app.logger.debug("[_perform_lookup_with_details] performing lookup")
-    
+
     # Get all matches with detailed information
-    all_matches = []
+    all_matches: list[dict[str, t.Any]] = []
     bank_names = set()
-    
+
     for st_name, signal in signals.items():
-        bank_matches = matching.lookup(signal, st_name, bypass_coinflip=bypass_enabled_ratio)
+        bank_matches = matching.lookup(
+            signal, st_name, bypass_coinflip=bypass_enabled_ratio
+        )
         for bank_name, matches in bank_matches.items():
             bank_names.add(bank_name)
             for match in matches:
-                all_matches.append({
-                    "bank_name": bank_name,
-                    "content_id": match["bank_content_id"],
-                    "distance": match["distance"],
-                    "signal_type": st_name,
-                    "signal_value": signal
-                })
-    
+                all_matches.append(
+                    {
+                        "bank_name": bank_name,
+                        "content_id": match["bank_content_id"],
+                        "distance": match["distance"],
+                        "signal_type": st_name,
+                        "signal_value": signal,
+                    }
+                )
+
     # Sort matches by distance (closest matches first)
-    all_matches.sort(key=lambda x: float(x["distance"]) if x["distance"].replace('.', '').isdigit() else float('inf'))
-    
-    return {
-        "hashes": signals,
-        "banks": sorted(bank_names),
-        "matches": all_matches
-    }
+    all_matches.sort(
+        key=lambda x: (
+            float(t.cast(str, x["distance"]))
+            if t.cast(str, x["distance"]).replace(".", "").isdigit()
+            else float("inf")
+        )
+    )
+
+    return {"hashes": signals, "banks": sorted(bank_names), "matches": all_matches}
+
 
 def _hash_url_for_search(url: str, content_type: str) -> dict[str, str]:
     """Utility function to hash a URL for content search."""
