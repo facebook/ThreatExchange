@@ -14,6 +14,7 @@ import pickle
 import pathlib
 import typing as t
 import logging
+import os
 
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
@@ -180,4 +181,10 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
         tmpfile = file.with_name(f".{file.name}")
         with tmpfile.open("wb") as f:
             pickle.dump(delta, f)
+
+        # delete the target file first if it exists, otherwise windows doesn't like it
+        if os.path.exists(file):
+            os.remove(file)
+
+        # move temp file to target
         tmpfile.rename(file)
