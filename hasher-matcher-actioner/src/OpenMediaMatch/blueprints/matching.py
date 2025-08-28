@@ -284,16 +284,19 @@ def lookup_post() -> TBankMatchBySignalType:
         abort(403, "Hashing is disabled, missing role")
 
     hashes = hashing.hash_media_from_form_data()
+    bypass_coinflip = request.args.get("bypass_coinflip", "false") == "true"
 
     resp = {}
     for signal_type in hashes.keys():
         signal = hashes[signal_type]
-        resp[signal_type] = lookup(signal, signal_type)
+        resp[signal_type] = lookup(signal, signal_type, bypass_coinflip)
 
     return resp
 
 
-def lookup(signal: str, signal_type_name: str) -> TMatchByBank:
+def lookup(
+    signal: str, signal_type_name: str, bypass_coinflip: bool = False
+) -> TMatchByBank:
     current_app.logger.debug("performing lookup")
     results_by_bank_content_id = {
         r.metadata: r for r in query_index(signal, signal_type_name)
@@ -308,11 +311,15 @@ def lookup(signal: str, signal_type_name: str) -> TMatchByBank:
         len(enabled_content),
     )
     banks = {c.bank.name: c.bank for c in enabled_content}
+
+    # Always allow all banks, whether matching is enabled or not if bypass_coinflip is True
     rand = random.Random(request.args.get("seed"))
-    coinflip = rand.random()
+    coinflip = rand.random() if not bypass_coinflip else 0
+    current_app.logger.debug("coinflip: %s", coinflip)
     enabled_banks = {
         b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
     }
+    current_app.logger.debug("enabled_banks: %s", enabled_banks)
     current_app.logger.debug(
         "lookup matches %d banks (%d enabled_banks)", len(banks), len(enabled_banks)
     )
