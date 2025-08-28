@@ -55,24 +55,39 @@ You can see a complete example using Docker Compose in the provided [docker-comp
 
 HMA requires a configuration file passed as an environment variable, `OMM_CONFIG`, which specifies various operational parameters. An [example configuration file](./reference_omm_configs/development_omm_config.py) can be found in the repository for you to customize according to your needs.
 
-#### Running the Application in Development
+#### Database Connection
 
-To run HMA in a development environment using Docker, use the following command:
+HMA requires configuration for the database connection to postgresql, if you're not using the `docker-compose` approach described above, you will need to set the database URI for HMA to connect to. For the docker commands below, you may need to specify the network on which the postgresql database is available, in which case the commands may look something like the following:
 
-```bash
-$ docker run -e OMM_CONFIG='/build/reference_omm_configs/development_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma flask --app OpenMediaMatch.app run --host=0.0.0.0
+```sh
+docker run --rm --net development_default -p 5100:5100 -e OMM_CONFIG="/reference_configs/development_omm_config.py" -e OMM_DATABASE_URI="postgresql://postgres:@postgresql/hma" ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
 ```
 
-This command sets the necessary environment variable and exposes the app on port 5000 of your host machine, making the API accessible locally.
+#### Running the Application in Development
+
+To run HMA in a development environment using Docker, we first need to run the database migrations:
+
+```bash
+$ docker run --rm -e OMM_CONFIG='/reference_configs/development_omm_config.py' ghcr.io/facebook/threatexchange/hma /app/scripts/db-migrate.sh
+```
+
+
+Then we can start the server with:
+
+```bash
+$ docker run --rm -e OMM_CONFIG='/reference_configs/development_omm_config.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma
+```
+
+This command sets the necessary environment variable and exposes the app on port 5100 of your host machine, making the API accessible locally.
 
 #### Running the Application in Production
 
-For production environments, it is recommended to use a more robust server like Gunicorn instead of Flask's built-in server. Also, ensure that only a single instance of the curator role is active at any time to manage the indexing and download of hash bank data effectively.
+For production environments, you'll usually end up with specific configuration for your environment, for instance, only running certain roles (curator, hasher, matcher) or including specific signal types or exchanges. You should ensure that only a single instance of the curator role is active at any time to manage the indexing and download of hash bank data effectively.
 
-Here is an example command to run the application with Gunicorn:
+The `ghcr.io/facebook/threatexchange/hma` uses Gunicorn by default, if we had our own configuration file in a `config` directory named `config/production.py`, in docker we can use that as follows:
 
 ```bash
-$ docker run -e OMM_CONFIG='/build/reference_omm_configs/production_omm_config.py' -p 5000:5000 ghcr.io/facebook/threatexchange/hma gunicorn --bind 0.0.0.0:5000 "OpenMediaMatch.app:create_app()"
+$ docker run --rm -v 'config:/config:ro' -e OMM_CONFIG='/config/production.py' -p 5100:5100 ghcr.io/facebook/threatexchange/hma"
 ```
 
 #### Notes:
