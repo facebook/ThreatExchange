@@ -1,6 +1,6 @@
 This file gives some high level suggestions and ongoing direction for the repository, and larger projects that might need help to complete, if you are a developer interested in donating more time.
 
-As of 8/2025, python-threatexchange is not in very active development, as most energy is being invested in one of the projects built on top of it: [Hasher-Matcher-Actioner (HMA)](https://github.com/facebook/ThreatExchange/new/main/hasher-matcher-actioner)
+As of 8/2025, python-threatexchange is not in very active development, as most energy is being invested in one of the projects built on top of it: [Hasher-Matcher-Actioner (HMA)](https://github.com/facebook/ThreatExchange/tree/main/hasher-matcher-actioner)
 
 Thus, many of these suggest next steps have a relationship with HMA.
 
@@ -27,7 +27,7 @@ Especially as HMA increases adoption, making sure that the core functionality in
 
 # Expansions that could expand the capabilities of HMA
 ## Building a new base interface for "Classifier"
-Issue: TBD
+Issue: https://github.com/facebook/ThreatExchange/issues/1864
 
 pytx was built with hashing and matching first, but many companies need help adopting services that don't share embeddings directly, such as Google's content safety API, or Amazon Rekognition, or even a self-trained image or video classifier.
 
