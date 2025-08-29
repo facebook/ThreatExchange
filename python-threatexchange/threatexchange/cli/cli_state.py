@@ -180,4 +180,4 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
         tmpfile = file.with_name(f".{file.name}")
         with tmpfile.open("wb") as f:
             pickle.dump(delta, f)
-        tmpfile.rename(file)
+        tmpfile.replace(file)
