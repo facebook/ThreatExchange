@@ -47,7 +47,7 @@ If you're operating at the scale where this becomes necessary, you will more tha
 
 ### Single instance
 
-![Single instance deployment](diagrams/deployment-strategy-single-instance.svg)
+![Single instance deployment](../diagrams/deployment-strategy-single-instance.svg)
 
 It's entirely possible to run everything on one machine. This has the advantage of being the easiest to set up and configure and is appropriate for:
 
@@ -59,7 +59,7 @@ A single-instance Postgres can be run as a sidecar container next to the API ser
 
 ### Redundant instances
 
-![Redundant instance deployment](diagrams/deployment-strategy-redundant-instances.svg)
+![Redundant instance deployment](../diagrams/deployment-strategy-redundant-instances.svg)
 
 A typical production environment would require some degree of redundancy such that the loss of one server doesn't cause a service outage. In this scenario, you would run two identically sized Docker containers, on two separate Docker or Kubernetes hosts, with the Postgres database service in a third location with a redundancy strategy of its own.
 
@@ -71,7 +71,7 @@ Building on the above, as traffic grows, the containers can simply be resized to
 
 ### Horizontal scale-out - split roles
 
-![Split role deployment](diagrams/deployment-strategy-split-roles.svg)
+![Split role deployment](../diagrams/deployment-strategy-split-roles.svg)
 
 At the higher end of the scaling curve, it becomes advantageous to run the API in a split-role pattern. This simply means having disjoint sets of instances in role groups where each role group is dedicated to one particular functional area of HMA.
 
@@ -104,13 +104,13 @@ Routing of incoming API requests to the correct role group backend is made as si
 
 Two concurrent API call flows are illustrated here. From the left, we have the hashing/matching flow that would typically be called at high frequency in the content upload path for real-time or near-real-time scanning of uploaded content. From the right, we have administrative actions from the site operators who are updating the database of known violating content.
 
-![Match request/response flow](diagrams/match-request-response-flow.svg)
+![Match request/response flow](../diagrams/match-request-response-flow.svg)
 
 ## Backend
 
 ### Database Schema
 
-![Database schema](diagrams/database-schema.svg)
+![Database schema](../diagrams/database-schema.svg)
 
 ### Indexing: FAISS
 
