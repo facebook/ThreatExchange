@@ -1,6 +1,8 @@
 # API
 
-As HMA is not planning to provide a production UI, the API is the key point of integration. We hope that users are able to treat it as a “black box” with the API defining the inputs and outputs.
+While HMA provides a simple UI for debugging and development, scanning content at scale will require API integration. Additionally, if you wish to provide a UI with more capabilities like access control, you can use the API to build a more featureful version of the debugging UI.
+
+Note that there are multiple ways to set up a production deployment with their own cost tradeoffs. See [architecture.md](./architecture.md) for more details, especially about which stage to do hashing.
 
 ## Accessing the API
 
