@@ -267,11 +267,9 @@ def query_index_threshold(
     
     current_app.logger.debug("[lookup_signal_threshold] querying index")
     # Only CLIP signal types support query_threshold
-    if signal_type_name.lower() != 'clip':
-        abort(400, f"query_threshold is only supported for CLIP signal type, got '{signal_type_name}'")
     
     if not hasattr(index, 'query_threshold'):
-        abort(503, "CLIP index does not support query_threshold method")
+        abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
     
     results = index.query_threshold(signal, threshold)
     current_app.logger.debug("[lookup_signal_threshold] query complete")
@@ -295,12 +293,9 @@ def query_index_topk(
         abort(503, "index not yet ready")
     
     current_app.logger.debug("[lookup_signal_topk] querying index")
-    # Only CLIP signal types support query_top_k
-    if signal_type_name.lower() != 'clip':
-        abort(400, f"query_top_k is only supported for CLIP signal type, got '{signal_type_name}'")
     
     if not hasattr(index, 'query_top_k'):
-        abort(503, "CLIP index does not support query_top_k method")
+        abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
     
     results = index.query_top_k(signal, k)
     current_app.logger.debug("[lookup_signal_topk] query complete")
