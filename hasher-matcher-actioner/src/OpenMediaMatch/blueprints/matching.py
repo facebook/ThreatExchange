@@ -174,11 +174,9 @@ def lookup_threshold():
 
     results = query_index_threshold(signal, signal_type_name, threshold)
     storage = get_storage()
-    
     # Get signals for the results
     content_ids = [m.metadata for m in results]
     signals_by_content = storage.bank_content_get_signals(content_ids)
-    
     matches = [
         {
             "bank_content_id": m.metadata,
@@ -187,7 +185,6 @@ def lookup_threshold():
         }
         for m in results
     ]
-    
     return {"matches": matches}
 
 
@@ -211,11 +208,9 @@ def lookup_topk():
 
     results = query_index_topk(signal, signal_type_name, k)
     storage = get_storage()
-    
     # Get signals for the results
     content_ids = [m.metadata for m in results]
     signals_by_content = storage.bank_content_get_signals(content_ids)
-    
     matches = [
         {
             "bank_content_id": m.metadata,
@@ -224,7 +219,6 @@ def lookup_topk():
         }
         for m in results
     ]
-    
     return {"matches": matches}
 
 
@@ -266,9 +260,7 @@ def query_index_threshold(
         abort(503, "index not yet ready")
     if not hasattr(index, 'query_threshold'):
         abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
-    
     current_app.logger.debug("[lookup_signal_threshold] querying index")
-    
     results = index.query_threshold(signal, threshold)
     current_app.logger.debug("[lookup_signal_threshold] query complete")
     return results
@@ -291,9 +283,7 @@ def query_index_topk(
         abort(503, "index not yet ready")
     if not hasattr(index, 'query_top_k'):
         abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
-    
     current_app.logger.debug("[lookup_signal_topk] querying index")
-    
     results = index.query_top_k(signal, k)
     current_app.logger.debug("[lookup_signal_topk] query complete")
     return results
