@@ -45,6 +45,12 @@ class MatchWithDistance(t.TypedDict):
     distance: str
 
 
+class MatchWithDistanceAndSignal(t.TypedDict):
+    bank_content_id: int
+    distance: str
+    signal: str
+
+
 TMatchByBank = t.Mapping[str, t.Sequence[MatchWithDistance]]
 TBankMatchBySignalType = t.Mapping[str, TMatchByBank]
 
@@ -147,6 +153,75 @@ def raw_lookup():
     return {"matches": lookup_signal_func(signal, signal_type_name)}
 
 
+@bp.route("/lookup_threshold")
+def lookup_threshold():
+    """
+    Look up a hash in the similarity index using a custom threshold.
+
+    This endpoint allows querying with a specific similarity threshold
+    instead of using the default threshold for the signal type.
+
+    Input:
+     * Signal type (hash type)
+     * Signal value (the hash)
+     * Threshold (int) - maximum distance for matches (required)
+    Output:
+     * List of matching with content_id, distance, and signal values
+    """
+    signal = require_request_param("signal")
+    signal_type_name = require_request_param("signal_type")
+    threshold = int(require_request_param("threshold"))
+
+    results = query_index_threshold(signal, signal_type_name, threshold)
+    storage = get_storage()
+    # Get signals for the results
+    content_ids = [m.metadata for m in results]
+    signals_by_content = storage.bank_content_get_signals(content_ids)
+    matches = [
+        {
+            "bank_content_id": m.metadata,
+            "distance": m.similarity_info.pretty_str(),
+            "signal": signals_by_content.get(m.metadata, {}).get(signal_type_name, ""),
+        }
+        for m in results
+    ]
+    return {"matches": matches}
+
+
+@bp.route("/lookup_topk")
+def lookup_topk():
+    """
+    Look up the top K closest matches for a hash in the similarity index.
+
+    This endpoint returns the K closest matches regardless of threshold.
+
+    Input:
+     * Signal type (hash type)
+     * Signal value (the hash)
+     * k (int) - number of top matches to return (required)
+    Output:
+     * List of matching with content_id, distance, and signal values
+    """
+    signal = require_request_param("signal")
+    signal_type_name = require_request_param("signal_type")
+    k = int(require_request_param("k"))
+
+    results = query_index_topk(signal, signal_type_name, k)
+    storage = get_storage()
+    # Get signals for the results
+    content_ids = [m.metadata for m in results]
+    signals_by_content = storage.bank_content_get_signals(content_ids)
+    matches = [
+        {
+            "bank_content_id": m.metadata,
+            "distance": m.similarity_info.pretty_str(),
+            "signal": signals_by_content.get(m.metadata, {}).get(signal_type_name, ""),
+        }
+        for m in results
+    ]
+    return {"matches": matches}
+
+
 def query_index(
     signal: str, signal_type_name: str
 ) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
@@ -165,6 +240,52 @@ def query_index(
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
+    return results
+
+
+def query_index_threshold(
+    signal: str, signal_type_name: str, threshold: int
+) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
+    storage = get_storage()
+    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
+
+    try:
+        signal = signal_type.validate_signal_str(signal)
+    except Exception as e:
+        abort(400, f"invalid signal: {e}")
+
+    index = _get_index(signal_type)
+
+    if index is None:
+        abort(503, "index not yet ready")
+    if not hasattr(index, 'query_threshold'):
+        abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
+    current_app.logger.debug("[lookup_signal_threshold] querying index")
+    results = index.query_threshold(signal, threshold)
+    current_app.logger.debug("[lookup_signal_threshold] query complete")
+    return results
+
+
+def query_index_topk(
+    signal: str, signal_type_name: str, k: int
+) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
+    storage = get_storage()
+    signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
+
+    try:
+        signal = signal_type.validate_signal_str(signal)
+    except Exception as e:
+        abort(400, f"invalid signal: {e}")
+
+    index = _get_index(signal_type)
+
+    if index is None:
+        abort(503, "index not yet ready")
+    if not hasattr(index, 'query_top_k'):
+        abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
+    current_app.logger.debug("[lookup_signal_topk] querying index")
+    results = index.query_top_k(signal, k)
+    current_app.logger.debug("[lookup_signal_topk] query complete")
     return results
 
 
