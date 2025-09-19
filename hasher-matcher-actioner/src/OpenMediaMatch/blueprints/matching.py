@@ -264,8 +264,6 @@ def query_index_threshold(
 
     if index is None:
         abort(503, "index not yet ready")
-    
-    
     if not hasattr(index, 'query_threshold'):
         abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
     
@@ -291,7 +289,6 @@ def query_index_topk(
 
     if index is None:
         abort(503, "index not yet ready")
-    
     if not hasattr(index, 'query_top_k'):
         abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
     
