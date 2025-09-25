@@ -1,5 +1,5 @@
 # Hasher Matcher Actioner Roadmap
-This file gives some high level suggestions and ongoing direction for the Hasher Matcher Actioner (HMA) subproject in this repository, and larger projects that might need help to complete, if you are a developer interested in donating more time.
+This file gives some high level suggestions and ongoing direction for the Hasher Matcher Actioner (HMA) subproject in this repository, and larger projects if you are a developer interested in donating more time.
 As of 9/2025, HMA has active interest, and some ongoing development. Some of these features might imply adding features to the underlying [python-threatexchange](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange) library, also hosted in this repository.
 
 # Most Needed
