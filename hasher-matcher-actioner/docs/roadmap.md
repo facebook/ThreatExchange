@@ -1,6 +1,11 @@
 # Hasher Matcher Actioner Roadmap
 This file gives some high level suggestions and ongoing direction for the Hasher Matcher Actioner (HMA) subproject in this repository, and larger projects if you are a developer interested in donating more time.
-As of 9/2025, HMA has active interest, and some ongoing development. Some of these features might imply adding features to the underlying [python-threatexchange](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange) library, also hosted in this repository.
+
+As of **9/2025**, HMA has active interest, and some ongoing development. Some of these features might imply adding features to the underlying [python-threatexchange](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange) library, also hosted in this repository.
+
+If an issue isn't listed in the section, there may not be one created yet, but as development progresses, issues with owners may be assigned.
+
+You can discuss the current content in this issue: https://github.com/facebook/ThreatExchange/issues/1873
 
 # Most Needed
 These projects we think would most directly help with HMA in it's current state, either making it directly better for current adopters, or making it easier for new adopters to get started.
@@ -9,6 +14,11 @@ These projects we think would most directly help with HMA in it's current state,
 HMA is built on flask and python, though the original authors don’t have much experience running this technology stack at scale. We’ve noticed some problems when trying to run the software at our targeted scale of ~10M hashes indexed, such as memory leaks (https://github.com/facebook/ThreatExchange/issues/1813).
 
 The target scale for a multi-instance HMA deployment is to be able to support at least 10M indexed hashes with 4k lookups per second, and for potential adopters to be able to test the technology with sampled traffic with only a single machine. Making sure there are ways to manage such a deployment in production compatible with a few different infrastructure choices is our top priority.
+
+## Improving Documentation for Adopters
+HMA is currently very sparse on documentation, and deploying it in your stack requires some amount of reading the code to understand where to integrate it. There are two needs
+
+
 
 ## Functionality for Confirming/Deconfirming Signals from Exchanges
 One of the key features of HMA is the integration with Exchanges, which allow receiving hashes from third parties. Sometimes, despite the best practices of all contributors to an exchange, it may turn out that a benign image that only exists on your platform will show as matching to one of these hashes. Even a single signal can unexpectedly create a flood of matches that might otherwise overwhelm your downstream review queue.
