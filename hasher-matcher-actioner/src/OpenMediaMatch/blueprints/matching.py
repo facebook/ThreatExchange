@@ -170,7 +170,7 @@ def lookup_threshold():
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    threshold = int(require_request_param("threshold"))
+    threshold = require_request_param("threshold")
 
     results = query_index_threshold(signal, signal_type_name, threshold)
     storage = get_storage()
@@ -244,7 +244,7 @@ def query_index(
 
 
 def query_index_threshold(
-    signal: str, signal_type_name: str, threshold: int
+    signal: str, signal_type_name: str, threshold: t.Any
 ) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
