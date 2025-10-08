@@ -84,19 +84,9 @@ def _check_content_length_stream_response(
     Check for content length and raise an exception if it exceeds max_length.
     Returns the response as a stream.
     """
-    # First check content length with HEAD request
-    head_resp = requests.head(url, timeout=30, allow_redirects=True)
-    head_resp.raise_for_status()
-
-    content_length = head_resp.headers.get("content-length")
-    if content_length is not None and int(content_length) > max_length:
-        abort(413, "Content too large")
-
-    # If content length is acceptable, proceed with GET request
     response = requests.get(url, stream=True, timeout=30, allow_redirects=True)
     response.raise_for_status()
 
-    # Double check content length from GET response
     content_length = response.headers.get("content-length")
     if content_length is not None and int(content_length) > max_length:
         abort(413, "Content too large")

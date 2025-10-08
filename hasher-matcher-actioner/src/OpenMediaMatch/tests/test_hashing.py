@@ -120,59 +120,50 @@ def test_empty_allowed_hostnames(app):
             ), f"URL should be valid when ALLOWED_HOSTNAMES is empty: {url}"
 
 
-@patch("requests.head")
 @patch("requests.get")
-def test_content_length_validation(mock_get, mock_head, client):
+def test_content_length_validation(mock_get, client):
     """Test content length validation."""
-    # Mock successful HEAD response with large content length
-    mock_head_resp = Mock()
-    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)}
-    mock_head_resp.raise_for_status = (
-        Mock()
-    )  # Add this to prevent the raise_for_status() call from failing
-    mock_head.return_value = mock_head_resp
+    # Mock GET response with large content length
+    mock_get_resp = Mock()
+    mock_get_resp.headers = {
+        "content-type": "image/jpeg",
+        "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1),
+    }
+    mock_get_resp.raise_for_status = Mock()
+    mock_get.return_value = mock_get_resp
 
     # Test with large content length
     response = client.get("/h/hash?url=https://example.com/image.jpg")
     assert response.status_code == 413
     assert "Content too large" in response.get_data(as_text=True)
 
-    # Mock successful HEAD response with acceptable content length
-    mock_head_resp.headers = {"content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE - 1)}
-
-    # Mock successful GET response
-    mock_get_resp = Mock()
+    # Mock GET response with acceptable content length
     mock_get_resp.headers = {
         "content-type": "image/jpeg",
         "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE - 1),
     }
     mock_get_resp.iter_content.return_value = [b"fake image data"]
-    mock_get_resp.raise_for_status = (
-        Mock()
-    )  # Add this to prevent the raise_for_status() call from failing
-    mock_get.return_value = mock_get_resp
 
     # Test with acceptable content length
     response = client.get("/h/hash?url=https://example.com/image.jpg")
     assert response.status_code != 413
 
 
-@patch("requests.head")
-def test_content_length_validation_default(mock_head, client, app):
+@patch("requests.get")
+def test_content_length_validation_default(mock_get, client, app):
     with app.app_context():
         # Override MAX_REMOTE_FILE_SIZE to None, simulating it not
         # being present in an OMM_CONFIG file:
         app.config["MAX_REMOTE_FILE_SIZE"] = None
 
-        # Mock successful HEAD response with large content length
-        mock_head_resp = Mock()
-        mock_head_resp.headers = {
-            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)
+        # Mock GET response with large content length
+        mock_get_resp = Mock()
+        mock_get_resp.headers = {
+            "content-type": "image/jpeg",
+            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1),
         }
-        mock_head_resp.raise_for_status = (
-            Mock()
-        )  # Add this to prevent the raise_for_status() call from failing
-        mock_head.return_value = mock_head_resp
+        mock_get_resp.raise_for_status = Mock()
+        mock_get.return_value = mock_get_resp
 
         # Test with large content length
         response = client.get("/h/hash?url=https://example.com/image.jpg")
@@ -180,21 +171,20 @@ def test_content_length_validation_default(mock_head, client, app):
         assert "Content too large" in response.get_data(as_text=True)
 
 
-@patch("requests.head")
-def test_content_length_validation_misconfiguration(mock_head, client, app):
+@patch("requests.get")
+def test_content_length_validation_misconfiguration(mock_get, client, app):
     with app.app_context():
         # Override MAX_REMOTE_FILE_SIZE to a non-integer value, simulating it
         # being set from the environment variables incorrectly:
         app.config["MAX_REMOTE_FILE_SIZE"] = "not-an-integer"
 
-        mock_head_resp = Mock()
-        mock_head_resp.headers = {
-            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1)
+        mock_get_resp = Mock()
+        mock_get_resp.headers = {
+            "content-type": "image/jpeg",
+            "content-length": str(DEFAULT_MAX_REMOTE_FILE_SIZE + 1),
         }
-        mock_head_resp.raise_for_status = (
-            Mock()
-        )  # Add this to prevent the raise_for_status() call from failing
-        mock_head.return_value = mock_head_resp
+        mock_get_resp.raise_for_status = Mock()
+        mock_get.return_value = mock_get_resp
 
         # Test with large content length
         response = client.get("/h/hash?url=https://example.com/image.jpg")
