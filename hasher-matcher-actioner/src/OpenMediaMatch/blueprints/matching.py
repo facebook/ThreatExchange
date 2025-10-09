@@ -258,10 +258,13 @@ def query_index_threshold(
 
     if index is None:
         abort(503, "index not yet ready")
-    if not hasattr(index, 'query_threshold'):
-        abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
+    if not hasattr(index, "query_threshold"):
+        abort(
+            501,
+            f"Signal type '{signal_type_name}' does not support query_threshold method",
+        )
     current_app.logger.debug("[lookup_signal_threshold] querying index")
-    results = index.query_threshold(signal, threshold)
+    results = index.query_threshold(signal, threshold)  # type: ignore[attr-defined]
     current_app.logger.debug("[lookup_signal_threshold] query complete")
     return results
 
@@ -281,10 +284,13 @@ def query_index_topk(
 
     if index is None:
         abort(503, "index not yet ready")
-    if not hasattr(index, 'query_top_k'):
-        abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
+    if not hasattr(index, "query_top_k"):
+        abort(
+            501,
+            f"Signal type '{signal_type_name}' does not support query_top_k method",
+        )
     current_app.logger.debug("[lookup_signal_topk] querying index")
-    results = index.query_top_k(signal, k)
+    results = index.query_top_k(signal, k)  # type: ignore[attr-defined]
     current_app.logger.debug("[lookup_signal_topk] query complete")
     return results
 
