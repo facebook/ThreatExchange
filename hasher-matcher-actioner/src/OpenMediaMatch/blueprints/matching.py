@@ -174,7 +174,7 @@ def query_index(
 
 
 def lookup_signal(
-    signal: str, signal_type_name: str, banks: t.Optional[t.Sequence[str]] = None
+    signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
 ) -> list[int]:
     results = query_index(signal, signal_type_name)
     content_ids = [m.metadata for m in results]
