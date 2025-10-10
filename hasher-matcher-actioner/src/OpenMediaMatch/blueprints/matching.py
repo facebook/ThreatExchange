@@ -31,7 +31,7 @@ from OpenMediaMatch.utils.flask_utils import (
     str_to_bool,
 )
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.utils.memory_utils import trim_process_memory
+from OpenMediaMatch.utils.memory_utils import trim_process_memory, log_memory_info
 
 bp = Blueprint("matching", __name__)
 bp.register_error_handler(HTTPException, api_error_handler)
@@ -81,22 +81,33 @@ class _SignalIndexInMemoryCache:
         # There's a race condition here, but it's unclear if we should solve it
         curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
+            app: Flask = get_apscheduler().app
+            signal_name = self.signal_type.get_name()
+            
+            # Log memory before index swap
+            log_memory_info(f"IndexSwap[{signal_name}] - Before", app.logger)
+            
             new_index = store.get_signal_type_index(self.signal_type)
             if new_index is None:
-                app: Flask = get_apscheduler().app
                 app.logger.error(
                     "CachedIndex[%s] index checkpoint(%r)"
                     + " says new index available but unable to get it",
-                    self.signal_type.get_name(),
+                    signal_name,
                     curr_checkpoint,
                 )
                 return
 
+            # Log memory during swap (old index still in memory)
+            log_memory_info(f"IndexSwap[{signal_name}] - During (both in memory)", app.logger)
+            
             self.index = new_index
             self.checkpoint = curr_checkpoint
 
             # Force garbage collection to reclaim memory and attempt to free pages
-            trim_process_memory()
+            trim_process_memory(app.logger, f"IndexSwap[{signal_name}]")
+            
+            # Log memory after swap and cleanup
+            log_memory_info(f"IndexSwap[{signal_name}] - After", app.logger)
 
         self.last_check_ts = now
 
