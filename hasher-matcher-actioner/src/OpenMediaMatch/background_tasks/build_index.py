@@ -2,7 +2,9 @@
 
 import logging
 import time
+import gc
 import typing as t
+from typing import Optional
 
 from threatexchange.signal_type.signal_base import SignalType
 
@@ -16,6 +18,7 @@ from OpenMediaMatch.storage.interface import (
 )
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.utils.memory_utils import trim_process_memory
+from OpenMediaMatch.utils.memory_monitoring import MemoryMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +42,23 @@ def build_all_indices(
     start = time.time()
     logger.info("Running the %s background task", build_all_indices.__name__)
     enabled = signal_type_cfgs.get_enabled_signal_types()
+    
+    # Monitor memory before starting all indices
+    monitor = MemoryMonitor(enable_detailed_profiling=False)
+    logger.info(monitor.log_snapshot("Before building all indices"))
+    
     for st in enabled.values():
+        # Force rebuild by clearing the checkpoint
+        # index_store.store_signal_type_index(
+        #     st,
+        #     st.get_index_cls().build([]),
+        #     SignalTypeIndexBuildCheckpoint.get_empty()
+        # )
         build_index(st, bank_store, index_store)
+
+    # Monitor memory after building all indices
+    logger.info(monitor.log_snapshot("After building all indices"))
+    logger.info(monitor.log_memory_trend())
 
     logger.info(
         "Completed %s background task - %s",
@@ -64,28 +82,44 @@ def build_index(
     # First check to see if new signals have appeared since the last build
     idx_checkpoint = index_store.get_last_index_build_checkpoint(for_signal_type)
     bank_checkpoint = bank_store.get_current_index_build_target(for_signal_type)
+
     if idx_checkpoint == bank_checkpoint:
         logger.info("%s index up to date, no build needed", for_signal_type.get_name())
         return
+
     logger.info(
         "Building index for %s (%d signals)",
         for_signal_type.get_name(),
         0 if bank_checkpoint is None else bank_checkpoint.total_hash_count,
     )
-
-    # Use try/finally to ensure aggressive memory trim after build
+    
+    # Use try/finally to ensure cleanup happens even on exceptions
     signal_count = 0
-    built_index: t.Any | None = None  # keep in locals per review nit
-
+    built_index: t.Any | None = None
+    
     try:
-        built_index, checkpoint, signal_count = _prepare_index(
+        # Prepare index with memory monitoring
+        built_index, checkpoint, signal_count, monitor = _prepare_index(
             for_signal_type, bank_store
         )
+        
+        # Monitor memory during index storage
+        logger.info(monitor.log_snapshot(f"Before index storage for {for_signal_type.get_name()}"))
         index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
+        logger.info(monitor.log_snapshot(f"After index storage for {for_signal_type.get_name()}"))
+        
     finally:
+        # Guaranteed cleanup even if exceptions occur
+        logger.info(monitor.log_snapshot(f"Before cleanup for {for_signal_type.get_name()}"))
+
         # Force garbage collection to reclaim memory and attempt to free pages
         trim_process_memory(logger, "Indexer")
 
+        logger.info(monitor.log_snapshot(f"After cleanup for {for_signal_type.get_name()}"))
+
+        # Log final memory trends
+        logger.info(monitor.log_memory_trend())
+    
     logger.info(
         "Indexed %d signals for %s - %s",
         signal_count,
@@ -97,24 +131,36 @@ def build_index(
 def _prepare_index(
     for_signal_type: t.Type[SignalType],
     bank_store: IBankStore,
-) -> tuple[t.Any, SignalTypeIndexBuildCheckpoint, int]:
+) -> tuple[t.Any, SignalTypeIndexBuildCheckpoint, int, MemoryMonitor]:
     """
     Collect signals for the given type, build the index, and compute checkpoint.
-    Returns a tuple of (built_index, checkpoint, signal_count).
+    Returns a tuple of (built_index, checkpoint, signal_count, monitor).
     """
+    # Memory monitoring is always enabled for diagnostics
+    monitor = MemoryMonitor(enable_detailed_profiling=True)
+    
     signal_list: list[tuple[str, int]] = []
     signal_count = 0
     last_cs = None
-
+    
+    # Monitor memory during signal collection
+    logger.info(monitor.log_snapshot(f"Before signal collection for {for_signal_type.get_name()}"))
+    
     # Collect signals
     for last_cs in bank_store.bank_yield_content(for_signal_type):
         signal_list.append((last_cs.signal_val, last_cs.bank_content_id))
         signal_count += 1
-
-    # Build index
+        if signal_count % 10000 == 0:  # Log memory every 10k signals
+            logger.info(monitor.log_snapshot(f"After collecting {signal_count} signals for {for_signal_type.get_name()}"))
+    
+    logger.info(monitor.log_snapshot(f"After signal collection for {for_signal_type.get_name()}"))
+    
+    # Monitor memory during index building
+    logger.info(monitor.log_snapshot(f"Before index construction for {for_signal_type.get_name()}"))
     index_cls = for_signal_type.get_index_cls()
     built_index = index_cls.build(signal_list)
-
+    logger.info(monitor.log_snapshot(f"After index construction for {for_signal_type.get_name()}"))
+    
     # Create checkpoint
     checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
     if last_cs is not None:
@@ -124,4 +170,4 @@ def _prepare_index(
             total_hash_count=signal_count,
         )
 
-    return built_index, checkpoint, signal_count
+    return built_index, checkpoint, signal_count, monitor
