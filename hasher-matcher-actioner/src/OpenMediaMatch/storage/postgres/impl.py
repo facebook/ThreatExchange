@@ -414,10 +414,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     )
                 )
             else:
-                op_helpers[xd.id] = (
-                    _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
-                        xd, as_signal_types
-                    )
+                op_helpers[
+                    xd.id
+                ] = _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
+                    xd, as_signal_types
                 )
                 if pickled_fetch_signal_metadata != xd.pickled_fetch_signal_metadata:
                     xd_to_update.append(
@@ -589,7 +589,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             delete(database.BankContent).where(database.BankContent.id == content_id)
         )
         database.db.session.commit()
-        return result.rowcount
+        return result.rowcount  # type: ignore[attr-defined]
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
