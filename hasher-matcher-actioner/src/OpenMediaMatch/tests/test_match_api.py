@@ -140,21 +140,21 @@ def test_raw_lookup_with_bank_filter(client_with_multi_bank_data: FlaskClient):
     assert len(all_matches) == 3  # One from each bank
 
     # Test filtering by single bank
-    query_str["banks"] = "BANK_A"  # type: ignore
+    query_str["banks"] = "BANK_A"
     resp = client.get("/m/raw_lookup", query_string=query_str)
     assert resp.status_code == 200
     bank_a_matches = resp.json["matches"]  # type: ignore
     assert len(bank_a_matches) == 1
 
     # Test filtering by multiple banks
-    query_str["banks"] = "BANK_A,BANK_B"  # type: ignore
+    query_str["banks"] = "BANK_A,BANK_B"
     resp = client.get("/m/raw_lookup", query_string=query_str)
     assert resp.status_code == 200
     multi_bank_matches = resp.json["matches"]  # type: ignore
     assert len(multi_bank_matches) == 2
 
     # Test filtering by non-existent bank
-    query_str["banks"] = "NON_EXISTENT_BANK"  # type: ignore
+    query_str["banks"] = "NON_EXISTENT_BANK"
     resp = client.get("/m/raw_lookup", query_string=query_str)
     assert resp.status_code == 200
     no_matches = resp.json["matches"]  # type: ignore
@@ -202,7 +202,7 @@ def test_lookup_with_bank_filter(client_with_multi_bank_data: FlaskClient):
     assert "BANK_C" in resp_json
 
     # Test filtering by single bank
-    query_str["banks"] = "BANK_A"  # type: ignore
+    query_str["banks"] = "BANK_A"
     resp = client.get("/m/lookup", query_string=query_str)
     assert resp.status_code == 200
     resp_json = t.cast(TMatchByBank, resp.json)
@@ -211,7 +211,7 @@ def test_lookup_with_bank_filter(client_with_multi_bank_data: FlaskClient):
     assert len(resp_json["BANK_A"]) > 0
 
     # Test filtering by multiple banks
-    query_str["banks"] = "BANK_A,BANK_C"  # type: ignore
+    query_str["banks"] = "BANK_A,BANK_C"
     resp = client.get("/m/lookup", query_string=query_str)
     assert resp.status_code == 200
     resp_json = t.cast(TMatchByBank, resp.json)
@@ -221,7 +221,7 @@ def test_lookup_with_bank_filter(client_with_multi_bank_data: FlaskClient):
     assert "BANK_B" not in resp_json
 
     # Test filtering by non-existent bank
-    query_str["banks"] = "NON_EXISTENT_BANK"  # type: ignore
+    query_str["banks"] = "NON_EXISTENT_BANK"
     resp = client.get("/m/lookup", query_string=query_str)
     assert resp.status_code == 200
     resp_json = t.cast(TMatchByBank, resp.json)
