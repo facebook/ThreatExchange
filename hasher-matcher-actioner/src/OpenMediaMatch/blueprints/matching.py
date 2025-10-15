@@ -324,7 +324,9 @@ def lookup_post() -> TBankMatchBySignalType:
     resp = {}
     for signal_type in hashes.keys():
         signal = hashes[signal_type]
-        resp[signal_type] = lookup(signal, signal_type, bypass_coinflip, requested_banks)
+        resp[signal_type] = lookup(
+            signal, signal_type, bypass_coinflip, requested_banks
+        )
 
     return resp
 
