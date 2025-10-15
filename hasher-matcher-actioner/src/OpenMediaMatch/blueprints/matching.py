@@ -146,11 +146,16 @@ def raw_lookup():
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
     include_distance = str_to_bool(request.args.get("include_distance", "false"))
+
+    # Parse optional banks parameter
+    banks_param = request.args.get("banks")
+    requested_banks = set(banks_param.split(",")) if banks_param else None
+
     lookup_signal_func = (
         lookup_signal_with_distance if include_distance else lookup_signal
     )
 
-    return {"matches": lookup_signal_func(signal, signal_type_name)}
+    return {"matches": lookup_signal_func(signal, signal_type_name, requested_banks)}
 
 
 @bp.route("/lookup_threshold")
@@ -298,22 +303,44 @@ def query_index_topk(
     return results
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> list[int]:
+def lookup_signal(
+    signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
+) -> list[int]:
     results = query_index(signal, signal_type_name)
-    return [m.metadata for m in results]
+    content_ids = [m.metadata for m in results]
+
+    # Filter by banks if specified
+    if banks is not None:
+        storage = get_storage()
+        contents = storage.bank_content_get(content_ids)
+        content_ids = [c.id for c in contents if c.bank.name in banks]
+
+    return content_ids
 
 
 def lookup_signal_with_distance(
-    signal: str, signal_type_name: str
+    signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
 ) -> list[MatchWithDistance]:
     results = query_index(signal, signal_type_name)
-    return [
+    matches: list[MatchWithDistance] = [
         {
             "bank_content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
         }
         for m in results
     ]
+
+    # Filter by banks if specified
+    if banks is not None:
+        storage = get_storage()
+        content_ids = [m["bank_content_id"] for m in matches]
+        contents = storage.bank_content_get(content_ids)
+        # Create a set of valid content IDs
+        valid_content_ids = {c.id for c in contents if c.bank.name in banks}
+        # Filter matches to only include valid content IDs
+        matches = [m for m in matches if m["bank_content_id"] in valid_content_ids]
+
+    return matches
 
 
 def _validate_and_transform_signal_type(
@@ -376,6 +403,10 @@ def lookup_get() -> t.Union[TMatchByBank, TBankMatchBySignalType]:
         ]
     }
     """
+    # Parse optional banks parameter
+    banks_param = request.args.get("banks")
+    requested_banks = set(banks_param.split(",")) if banks_param else None
+
     resp: dict[str, TMatchByBank] = {}
     if request.args.get("url", None):
         if not current_app.config.get("ROLE_HASHER", False):
@@ -385,11 +416,11 @@ def lookup_get() -> t.Union[TMatchByBank, TBankMatchBySignalType]:
 
         for signal_type in hashes.keys():
             signal = hashes[signal_type]
-            resp[signal_type] = lookup(signal, signal_type)
+            resp[signal_type] = lookup(signal, signal_type, banks=requested_banks)
     else:
         signal = require_request_param("signal")
         signal_type = require_request_param("signal_type")
-        return lookup(signal, signal_type)
+        return lookup(signal, signal_type, banks=requested_banks)
 
     selected_st = request.args.get("signal_type")
     if selected_st is not None:
@@ -416,16 +447,25 @@ def lookup_post() -> TBankMatchBySignalType:
     hashes = hashing.hash_media_from_form_data()
     bypass_coinflip = request.args.get("bypass_coinflip", "false") == "true"
 
+    # Parse optional banks parameter
+    banks_param = request.args.get("banks")
+    requested_banks = set(banks_param.split(",")) if banks_param else None
+
     resp = {}
     for signal_type in hashes.keys():
         signal = hashes[signal_type]
-        resp[signal_type] = lookup(signal, signal_type, bypass_coinflip)
+        resp[signal_type] = lookup(
+            signal, signal_type, bypass_coinflip, requested_banks
+        )
 
     return resp
 
 
 def lookup(
-    signal: str, signal_type_name: str, bypass_coinflip: bool = False
+    signal: str,
+    signal_type_name: str,
+    bypass_coinflip: bool = False,
+    banks: t.Optional[t.Set[str]] = None,
 ) -> TMatchByBank:
     current_app.logger.debug("performing lookup")
     results_by_bank_content_id = {
@@ -440,18 +480,23 @@ def lookup(
         len(contents),
         len(enabled_content),
     )
-    banks = {c.bank.name: c.bank for c in enabled_content}
+    all_banks = {c.bank.name: c.bank for c in enabled_content}
 
     # Always allow all banks, whether matching is enabled or not if bypass_coinflip is True
     rand = random.Random(request.args.get("seed"))
     coinflip = rand.random() if not bypass_coinflip else 0
     current_app.logger.debug("coinflip: %s", coinflip)
     enabled_banks = {
-        b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
+        b.name for b in all_banks.values() if b.matching_enabled_ratio >= coinflip
     }
+
+    # Filter by requested banks if specified
+    if banks is not None:
+        enabled_banks = enabled_banks.intersection(banks)
+
     current_app.logger.debug("enabled_banks: %s", enabled_banks)
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabled_banks)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_banks)", len(all_banks), len(enabled_banks)
     )
     results = defaultdict(list)
     for content in enabled_content:
