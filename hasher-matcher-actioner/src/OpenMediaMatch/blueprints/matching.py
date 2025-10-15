@@ -192,7 +192,7 @@ def lookup_signal_with_distance(
     signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
 ) -> list[MatchWithDistance]:
     results = query_index(signal, signal_type_name)
-    matches = [
+    matches: list[MatchWithDistance] = [
         {
             "bank_content_id": m.metadata,
             "distance": m.similarity_info.pretty_str(),
