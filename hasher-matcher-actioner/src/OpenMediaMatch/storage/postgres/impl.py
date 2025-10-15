@@ -414,10 +414,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     )
                 )
             else:
-                op_helpers[
-                    xd.id
-                ] = _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
-                    xd, as_signal_types
+                op_helpers[xd.id] = (
+                    _BulkDbOpExchangeDataHelper.from_existing_exchange_data(
+                        xd, as_signal_types
+                    )
                 )
                 if pickled_fetch_signal_metadata != xd.pickled_fetch_signal_metadata:
                     xd_to_update.append(
