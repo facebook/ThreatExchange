@@ -164,7 +164,7 @@ def lookup_threshold():
     Input:
      * Signal type (hash type)
      * Signal value (the hash)
-     * Threshold (int) - maximum distance for matches (required)
+     * Threshold - maximum distance for matches (required)
     Output:
      * List of matching with content_id, distance, and signal values
     """
@@ -204,7 +204,10 @@ def lookup_topk():
     """
     signal = require_request_param("signal")
     signal_type_name = require_request_param("signal_type")
-    k = int(require_request_param("k"))
+    try:
+        k = int(require_request_param("k"))
+    except ValueError:
+        abort(400, "k must be an integer")
 
     results = query_index_topk(signal, signal_type_name, k)
     storage = get_storage()
@@ -244,7 +247,7 @@ def query_index(
 
 
 def query_index_threshold(
-    signal: str, signal_type_name: str, threshold: t.Any
+    signal: str, signal_type_name: str, threshold: str
 ) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
@@ -258,10 +261,13 @@ def query_index_threshold(
 
     if index is None:
         abort(503, "index not yet ready")
-    if not hasattr(index, 'query_threshold'):
-        abort(501, f"Signal type '{signal_type_name}' does not support query_threshold method")
+    if not hasattr(index, "query_threshold"):
+        abort(
+            501,
+            f"Signal type '{signal_type_name}' does not support query_threshold method",
+        )
     current_app.logger.debug("[lookup_signal_threshold] querying index")
-    results = index.query_threshold(signal, threshold)
+    results = index.query_threshold(signal, threshold)  # type: ignore[attr-defined]
     current_app.logger.debug("[lookup_signal_threshold] query complete")
     return results
 
@@ -281,10 +287,13 @@ def query_index_topk(
 
     if index is None:
         abort(503, "index not yet ready")
-    if not hasattr(index, 'query_top_k'):
-        abort(501, f"Signal type '{signal_type_name}' does not support query_top_k method")
+    if not hasattr(index, "query_top_k"):
+        abort(
+            501,
+            f"Signal type '{signal_type_name}' does not support query_top_k method",
+        )
     current_app.logger.debug("[lookup_signal_topk] querying index")
-    results = index.query_top_k(signal, k)
+    results = index.query_top_k(signal, k)  # type: ignore[attr-defined]
     current_app.logger.debug("[lookup_signal_topk] query complete")
     return results
 
