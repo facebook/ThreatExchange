@@ -175,7 +175,7 @@ def create_app() -> flask.Flask:
         # doesn't supply such functionality as individual deployments may have
         # different, competing, requirements.
         hook = app.config.get("APP_HOOK", None)
-        if hook != None:
+        if hook != None and callable(hook):
             hook(app)
 
     @app.route("/")
