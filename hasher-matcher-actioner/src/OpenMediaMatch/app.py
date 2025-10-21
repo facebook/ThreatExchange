@@ -170,6 +170,14 @@ def create_app() -> flask.Flask:
         if app.config.get("ROLE_CURATOR", False):
             app.register_blueprint(curation.bp, url_prefix="/c")
 
+        # Allow the config to hook into the Flask app to add things like auth,
+        # new endpoints, etc as may be required by their environments. HMA itself
+        # doesn't supply such functionality as individual deployments may have
+        # different, competing, requirements.
+        hook = app.config.get("APP_HOOK", None)
+        if hook != None and callable(hook):
+            hook(app)
+
     @app.route("/")
     def home():
         dst = "ui" if is_ui_enabled else "status"
