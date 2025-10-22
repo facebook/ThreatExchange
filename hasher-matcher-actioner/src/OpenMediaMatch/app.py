@@ -174,9 +174,8 @@ def create_app() -> flask.Flask:
         # new endpoints, etc as may be required by their environments. HMA itself
         # doesn't supply such functionality as individual deployments may have
         # different, competing, requirements.
-        hook = app.config.get("APP_HOOK", None)
-        if hook != None and callable(hook):
-            hook(app)
+        # Note: we want this to fail if the defined function isn't a function.
+        app.config.get("APP_HOOK", lambda _: None)(app)
 
     @app.route("/")
     def home():
