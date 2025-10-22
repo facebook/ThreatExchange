@@ -8,6 +8,7 @@ on:
     #   - main
     paths:
       - "hasher-matcher-actioner/**"
+      - ".github/workflows/hma-release.yaml"
 
 env:
   REGISTRY: ghcr.io
