@@ -7,8 +7,7 @@ on:
     branches:
       - main
     paths:
-      - "hasher-matcher-actioner/**"
-      - ".github/workflows/hma-release.yaml"
+      - "hasher-matcher-actioner/version.txt"
 
 env:
   REGISTRY: ghcr.io
@@ -34,7 +33,7 @@ jobs:
       - name: Read version and lowercase image name
         id: version
         run: |
-          echo "VERSION=dev-profiling-test" >> $GITHUB_ENV
+          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
           echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >>${GITHUB_ENV}
 
       - name: Set up QEMU
@@ -58,4 +57,5 @@ jobs:
           context: hasher-matcher-actioner
           platforms: linux/amd64,linux/arm64
           tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:${{ env.VERSION }}
