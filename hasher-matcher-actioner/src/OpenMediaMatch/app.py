@@ -33,6 +33,7 @@ from OpenMediaMatch.background_tasks import (
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.utils import dev_utils
+from OpenMediaMatch.utils.memory_utils import log_memory_info
 
 
 def _is_debug_mode():
@@ -56,6 +57,41 @@ def _setup_task_logging(app_logger: logging.Logger):
     """Clownily replace module loggers with our own"""
     fetcher.logger = app_logger.getChild("Fetcher")
     build_index.logger = app_logger.getChild("Indexer")
+
+
+def _setup_memory_monitoring(app: flask.Flask):
+    """Setup memory monitoring middleware and periodic logging"""
+    import time
+    
+    # Track when we last logged memory to avoid spamming logs
+    last_memory_log = {"time": 0.0}
+    memory_log_interval = app.config.get("MEMORY_LOG_INTERVAL_SECONDS", 300)  # Default 5 min
+    
+    @app.before_request
+    def log_memory_before_request():
+        """Log memory info before processing requests (rate-limited)"""
+        current_time = time.time()
+        if current_time - last_memory_log["time"] >= memory_log_interval:
+            log_memory_info("Request Start", app.logger)
+            last_memory_log["time"] = current_time
+            flask.g.memory_logged = True
+        else:
+            flask.g.memory_logged = False
+    
+    @app.after_request
+    def log_memory_after_request(response):
+        """Log memory info after processing requests (only if we logged before)"""
+        if getattr(flask.g, "memory_logged", False):
+            log_memory_info("Request End", app.logger)
+        return response
+    
+    app.logger.info(
+        "Memory monitoring enabled (interval: %d seconds)", 
+        memory_log_interval
+    )
+    
+    # Log initial memory state
+    log_memory_info("App Startup", app.logger)
 
 
 def create_app() -> flask.Flask:
@@ -106,6 +142,10 @@ def create_app() -> flask.Flask:
     ), "STORAGE_IFACE_INSTANCE is not an instance of IUnifiedStore"
 
     _setup_task_logging(app.logger)
+    
+    # Add memory monitoring middleware if enabled
+    if app.config.get("ENABLE_MEMORY_MONITORING", False):
+        _setup_memory_monitoring(app)
 
     scheduler: APScheduler | None = None
 
@@ -145,6 +185,18 @@ def create_app() -> flask.Flask:
                     start_date=now + datetime.timedelta(seconds=15),
                 )
             app.logger.info("Started Apscheduler, initial tasks: %s", tasks)
+            
+            # Add periodic memory monitoring task if enabled
+            if app.config.get("ENABLE_MEMORY_MONITORING", False):
+                scheduler.add_job(
+                    "MemoryMonitor",
+                    lambda: log_memory_info("Periodic Check", app.logger),
+                    trigger="interval",
+                    seconds=int(app.config.get("MEMORY_LOG_INTERVAL_SECONDS", 300)),
+                    start_date=now + datetime.timedelta(seconds=60),
+                )
+                app.logger.info("Added periodic memory monitoring task")
+            
             scheduler.start()
 
         storage.init_flask(app)

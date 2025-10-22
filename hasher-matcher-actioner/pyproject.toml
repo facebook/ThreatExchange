@@ -37,12 +37,19 @@ all = [
     "types-psycopg2",
     "types-python-dateutil",
     "gunicorn",
-    "flask_apscheduler"
+    "flask_apscheduler",
+    "psutil>=5.9.0",
+    "pympler>=0.9"
 ]
 
 test = [ "pytest" ]
 
-prod = [ "gunicorn" ]
+prod = [ 
+    "gunicorn",
+    "psutil>=5.9.0",
+    "pympler>=0.9"
+]
+
 
 [tool.mypy]
 warn_unused_configs = true
