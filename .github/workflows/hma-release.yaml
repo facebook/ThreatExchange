@@ -4,8 +4,8 @@ name: Publish HMA docker image
 
 on:
   push:
-    # branches:
-    #   - main
+    branches:
+      - main
     paths:
       - "hasher-matcher-actioner/**"
       - ".github/workflows/hma-release.yaml"
