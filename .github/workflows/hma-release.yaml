@@ -4,10 +4,10 @@ name: Publish HMA docker image
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
-      - "hasher-matcher-actioner/version.txt"
+      - "hasher-matcher-actioner/**"
 
 env:
   REGISTRY: ghcr.io
@@ -33,7 +33,7 @@ jobs:
       - name: Read version and lowercase image name
         id: version
         run: |
-          echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+          echo "VERSION=dev-profiling-test" >> $GITHUB_ENV
           echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >>${GITHUB_ENV}
 
       - name: Set up QEMU
@@ -57,5 +57,4 @@ jobs:
           context: hasher-matcher-actioner
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:${{ env.VERSION }}
