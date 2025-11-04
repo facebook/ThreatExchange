@@ -3,14 +3,21 @@
 
 ## Description
 
-This is a collection of reference implementation for the PDQ hashing algorithm.
+This is a collection of reference implementation for the PDQ image hashing algorithm.
+
+PDQ stands for:
+* **P**: A perceptual hasher: it tries to match images which people perceive as similar;
+* **D**: It is a spectral hashing algorithm, namely, it uses a Discrete Cosine Transform (DCT);
+* **Q**: One of its outputs is a quality metric, enabling systems to filter junky/featureless images out of processing.
+
+Apocryphally, it is also short for "Pretty Darn Quick", as it was designed to be efficient to run at scale. 
 
 Please see [../hashing.pdf](https://github.com/facebook/ThreatExchange/blob/main/hashing/hashing.pdf)
 within this repository for an explanation of the algorithm.
 
 See also the [Meta Newsroom Post](https://newsroom.fb.com/news/2019/08/open-source-photo-video-matching) for context.
 
-As of November 2018 there are C++, PHP, and Java implementations.  Details are in the `*/README.md` files.
+As of November 2025 there are C++, PHP, Python, Java, and WASM implementations.  Details are in the `*/README.md` files.
 
 ## Other Bindings and Implementations
 * C# / DotNet: [crispthinking/pdqhash](https://github.com/crispthinking/PdqHash)
