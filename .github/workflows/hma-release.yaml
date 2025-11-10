@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - "hasher-matcher-actioner/version.txt"
+      - ".github/workflows/hma-release.yaml"
 
 env:
   REGISTRY: ghcr.io
