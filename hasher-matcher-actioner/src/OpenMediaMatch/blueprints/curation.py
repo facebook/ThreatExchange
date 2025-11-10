@@ -1,11 +1,14 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from datetime import datetime, timedelta
 import re
 import time
 import typing as t
+from datetime import datetime, timedelta
 
-from flask import Blueprint, Response, request, jsonify, abort
+from flask_openapi3 import APIBlueprint
+from flask_openapi3.models import Tag
+from flask import Response, abort, jsonify, request
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import HTTPException
 
@@ -17,41 +20,61 @@ from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
 import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
-
-
-class BankContentResponse(t.TypedDict):
-    id: int
-    disable_until_ts: int
-    collab_metadata: t.Mapping[str, t.Sequence[str]]
-    original_media_uri: t.Optional[str]
-    bank: iface.BankConfig
-    signals: t.NotRequired[t.Mapping[str, str]]
+from OpenMediaMatch.schemas.curation import (
+    BankConfig,
+    BankContentResponse,
+    BankCreateRequest,
+    BankUpdateRequest,
+    BankedContentMetadata,
+    ExchangeConfig,
+    ExchangeUpdateRequest,
+)
+from OpenMediaMatch.schemas.shared import ErrorResponse, SuccessResponse
 
 
 def five_years_from_now() -> int:
     return int(time.mktime((datetime.now() + timedelta(days=365 * 5)).timetuple()))
 
 
-class BankedContentMetadata(t.TypedDict):
-    content_id: t.NotRequired[str]
-    content_uri: t.NotRequired[str]
-    json: t.NotRequired[dict[t.Any, t.Any]]
-
-
-bp = Blueprint("curation", __name__)
+bp = APIBlueprint("curation", __name__, url_prefix="/c")
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 # Banking
 
 
-@bp.route("/banks", methods=["GET"])
+class BankPathParams(BaseModel):
+    bank_name: str
+
+
+class BankContentPathParams(BankPathParams):
+    content_id: int
+
+
+class ExchangePathParams(BaseModel):
+    exchange_name: str
+
+
+@bp.get(
+    "/banks",
+    tags=[Tag(name="Banks")],
+    responses={"200": {"description": "List of banks"}},
+    summary="List banks",
+    description="Get list of all banks",
+)
 def banks_index():
     storage = persistence.get_storage()
     return list(storage.get_banks().values())
 
 
-@bp.route("/bank/<bank_name>", methods=["GET"])
-def bank_show_by_name(bank_name: str):
+@bp.get(
+    "/bank/<bank_name>",
+    tags=[Tag(name="Banks")],
+    responses={"200": BankConfig, "404": ErrorResponse},
+    summary="Get bank",
+    description="Get bank configuration by name",
+)
+def bank_show_by_name(path: BankPathParams):
+    bank_name = path.bank_name
     storage = persistence.get_storage()
 
     bank = storage.get_bank(bank_name)
@@ -60,16 +83,21 @@ def bank_show_by_name(bank_name: str):
     return jsonify(bank)
 
 
-@bp.route("/banks", methods=["POST"])
-def bank_create():
-    name = flask_utils.require_json_param("name")
-    data = request.get_json()
-    enabled_ratio = 1.0
-    if "enabled_ratio" in data:
-        enabled_ratio = flask_utils.str_to_type(data["enabled_ratio"], float)
-    elif "enabled" in data:
-        enabled_ratio = 1.0 if flask_utils.str_to_bool(data["enabled"]) else 0.0
-    return jsonify(bank_create_impl(name, enabled_ratio)), 201
+@bp.post(
+    "/banks",
+    tags=[Tag(name="Banks")],
+    responses={"201": BankConfig, "400": ErrorResponse, "403": ErrorResponse},
+    summary="Create bank",
+    description="Create a new bank",
+)
+def bank_create(body: BankCreateRequest):
+    if body.enabled_ratio is not None:
+        enabled_ratio = body.enabled_ratio
+    elif body.enabled is not None:
+        enabled_ratio = 1.0 if body.enabled else 0.0
+    else:
+        enabled_ratio = 1.0
+    return jsonify(bank_create_impl(body.name, enabled_ratio)), 201
 
 
 def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
@@ -83,23 +111,34 @@ def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
     return bank
 
 
-@bp.route("/bank/<bank_name>", methods=["PUT"])
-def bank_update(bank_name: str):
+@bp.put(
+    "/bank/<bank_name>",
+    tags=[Tag(name="Banks")],
+    responses={
+        "200": BankConfig,
+        "400": ErrorResponse,
+        "403": ErrorResponse,
+        "404": ErrorResponse,
+    },
+    summary="Update bank",
+    description="Update bank configuration",
+)
+def bank_update(path: BankPathParams, body: BankUpdateRequest):
+    bank_name = path.bank_name
     storage = persistence.get_storage()
-    data = request.get_json()
     bank = storage.get_bank(bank_name)
     rename_from: t.Optional[str] = None
     if bank is None:
         abort(404, "Bank not found")
 
     try:
-        if "name" in data:
+        if body.name is not None:
             rename_from = bank.name
-            bank.name = data["name"]
-        if "enabled" in data:
-            bank.matching_enabled_ratio = 1 if bool(data["enabled"]) else 0
-        if "enabled_ratio" in data:
-            bank.matching_enabled_ratio = data["enabled_ratio"]
+            bank.name = body.name
+        if body.enabled is not None:
+            bank.matching_enabled_ratio = 1 if bool(body.enabled) else 0
+        if body.enabled_ratio is not None:
+            bank.matching_enabled_ratio = body.enabled_ratio
 
         storage.bank_update(bank, rename_from=rename_from)
     except ValueError as e:
@@ -109,8 +148,15 @@ def bank_update(bank_name: str):
     return jsonify(bank)
 
 
-@bp.route("/bank/<bank_name>", methods=["DELETE"])
-def bank_delete(bank_name: str):
+@bp.delete(
+    "/bank/<bank_name>",
+    tags=[Tag(name="Banks")],
+    responses={"200": SuccessResponse, "404": ErrorResponse},
+    summary="Delete bank",
+    description="Delete a bank",
+)
+def bank_delete(path: BankPathParams):
+    bank_name = path.bank_name
     storage = persistence.get_storage()
     storage.bank_delete(bank_name)
     return {"message": "Done"}
@@ -132,19 +178,23 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     # Validate
     if not isinstance(metadata, dict):
         abort(400, "metadata should be a json object")
-    expected_keys = BankedContentMetadata.__optional_keys__.union(
-        BankedContentMetadata.__required_keys__
-    )
-    unexpected = set(metadata).difference(expected_keys)
-    if unexpected:
-        abort(
-            400, f"metadata contains unexpected keys: {' ,'.join(sorted(unexpected))}"
-        )
-    return t.cast(BankedContentMetadata, metadata)
+
+    try:
+        return BankedContentMetadata(**metadata)
+    except ValidationError as e:
+        abort(400, f"Invalid metadata: {str(e)}")
 
 
-@bp.route("/bank/<bank_name>/content/<int:content_id>", methods=["GET"])
-def bank_get_content(bank_name: str, content_id: int):
+@bp.get(
+    "/bank/<bank_name>/content/<int:content_id>",
+    tags=[Tag(name="Bank Content")],
+    responses={"200": BankContentResponse, "404": ErrorResponse},
+    summary="Get bank content",
+    description="Get details of a specific content item in a bank",
+)
+def bank_get_content(path: BankContentPathParams):
+    bank_name = path.bank_name
+    content_id = path.content_id
     storage = persistence.get_storage()
     bank = storage.get_bank(bank_name)
     if not bank:
@@ -155,26 +205,44 @@ def bank_get_content(bank_name: str, content_id: int):
         abort(404, f"content '{content_id}' not found")
     content_config = content[0]
 
-    # Create base response
-    response: BankContentResponse = {
-        "id": content_config.id,
-        "disable_until_ts": content_config.disable_until_ts,
-        "collab_metadata": content_config.collab_metadata,
-        "original_media_uri": content_config.original_media_uri,
-        "bank": content_config.bank,
+    collab_metadata = {
+        key: list(values) for key, values in content_config.collab_metadata.items()
     }
-
-    # If signals were requested, fetch them separately and include in response
+    bank_schema = BankConfig(
+        name=content_config.bank.name,
+        matching_enabled_ratio=content_config.bank.matching_enabled_ratio,
+    )
+    signals_payload: t.Optional[dict[str, str]] = None
     if include_signals:
         signals = storage.bank_content_get_signals([content_id])
         if content_id in signals:
-            response["signals"] = signals[content_id]
+            signals_payload = dict(signals[content_id])
 
-    return jsonify(response)
+    response = BankContentResponse(
+        id=content_config.id,
+        disable_until_ts=content_config.disable_until_ts,
+        collab_metadata=collab_metadata,
+        original_media_uri=content_config.original_media_uri,
+        bank=bank_schema,
+        signals=signals_payload,
+    )
+
+    content_response = response.model_dump()
+    if signals_payload is None:
+        content_response.pop("signals", None)
+
+    return jsonify(content_response)
 
 
-@bp.route("/bank/<bank_name>/content", methods=["POST"])
-def bank_add_content(bank_name: str):
+@bp.post(
+    "/bank/<bank_name>/content",
+    tags=[Tag(name="Bank Content")],
+    responses={"201": BankContentResponse, "400": ErrorResponse, "404": ErrorResponse},
+    summary="Add content to bank",
+    description="Add content to a bank by URL or file upload with optional metadata",
+)
+def bank_add_content(path: BankPathParams):
+    bank_name = path.bank_name
     """
     Add content to a bank by providing a URI to the content (via the `url`
     query parameter), or uploading a file (via multipart/form-data).
@@ -215,9 +283,15 @@ def bank_add_content(bank_name: str):
 
     metadata = _validate_bank_add_metadata()
 
+    url = request.args.get("url")
+
     # Url was passed as a query param?
-    if request.args.get("url", None):
-        hashes = hashing.hash_media()
+    if url:
+        hashes = hashing.hash_url_content(
+            url,
+            content_type_hint=request.args.get("content_type"),
+            signal_type_names=request.args.get("types"),
+        )
     # File uploaded via multipart/form-data?
     elif request.files:
         hashes = hashing.hash_media_from_form_data()
@@ -263,8 +337,16 @@ def _bank_add_signals(
     }
 
 
-@bp.route("/bank/<bank_name>/content/<content_id>", methods=["PUT"])
-def bank_update_content(bank_name: str, content_id: int):
+@bp.put(
+    "/bank/<bank_name>/content/<int:content_id>",
+    tags=[Tag(name="Bank Content")],
+    responses={"200": SuccessResponse, "400": ErrorResponse, "404": ErrorResponse},
+    summary="Update bank content",
+    description="Update metadata for a specific content item in a bank",
+)
+def bank_update_content(path: BankContentPathParams):
+    bank_name = path.bank_name
+    content_id = path.content_id
     """
     Update the metadata for a banked content item.
 
@@ -295,8 +377,16 @@ def bank_update_content(bank_name: str, content_id: int):
     return jsonify(content)
 
 
-@bp.route("/bank/<bank_name>/content/<content_id>", methods=["DELETE"])
-def bank_delete_content(bank_name: str, content_id: int):
+@bp.delete(
+    "/bank/<bank_name>/content/<int:content_id>",
+    tags=[Tag(name="Bank Content")],
+    responses={"200": SuccessResponse, "404": ErrorResponse},
+    summary="Delete bank content",
+    description="Remove a content item from a bank",
+)
+def bank_delete_content(path: BankContentPathParams):
+    bank_name = path.bank_name
+    content_id = path.content_id
     """
     Remove a signal from a bank.
     """
@@ -309,8 +399,15 @@ def bank_delete_content(bank_name: str, content_id: int):
     return {"deleted": count}
 
 
-@bp.route("/bank/<bank_name>/signal", methods=["POST"])
-def bank_add_as_signals(bank_name: str):
+@bp.post(
+    "/bank/<bank_name>/signal",
+    tags=[Tag(name="Bank Content")],
+    responses={"201": SuccessResponse, "400": ErrorResponse, "404": ErrorResponse},
+    summary="Add signals to bank",
+    description="Add content to bank by providing signal hashes directly",
+)
+def bank_add_as_signals(path: BankPathParams):
+    bank_name = path.bank_name
     """
     Add a signal/hash directly to the bank.
 
@@ -333,7 +430,13 @@ def _get_collab(name: str):
 
 
 # Fetching/Exchanges (aka collaborations)
-@bp.route("/exchanges/apis", methods=["GET"])
+@bp.get(
+    "/exchanges/apis",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": {"description": "List of exchange API types"}},
+    summary="List exchange API types",
+    description="Get list of available exchange API types that can be configured",
+)
 def exchange_api_list() -> list[str]:
     exchange_apis = persistence.get_storage().exchange_apis_get_configs()
     return list(exchange_apis)
@@ -367,7 +470,13 @@ def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
     }
 
 
-@bp.route("/exchanges", methods=["POST"])
+@bp.post(
+    "/exchanges",
+    tags=[Tag(name="Exchanges")],
+    responses={"201": SuccessResponse, "400": ErrorResponse},
+    summary="Create exchange",
+    description="Create a new signal exchange configuration for collaborative sharing",
+)
 def exchange_create():
     """
     Creates an exchange configuration
@@ -414,7 +523,13 @@ def exchange_create():
     return {"message": "Created successfully"}, 201
 
 
-@bp.route("/exchanges", methods=["GET"])
+@bp.get(
+    "/exchanges",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": {"description": "List of exchange names"}},
+    summary="List exchanges",
+    description="Get list of all configured signal exchanges",
+)
 def exchange_list():
     """
     List all exchange configurations
@@ -430,8 +545,14 @@ def exchange_list():
     return [name for name in storage.exchanges_get()]
 
 
-@bp.route("/exchange/<string:exchange_name>", methods=["GET"])
-def exchange_show_by_name(exchange_name: str):
+@bp.get(
+    "/exchange/<string:exchange_name>",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": ExchangeConfig, "404": ErrorResponse},
+    summary="Get exchange",
+    description="Get details of a specific exchange configuration",
+)
+def exchange_show_by_name(path: ExchangePathParams):
     """
     Gets a single exchange configuration by name
     Inputs:
@@ -449,14 +570,14 @@ def exchange_show_by_name(exchange_name: str):
     # Workaround for serializing enums and sets. The smarter way would be to
     # override the root level json serializer, but that's a future project
     return Response(
-        response=dataclass_json.dataclass_dumps(_get_collab(exchange_name)),
+        response=dataclass_json.dataclass_dumps(_get_collab(path.exchange_name)),
         status=200,
         mimetype="application/json",
     )
 
 
 @bp.route("/exchange/<string:exchange_name>/status")
-def exchange_get_fetch_status(exchange_name: str):
+def exchange_get_fetch_status(path: ExchangePathParams):
     """
     Inputs:
       * Configuration name
@@ -473,13 +594,19 @@ def exchange_get_fetch_status(exchange_name: str):
     """
     return jsonify(
         persistence.get_storage().exchange_get_fetch_status(
-            _get_collab(exchange_name).name
+            _get_collab(path.exchange_name).name
         )
     )
 
 
-@bp.route("/exchange/<string:exchange_name>", methods=["PUT"])
-def exchange_update(exchange_name: str):
+@bp.put(
+    "/exchange/<string:exchange_name>",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": SuccessResponse, "400": ErrorResponse, "404": ErrorResponse},
+    summary="Update exchange",
+    description="Update an existing exchange configuration",
+)
+def exchange_update(path: ExchangePathParams, body: ExchangeUpdateRequest):
     """
     Edit exchange configuration
 
@@ -499,9 +626,9 @@ def exchange_update(exchange_name: str):
       ...
     }
     """
-    collab = _get_collab(exchange_name)
-    data = request.get_json()
-    collab.enabled = data.get("enabled", collab.enabled)
+    collab = _get_collab(path.exchange_name)
+    if body.enabled is not None:
+        collab.enabled = body.enabled
     persistence.get_storage().exchange_update(collab, create=False)
     return Response(
         response=dataclass_json.dataclass_dump_dict(collab),
@@ -510,8 +637,14 @@ def exchange_update(exchange_name: str):
     )
 
 
-@bp.route("/exchange/<string:exchange_name>", methods=["DELETE"])
-def exchange_delete(exchange_name: str):
+@bp.delete(
+    "/exchange/<string:exchange_name>",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": SuccessResponse, "404": ErrorResponse},
+    summary="Delete exchange",
+    description="Remove an exchange configuration",
+)
+def exchange_delete(path: ExchangePathParams):
     """
     Delete exchange configuration
 
@@ -524,12 +657,18 @@ def exchange_delete(exchange_name: str):
     }
     """
     storage = persistence.get_storage()
-    storage.exchange_delete(exchange_name)
+    storage.exchange_delete(path.exchange_name)
     return {"message": "Exchange deleted"}
 
 
 # Signal Types
-@bp.route("/signal_type", methods=["GET"])
+@bp.get(
+    "/signal_type",
+    tags=[Tag(name="Configuration")],
+    responses={"200": {"description": "List of signal type configurations"}},
+    summary="List signal types",
+    description="Get list of all signal types with their configuration",
+)
 def get_all_signal_types():
     """
     Lists all the signal type configs
@@ -552,7 +691,13 @@ def get_all_signal_types():
     ]
 
 
-@bp.route("/signal_type/<signal_type_name>", methods=["PUT"])
+@bp.put(
+    "/signal_type/<signal_type_name>",
+    tags=[Tag(name="Configuration")],
+    responses={"200": SuccessResponse, "400": ErrorResponse, "404": ErrorResponse},
+    summary="Update signal type",
+    description="Update configuration for a specific signal type",
+)
 def update_signal_type_config(signal_type_name: str):
     """
     Update mutable fields of the signal type config
@@ -572,7 +717,13 @@ def update_signal_type_config(signal_type_name: str):
     return jsonify({"name": signal_type_name, "enabled_ratio": enabled_ratio}), 204
 
 
-@bp.route("/signal_type/index", methods=["GET"])
+@bp.get(
+    "/signal_type/index",
+    tags=[Tag(name="Configuration")],
+    responses={"200": {"description": "Index status for all signal types"}},
+    summary="Signal type index status",
+    description="Get the index build status for all signal types",
+)
 def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
     """
     Get the index status for signal types.
@@ -617,7 +768,13 @@ def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
 
 
 # Content Types
-@bp.route("/content_type", methods=["GET"])
+@bp.get(
+    "/content_type",
+    tags=[Tag(name="Configuration")],
+    responses={"200": {"description": "List of content type configurations"}},
+    summary="List content types",
+    description="Get list of all content types with their configuration",
+)
 def get_all_content_types():
     """
     Lists all the signal type configs

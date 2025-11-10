@@ -10,12 +10,9 @@ import typing as t
 import requests
 import logging
 from urllib.parse import urlparse
-import ipaddress
-import socket
-import os
-from contextlib import contextmanager
 
-from flask import Blueprint
+from flask_openapi3 import APIBlueprint
+from flask_openapi3.models import Tag
 from flask import abort, request, current_app
 from werkzeug.exceptions import HTTPException
 
@@ -26,11 +23,12 @@ from threatexchange.signal_type.signal_base import FileHasher, BytesHasher, Sign
 
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils import flask_utils
-from OpenMediaMatch.storage.interface import BankConfig
+from OpenMediaMatch.schemas.hashing import HashRequest, HashResponse
+from OpenMediaMatch.schemas.shared import ErrorResponse
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("hashing", __name__)
+bp = APIBlueprint("hashing", __name__, url_prefix="/h")
 bp.register_error_handler(HTTPException, flask_utils.api_error_handler)
 
 # Add these constants at the top level
@@ -94,8 +92,14 @@ def _check_content_length_stream_response(
     return response
 
 
-@bp.route("/hash", methods=["GET"])
-def hash_media() -> dict[str, str]:
+@bp.get(
+    "/hash",
+    tags=[Tag(name="Hashing")],
+    responses={"200": HashResponse, "400": ErrorResponse, "413": ErrorResponse},
+    summary="Hash content from URL",
+    description="Fetch content from URL and return its hash values for all supported signal types",
+)
+def hash_media(query: HashRequest) -> dict[str, str]:
     """
     Fetch content and return its hash.
 
@@ -105,22 +109,31 @@ def hash_media() -> dict[str, str]:
     Output:
         * Mapping of signal types to hash values. Signal types are derived from the content type of the provided URL
     """
-    media_url = request.args.get("url", None)
-    if media_url is None:
-        abort(400, "Missing required parameter: url")
-
     try:
-        return hash_url_content(media_url)
+        result = hash_url_content(
+            query.url,
+            content_type_hint=query.content_type,
+            signal_type_names=query.types,
+        )
     except ValueError as e:
         abort(400, str(e))
+    response = HashResponse(**result)
+    return response.model_dump()
 
 
-def hash_url_content(media_url: str) -> dict[str, str]:
+def hash_url_content(
+    media_url: str,
+    *,
+    content_type_hint: t.Optional[str] = None,
+    signal_type_names: t.Optional[str] = None,
+) -> dict[str, str]:
     """
     Utility function to hash content from a URL.
 
     Args:
         media_url: URL to the media content
+        content_type_hint: Optional content type name to avoid request arg lookup
+        signal_type_names: Optional comma-separated signal types to hash
 
     Returns:
         Mapping of signal types to hash values
@@ -154,8 +167,12 @@ def hash_url_content(media_url: str) -> dict[str, str]:
             url_content_type = download_resp.headers["content-type"]
             current_app.logger.debug("%s is type %s", media_url, url_content_type)
 
-            content_type = _parse_request_content_type(url_content_type)
-            signal_types = _parse_request_signal_type(content_type)
+            content_type = _parse_request_content_type(
+                url_content_type, override=content_type_hint
+            )
+            signal_types = _parse_request_signal_type(
+                content_type, override=signal_type_names
+            )
 
             ret: dict[str, str] = {}
 
@@ -180,13 +197,20 @@ def hash_url_content(media_url: str) -> dict[str, str]:
         abort(400, f"Failed to fetch URL: {str(e)}")
 
 
-@bp.route("/hash", methods=["POST"])
-def hash_media_post():
+@bp.post(
+    "/hash",
+    tags=[Tag(name="Hashing")],
+    responses={"200": HashResponse, "400": ErrorResponse},
+    summary="Hash uploaded file",
+    description="Calculate hash for uploaded file via multipart/form-data",
+)
+def hash_media_post() -> dict[str, str]:
     """
     Calculate the hash for the provided file.
     """
-
-    return hash_media_from_form_data()
+    result = hash_media_from_form_data()
+    response = HashResponse(**result)
+    return response.model_dump()
 
 
 def hash_media_from_form_data() -> dict[str, str]:
@@ -246,8 +270,10 @@ def hash_media_from_form_data() -> dict[str, str]:
     return ret
 
 
-def _parse_request_content_type(url_content_type: str) -> t.Type[ContentType]:
-    arg = request.args.get("content_type", "")
+def _parse_request_content_type(
+    url_content_type: str, *, override: t.Optional[str] = None
+) -> t.Type[ContentType]:
+    arg = override or request.args.get("content_type", "")
     if not arg:
         if url_content_type.lower().startswith("image"):
             arg = PhotoContent.get_name()
@@ -275,6 +301,8 @@ def _lookup_content_type(arg: str) -> t.Type[ContentType]:
 
 def _parse_request_signal_type(
     content_type: t.Type[ContentType],
+    *,
+    override: t.Optional[str] = None,
 ) -> t.Mapping[str, t.Type[SignalType]]:
     """
     Parse the signal types from the request args.
@@ -282,7 +310,7 @@ def _parse_request_signal_type(
     signal_types = get_storage().get_enabled_signal_types_for_content_type(content_type)
     if not signal_types:
         abort(500, "No signal types configured!")
-    signal_type_args = request.args.get("types", None)
+    signal_type_args = override if override is not None else request.args.get("types")
     if signal_type_args is None:
         return signal_types
 
