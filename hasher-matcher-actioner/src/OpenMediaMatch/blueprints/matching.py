@@ -83,10 +83,10 @@ class _SignalIndexInMemoryCache:
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             app: Flask = get_apscheduler().app
             signal_name = self.signal_type.get_name()
-            
+
             # Log memory before index swap
             log_memory_info(f"IndexSwap[{signal_name}] - Before", app.logger)
-            
+
             new_index = store.get_signal_type_index(self.signal_type)
             if new_index is None:
                 app.logger.error(
@@ -98,14 +98,16 @@ class _SignalIndexInMemoryCache:
                 return
 
             # Log memory during swap (old index still in memory)
-            log_memory_info(f"IndexSwap[{signal_name}] - During (both in memory)", app.logger)
-            
+            log_memory_info(
+                f"IndexSwap[{signal_name}] - During (both in memory)", app.logger
+            )
+
             self.index = new_index
             self.checkpoint = curr_checkpoint
 
             # Force garbage collection to reclaim memory and attempt to free pages
             trim_process_memory(app.logger, f"IndexSwap[{signal_name}]")
-            
+
             # Log memory after swap and cleanup
             log_memory_info(f"IndexSwap[{signal_name}] - After", app.logger)
 

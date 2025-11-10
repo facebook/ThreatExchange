@@ -73,7 +73,7 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 # Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
 
 # We always want some logging by default, otherwise it's hard to tell whats happening inside the container:
-FLASK_LOGGING_CONFIG = dictConfig(
+dictConfig(
     {
         "version": 1,
         "formatters": {
@@ -91,6 +91,7 @@ FLASK_LOGGING_CONFIG = dictConfig(
         "root": {"level": "INFO", "handlers": ["wsgi"]},
     }
 )
+
 
 # If you need to add something to the Flask app, the following hook function can
 # be used. Note that adding functionality may or may not prevent the UI from

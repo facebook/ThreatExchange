@@ -42,11 +42,11 @@ def build_all_indices(
     start = time.time()
     logger.info("Running the %s background task", build_all_indices.__name__)
     enabled = signal_type_cfgs.get_enabled_signal_types()
-    
+
     # Monitor memory before starting all indices
     monitor = MemoryMonitor(enable_detailed_profiling=False)
     logger.info(monitor.log_snapshot("Before building all indices"))
-    
+
     for st in enabled.values():
         # Force rebuild by clearing the checkpoint
         # index_store.store_signal_type_index(
@@ -92,34 +92,46 @@ def build_index(
         for_signal_type.get_name(),
         0 if bank_checkpoint is None else bank_checkpoint.total_hash_count,
     )
-    
+
     # Use try/finally to ensure cleanup happens even on exceptions
     signal_count = 0
     built_index: t.Any | None = None
-    
+
     try:
         # Prepare index with memory monitoring
         built_index, checkpoint, signal_count, monitor = _prepare_index(
             for_signal_type, bank_store
         )
-        
+
         # Monitor memory during index storage
-        logger.info(monitor.log_snapshot(f"Before index storage for {for_signal_type.get_name()}"))
+        logger.info(
+            monitor.log_snapshot(
+                f"Before index storage for {for_signal_type.get_name()}"
+            )
+        )
         index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
-        logger.info(monitor.log_snapshot(f"After index storage for {for_signal_type.get_name()}"))
-        
+        logger.info(
+            monitor.log_snapshot(
+                f"After index storage for {for_signal_type.get_name()}"
+            )
+        )
+
     finally:
         # Guaranteed cleanup even if exceptions occur
-        logger.info(monitor.log_snapshot(f"Before cleanup for {for_signal_type.get_name()}"))
+        logger.info(
+            monitor.log_snapshot(f"Before cleanup for {for_signal_type.get_name()}")
+        )
 
         # Force garbage collection to reclaim memory and attempt to free pages
         trim_process_memory(logger, "Indexer")
 
-        logger.info(monitor.log_snapshot(f"After cleanup for {for_signal_type.get_name()}"))
+        logger.info(
+            monitor.log_snapshot(f"After cleanup for {for_signal_type.get_name()}")
+        )
 
         # Log final memory trends
         logger.info(monitor.log_memory_trend())
-    
+
     logger.info(
         "Indexed %d signals for %s - %s",
         signal_count,
@@ -138,29 +150,49 @@ def _prepare_index(
     """
     # Memory monitoring is always enabled for diagnostics
     monitor = MemoryMonitor(enable_detailed_profiling=True)
-    
+
     signal_list: list[tuple[str, int]] = []
     signal_count = 0
     last_cs = None
-    
+
     # Monitor memory during signal collection
-    logger.info(monitor.log_snapshot(f"Before signal collection for {for_signal_type.get_name()}"))
-    
+    logger.info(
+        monitor.log_snapshot(
+            f"Before signal collection for {for_signal_type.get_name()}"
+        )
+    )
+
     # Collect signals
     for last_cs in bank_store.bank_yield_content(for_signal_type):
         signal_list.append((last_cs.signal_val, last_cs.bank_content_id))
         signal_count += 1
         if signal_count % 10000 == 0:  # Log memory every 10k signals
-            logger.info(monitor.log_snapshot(f"After collecting {signal_count} signals for {for_signal_type.get_name()}"))
-    
-    logger.info(monitor.log_snapshot(f"After signal collection for {for_signal_type.get_name()}"))
-    
+            logger.info(
+                monitor.log_snapshot(
+                    f"After collecting {signal_count} signals for {for_signal_type.get_name()}"
+                )
+            )
+
+    logger.info(
+        monitor.log_snapshot(
+            f"After signal collection for {for_signal_type.get_name()}"
+        )
+    )
+
     # Monitor memory during index building
-    logger.info(monitor.log_snapshot(f"Before index construction for {for_signal_type.get_name()}"))
+    logger.info(
+        monitor.log_snapshot(
+            f"Before index construction for {for_signal_type.get_name()}"
+        )
+    )
     index_cls = for_signal_type.get_index_cls()
     built_index = index_cls.build(signal_list)
-    logger.info(monitor.log_snapshot(f"After index construction for {for_signal_type.get_name()}"))
-    
+    logger.info(
+        monitor.log_snapshot(
+            f"After index construction for {for_signal_type.get_name()}"
+        )
+    )
+
     # Create checkpoint
     checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
     if last_cs is not None:

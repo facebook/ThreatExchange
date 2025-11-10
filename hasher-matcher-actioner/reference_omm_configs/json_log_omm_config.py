@@ -60,7 +60,7 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     ],
 )
 
-FLASK_LOGGING_CONFIG = dictConfig(
+dictConfig(
     {
         "version": 1,
         "formatters": {
