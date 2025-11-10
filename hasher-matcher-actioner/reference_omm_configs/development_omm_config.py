@@ -91,3 +91,13 @@ FLASK_LOGGING_CONFIG = dictConfig(
         "root": {"level": "INFO", "handlers": ["wsgi"]},
     }
 )
+
+# If you need to add something to the Flask app, the following hook function can
+# be used. Note that adding functionality may or may not prevent the UI from
+# working, especially if authentication requirements are added to the API.
+def on_flask_ready(app):
+    app.logger.info("Flask app is ready!")
+
+
+# If you aren't doing anything with the Flask `app`, this can be removed.
+APP_HOOK = on_flask_ready
