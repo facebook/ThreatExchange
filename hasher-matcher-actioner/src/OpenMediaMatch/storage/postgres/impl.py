@@ -589,7 +589,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             delete(database.BankContent).where(database.BankContent.id == content_id)
         )
         database.db.session.commit()
-        return result.rowcount  # type: ignore[attr-defined]
+        return result.rowcount
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
