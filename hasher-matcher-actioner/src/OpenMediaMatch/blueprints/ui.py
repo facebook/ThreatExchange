@@ -3,15 +3,20 @@
 import time
 import typing as t
 
-from flask import Blueprint, abort, render_template, current_app
+from flask_openapi3 import APIBlueprint
+from flask_openapi3.models import Tag
+from flask import abort, render_template, current_app
 from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
-from OpenMediaMatch.blueprints.matching import MatchWithDistance
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
+from OpenMediaMatch.schemas.ui import (
+    BankFindContentRequest,
+    BankFindContentResponse,
+)
 
-bp = Blueprint("ui", __name__)
+bp = APIBlueprint("ui", __name__, url_prefix="/ui")
 
 
 def _index_info() -> dict[str, dict[str, t.Any]]:
@@ -102,7 +107,13 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
     return ret
 
 
-@bp.route("/")
+@bp.get(
+    "/",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "UI Landing page"}},
+    summary="UI Home",
+    description="UI Landing page",
+)
 def home():
     """
     UI Landing page
@@ -125,7 +136,13 @@ def home():
     return render_template("bootstrap.html.j2", page="home", **template_vars)
 
 
-@bp.route("/banks")
+@bp.get(
+    "/banks",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Bank management page"}},
+    summary="Bank Management",
+    description="Bank management page",
+)
 def banks():
     """
     Bank management page
@@ -138,7 +155,13 @@ def banks():
     return render_template("bootstrap.html.j2", page="banks", **template_vars)
 
 
-@bp.route("/exchanges")
+@bp.get(
+    "/exchanges",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Exchange management page"}},
+    summary="Exchange Management",
+    description="Exchange management page",
+)
 def exchanges():
     """
     Exchange management page
@@ -150,7 +173,13 @@ def exchanges():
     return render_template("bootstrap.html.j2", page="exchanges", **template_vars)
 
 
-@bp.route("/match")
+@bp.get(
+    "/match",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Match debug page"}},
+    summary="Match Debug",
+    description="Match debug page",
+)
 def match_dbg():
     """
     Bank management page
@@ -158,7 +187,27 @@ def match_dbg():
     return render_template("bootstrap.html.j2", page="match_dbg")
 
 
-@bp.route("/create_bank", methods=["POST"])
+@bp.get(
+    "/documentation",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "API documentation page"}},
+    summary="API Documentation",
+    description="API documentation page with embedded Swagger UI",
+)
+def documentation():
+    """
+    API documentation page
+    """
+    return render_template("bootstrap.html.j2", page="documentation")
+
+
+@bp.post(
+    "/create_bank",
+    tags=[Tag(name="UI")],
+    responses={"302": {"description": "Redirect to banks page"}},
+    summary="Create bank (UI form)",
+    description="Create a new bank via UI form submission",
+)
 def ui_create_bank():
     # content type from dropdown form
     bank_name = request.form.get("bank_name")
@@ -168,7 +217,13 @@ def ui_create_bank():
     return redirect("./")
 
 
-@bp.route("/query", methods=["POST"])
+@bp.post(
+    "/query",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Query results"}},
+    summary="Query content (UI)",
+    description="Query content via file upload from UI",
+)
 def upload():
     current_app.logger.debug("[query] hashing input")
     signals = hashing.hash_media_from_form_data()
@@ -181,7 +236,13 @@ def upload():
     return _perform_lookup_with_details(signals, bypass_enabled_ratio)
 
 
-@bp.route("/query_url", methods=["POST"])
+@bp.post(
+    "/query_url",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Query results"}},
+    summary="Query URL (UI)",
+    description="Query content by URL from UI",
+)
 def query_url():
     """
     Query by URL instead of file upload.
@@ -216,7 +277,13 @@ def query_url():
     return _perform_lookup_with_details(signals, bypass_enabled_ratio)
 
 
-@bp.route("/query_hash", methods=["POST"])
+@bp.post(
+    "/query_hash",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Query results"}},
+    summary="Query hash (UI)",
+    description="Query by hash value from UI",
+)
 def query_hash():
     """
     Query by hash value instead of file upload or URL.
@@ -294,7 +361,9 @@ def _hash_url_for_search(url: str, content_type: str) -> dict[str, str]:
     """Utility function to hash a URL for content search."""
     try:
         # Call the hashing utility function directly
-        return hashing.hash_url_content(url)
+        return hashing.hash_url_content(
+            url, content_type_hint=content_type, signal_type_names=None
+        )
     except ValueError as e:
         abort(400, f"Failed to hash URL: {str(e)}")
     except Exception as e:
@@ -348,8 +417,14 @@ def _find_match_content_ids_by_hash(
     return content_ids, matches
 
 
-@bp.route("/bank/<bank_name>/content/find", methods=["POST"])
-def bank_find_content(bank_name: str):
+@bp.post(
+    "/bank/<bank_name>/content/find",
+    tags=[Tag(name="UI")],
+    responses={"200": {"description": "Found content items"}},
+    summary="Find bank content (UI)",
+    description="Find content in a bank by URL or hash from UI",
+)
+def bank_find_content(path: curation.BankPathParams, body: BankFindContentRequest):
     """
     Find content in a bank by URL or hash to get content IDs for removal.
 
@@ -361,27 +436,26 @@ def bank_find_content(bank_name: str):
     - {"content_ids": [1, 2, 3], "matches": [...]}
     """
     storage = get_storage()
+    bank_name = path.bank_name
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
 
-    data = request.get_json()
-    if not data:
+    if body is None:
         abort(400, "JSON payload required")
 
     # Handle URL-based search
-    if "url" in data:
-        content_type = data.get("content_type")
-        if not content_type:
+    if body.url:
+        if not body.content_type:
             abort(400, "content_type required when searching by URL")
 
-        hashes = _hash_url_for_search(data["url"], content_type)
+        hashes = _hash_url_for_search(body.url, body.content_type)
         content_ids, matches = _find_match_content_ids_by_hashes(hashes, bank_name)
 
     # Handle hash-based search
-    elif "signal_type" in data and "signal_value" in data:
-        signal_type = data["signal_type"]
-        signal_value = data["signal_value"]
+    elif body.signal_type and body.signal_value:
+        signal_type = body.signal_type
+        signal_value = body.signal_value
         content_ids, matches = _find_match_content_ids_by_hash(
             signal_type, signal_value, bank_name
         )
@@ -392,8 +466,8 @@ def bank_find_content(bank_name: str):
             "Either 'url' with 'content_type' or 'signal_type' with 'signal_value' required",
         )
 
-    return {
-        "content_ids": list(content_ids),
-        "matches": matches,
-        "bank_name": bank_name,
-    }
+    response = BankFindContentResponse(
+        content_ids=list(content_ids), matches=matches, bank_name=bank_name
+    )
+
+    return response.model_dump()

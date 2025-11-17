@@ -17,10 +17,7 @@ from threatexchange.utils import dataclass_json
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.pdq.signal import PdqSignal
 
-from OpenMediaMatch.tests.utils import (
-    app,
-    client,
-)
+from OpenMediaMatch.tests.utils import app, client, create_bank
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
 
@@ -29,6 +26,15 @@ def test_status_response(client: FlaskClient):
     response = client.get("/status")
     assert response.status_code == 200
     assert response.data == b"I-AM-ALIVE"
+
+
+def test_openapi_documentation_available(client: FlaskClient):
+    response = client.get("/openapi/openapi.json")
+    assert response.status_code == 200
+    assert response.is_json
+    payload = response.get_json()
+    assert payload is not None
+    assert payload.get("info", {}).get("title") == "Open Media Match API"
 
 
 def test_lookup_success(app: Flask, client: FlaskClient):

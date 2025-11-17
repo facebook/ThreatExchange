@@ -14,11 +14,14 @@ import os
 import datetime
 import sys
 import typing as t
+from importlib.metadata import PackageNotFoundError, version as get_package_version
 
 import click
 import flask
 from flask.logging import default_handler
 from flask_apscheduler import APScheduler
+from flask_openapi3 import OpenAPI, APIBlueprint
+from flask_openapi3.models import Info, Tag
 
 from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
@@ -33,6 +36,11 @@ from OpenMediaMatch.background_tasks import (
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.utils import dev_utils
+
+try:
+    _APP_VERSION = get_package_version("OpenMediaMatch")
+except PackageNotFoundError:
+    _APP_VERSION = "0.0.0"
 
 
 def _is_debug_mode():
@@ -58,7 +66,7 @@ def _setup_task_logging(app_logger: logging.Logger):
     build_index.logger = app_logger.getChild("Indexer")
 
 
-def create_app() -> flask.Flask:
+def create_app() -> OpenAPI:
     """
     Create and configure the Flask app
     """
@@ -67,7 +75,59 @@ def create_app() -> flask.Flask:
     root = logging.getLogger()
     if not root.handlers:
         root.addHandler(default_handler)
-    app = flask.Flask(__name__)
+
+    app = OpenAPI(
+        __name__,
+        info=Info(
+            title="Open Media Match API",
+            version=_APP_VERSION,
+            description="Hasher-Matcher-Actioner (HMA) - A reference implementation for content moderation copy detection",
+        ),
+        doc_ui=True,
+        doc_prefix="/openapi",
+        doc_url="/openapi.json",
+    )
+
+    default_tags = [
+        Tag(
+            name="Core",
+            description="Health checks and system status endpoints",
+        ),
+        Tag(
+            name="Hashing",
+            description="Generate perceptual hashes (PDQ, TMK, vPDQ) for photos and videos",
+        ),
+        Tag(
+            name="Matching",
+            description="Match content against indexed hashes from banks with similarity scoring",
+        ),
+        Tag(
+            name="Banks",
+            description="Manage content banks - collections of known content for matching",
+        ),
+        Tag(
+            name="Bank Content",
+            description="Add, update, and remove content items within banks",
+        ),
+        Tag(
+            name="Exchanges",
+            description="Configure external signal exchanges like ThreatExchange for collaborative sharing",
+        ),
+        Tag(
+            name="Configuration",
+            description="System-wide configuration for signal types, content types, and indexing",
+        ),
+        Tag(
+            name="UI",
+            description="Web-based user interface pages (HTML responses)",
+        ),
+        Tag(
+            name="Development",
+            description="Development and testing utilities - not for production use",
+        ),
+    ]
+    app.tags.extend(default_tags)
+    app.tag_names.extend(tag.name for tag in default_tags)
 
     if "OMM_CONFIG" in os.environ:
         app.config.from_envvar("OMM_CONFIG")
@@ -154,21 +214,21 @@ def create_app() -> flask.Flask:
         # URL prefixing facilitates easy Layer 7 routing :)
 
         if is_ui_enabled:
-            app.register_blueprint(ui.bp, url_prefix="/ui")
+            app.register_api(ui.bp)
 
         if not app.config.get("PRODUCTION", False):
-            app.register_blueprint(development.bp, url_prefix="/dev")
+            app.register_api(development.bp)
 
         if app.config.get("ROLE_HASHER", False):
-            app.register_blueprint(hashing.bp, url_prefix="/h")
+            app.register_api(hashing.bp)
 
         if app.config.get("ROLE_MATCHER", False):
-            app.register_blueprint(matching.bp, url_prefix="/m")
+            app.register_api(matching.bp)
             if app.config.get("TASK_INDEX_CACHE", False) and not running_migrations:
                 matching.initiate_index_cache(app, scheduler)
 
         if app.config.get("ROLE_CURATOR", False):
-            app.register_blueprint(curation.bp, url_prefix="/c")
+            app.register_api(curation.bp)
 
         # Allow the config to hook into the Flask app to add things like auth,
         # new endpoints, etc as may be required by their environments. HMA itself
@@ -177,12 +237,27 @@ def create_app() -> flask.Flask:
         # Note: we want this to fail if the defined function isn't a function.
         app.config.get("APP_HOOK", lambda _: None)(app)
 
-    @app.route("/")
+    @app.get(
+        "/",
+        tags=[Tag(name="Core")],
+        responses={"302": {"description": "Redirect to UI or status"}},
+        summary="Home endpoint",
+        description="Redirects to UI if enabled, otherwise to status endpoint",
+    )
     def home():
         dst = "ui" if is_ui_enabled else "status"
         return flask.redirect(f"/{dst}")
 
-    @app.route("/status")
+    @app.get(
+        "/status",
+        tags=[Tag(name="Core")],
+        responses={
+            "200": {"description": "Service is alive"},
+            "503": {"description": "Service is not ready"},
+        },
+        summary="Health check",
+        description="Liveness/readiness check",
+    )
     def status():
         """
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
@@ -192,7 +267,13 @@ def create_app() -> flask.Flask:
                 return f"INDEX-STALE", 503
         return "I-AM-ALIVE", 200
 
-    @app.route("/site-map")
+    @app.get(
+        "/site-map",
+        tags=[Tag(name="Core")],
+        responses={"200": {"description": "List of available routes"}},
+        summary="Site map",
+        description="Get list of all available API routes",
+    )
     def site_map():
         # Use a set to avoid duplicates (e.g. same path, multiple methods)
         routes = set()
