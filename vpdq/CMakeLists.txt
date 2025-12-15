@@ -27,7 +27,7 @@ add_custom_command(
   COMMENT
     "Making ${CMAKE_CURRENT_BINARY_DIR}/python/vpdq.cpp from ${CMAKE_CURRENT_SOURCE_DIR}/python/vpdq.pyx"
   COMMAND
-    Python::Interpreter -m cython "${CMAKE_CURRENT_SOURCE_DIR}/python/vpdq.pyx"
+    Python::Interpreter -m cython --cplus "${CMAKE_CURRENT_SOURCE_DIR}/python/vpdq.pyx"
     --output-file "${CMAKE_CURRENT_SOURCE_DIR}/python/vpdq.cpp"
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/python/vpdq.pyx
   VERBATIM)
