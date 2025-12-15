@@ -10,21 +10,20 @@ with warnings.catch_warnings():
 # Resume regularly scheduled imports
 
 import logging
+import logging.config
 import os
 import datetime
 import sys
-import typing as t
 from importlib.metadata import PackageNotFoundError, version as get_package_version
 
 import click
 import flask
 from flask.logging import default_handler
 from flask_apscheduler import APScheduler
-from flask_openapi3 import OpenAPI, APIBlueprint
+from flask_openapi3 import OpenAPI
 from flask_openapi3.models import Info, Tag
 
 from threatexchange.exchanges import auth
-from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
@@ -41,14 +40,6 @@ try:
     _APP_VERSION = get_package_version("OpenMediaMatch")
 except PackageNotFoundError:
     _APP_VERSION = "0.0.0"
-
-
-def _is_debug_mode():
-    """Does it look like the app is being run in debug mode?"""
-    debug = os.environ.get("FLASK_DEBUG")
-    if not debug:
-        return os.environ.get("FLASK_ENV") == "development"
-    return debug.lower() not in ("0", "false", "no")
 
 
 def _is_werkzeug_reloaded_process():

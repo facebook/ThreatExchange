@@ -513,10 +513,7 @@ def exchange_create():
     try:
         cfg = dataclass_json.dataclass_load_dict(api_json, api_type.get_config_cls())
     except Exception as e:
-        abort(
-            400,
-            f"Failed to parse `api_json` - verify all fields are supplied. {str(e)}",
-        )
+        abort(400, f"Failed to parse `api_json` - {str(e)}")
 
     storage.exchange_update(cfg, create=True)
 
