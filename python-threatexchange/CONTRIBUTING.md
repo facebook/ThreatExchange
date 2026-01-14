@@ -133,3 +133,62 @@ $ black .
 $ python -m mypy threatexchange
 $ py.test
 ```
+
+## Hello World Excercise
+A way to verify your development environment is to make a small change in the codebase and see the result. 
+
+For this exercise, we are going to make a small change to the default text matching system, so that the text "hello world" will trigger as a match with the example dataset.
+
+Once you have your copy of the code, we're going to head over to [RawTextSignal](https://github.com/facebook/ThreatExchange/blob/main/python-threatexchange/threatexchange/signal_type/raw_text.py#L98), specifically it's list of sample signals. What you are seeing in this file:
+* python-threatexchange has interfaces for the core concepts of signal exchange. One of these interfaces is "Signal", or a signature of content that can be serialized into a string and shared.
+* RawTextSignal represents simple human-readable unicode text
+  * Another interface, called ContentType tells python-threatexchange how to pair signals with inputs, such as text files
+* python-threatexchange focuses on making these concepts easy to demonstrate, so every SignalType comes with example signals built in
+
+**Our change**: We are going to add the text "hello world" to the list of example signals, which are loaded during demo use
+
+Once you've made the change, we also need to make sure we've set up our execution environment for local execution. The instructions for that are [in this file](#installing-locally).
+
+Once you've set up a local install, let's test our changes in the terminal.
+
+```
+$ threatexchange fetch
+$ threatexchange match text -- 'hello world'
+raw_text - (Sample Signals) INVESTIGATION_SEED
+```
+If you don't see 'hello world' in the matching set, you may need to debug! Instructions are below.
+
+### Debugging 
+If you don't see the output for hello world, here are some things to try:
+
+#### Make sure you are aliased to the local version and in the right directory / "No such command threatexchange"
+```bash
+which threatexchange
+```
+pip install -e will only use the local copy if you are in a subfolder of the directory you installed from. `cd` over to your local checkout directory before running commands. You can use the `which` command to see which binary is being called by threatexchange.
+
+#### Stale index
+`threatexchange` only matches against the last copy of the data it built, if you ran `fetch` or `match` before making the change, the built index won't have your new signal.
+
+Run 
+```bash
+threatexchange fetch
+```
+to pick up the newest version of the data.
+
+#### Factory reset
+If you have been doing other customizations to the local state, you can bring it back to a freshly installed state by doing 
+```bash
+threatexchange --factory-reset
+```
+If you somehow got the CLI into a state that the `threatexchange` command can't even run, you can get the same results by doing 
+```bash
+rm -r ~/.threatexchange
+```
+
+#### None of the above worked!
+You can [open an issue](https://github.com/facebook/ThreatExchange/issues) to help us update the docs here if you ran into something that isn't covered. In the issue please list:
+1. Your operating system / terminal environment (e.g. bash, tmux, windows powershell)
+2. The commands ran, and the full output of any errors you are seeing
+3. (For code issues) `git diff` can be used to demonstrate the local changes you made
+
