@@ -133,10 +133,30 @@ def create_app() -> OpenAPI:
     # Override fields with environment variables
     app.config.from_prefixed_env("OMM")
 
-    app.config.update(
-        SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    )
+    # Configure database URIs for read/write if provided
+    # DATABASE_URI is used as the default/write database
+    # DATABASE_READ_URI (if provided) will be used for read operations
+    database_uri = app.config.get("DATABASE_URI")
+    database_read_uri = app.config.get("DATABASE_READ_URI", None)
+    
+    sqlalchemy_config = {
+        "SQLALCHEMY_DATABASE_URI": database_uri,
+        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+    }
+    
+    # If a separate read database is configured, set up binds
+    if database_read_uri:
+        sqlalchemy_config["SQLALCHEMY_BINDS"] = {
+            "read": database_read_uri,
+        }
+        app.logger.info("Read/Write database separation enabled")
+        app.logger.info(f"Write DB: {database_uri}")
+        app.logger.info(f"Read DB: {database_read_uri}")
+    else:
+        app.logger.info("Using single database for all operations")
+        app.logger.info(f"Database: {database_uri}")
+    
+    app.config.update(sqlalchemy_config)
 
     logging_config = app.config.get("FLASK_LOGGING_CONFIG")
     if logging_config:
