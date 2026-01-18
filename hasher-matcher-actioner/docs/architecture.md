@@ -112,6 +112,27 @@ Two concurrent API call flows are illustrated here. From the left, we have the h
 
 ![Database schema](../diagrams/database-schema.svg)
 
+### Database Read/Write Separation
+
+For high-availability deployments, OMM supports routing read queries to a read replica while directing writes to the primary database. This is optional and configured via environment variables:
+
+| Variable | Description |
+| -------- | ----------- |
+| `DATABASE_URI` | Primary database connection (required) - used for all write operations |
+| `DATABASE_READ_URI` | Read replica connection (optional) - used for read-only queries |
+
+When `DATABASE_READ_URI` is configured, the application uses two helper functions:
+
+- `get_write_session()` - Returns a session connected to the primary database
+- `get_read_session()` - Returns a session connected to the read replica (falls back to primary if not configured)
+
+This separation allows you to:
+- Scale read capacity independently by adding read replicas
+- Reduce load on the primary database
+- Improve query performance for read-heavy workloads (e.g., matchers)
+
+If only `DATABASE_URI` is provided, all operations use the primary database.
+
 ### Indexing: FAISS
 
 [FAISS](https://github.com/facebookresearch/faiss) is an open source library that provides efficient solutions for similarity search and clustering of dense vectors. This is particularly well-suited to media similarity search. We start with a simple table which maps content IDs to their PDQ hash:
