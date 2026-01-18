@@ -3,15 +3,8 @@
 """
 Example OMM configuration with read/write database separation.
 
-This configuration demonstrates how to set up separate database connections
-for read and write operations, which is useful for:
-- Load balancing across read replicas
-- Reducing load on the primary database
-- Improving read performance by distributing queries
-- Supporting database replication architectures
-
-IMPORTANT: The read replica must be in sync with the primary database.
-Replication lag can cause inconsistencies if not properly managed.
+This demonstrates separate database connections for read and write operations.
+Useful for load balancing reads across replicas while writes go to primary.
 """
 
 from logging.config import dictConfig
@@ -28,33 +21,16 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
 )
 
-# Database configuration - Write database (primary)
+# Database configuration
 DBUSER = "media_match"
 DBPASS = "hunter2"
-DBHOST = "db-primary"  # Primary database hostname
 DBNAME = "media_match"
-DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
-# Read database configuration (read replica)
-# This can point to a read replica, read-only replica, or load balancer
-# in front of multiple read replicas
-READ_DBHOST = "db-replica"  # Read replica hostname or load balancer
-DATABASE_READ_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{READ_DBHOST}/{DBNAME}"
+# Primary database (writes)
+DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@db-primary/{DBNAME}"
 
-# Alternative configurations:
-# 
-# 1. Using environment variables for sensitive data:
-# import os
-# DATABASE_URI = os.getenv("DATABASE_WRITE_URI", "postgresql://...")
-# DATABASE_READ_URI = os.getenv("DATABASE_READ_URI", "postgresql://...")
-#
-# 2. Using the same database for both (no read/write split):
-# DATABASE_URI = "postgresql://..."
-# # DATABASE_READ_URI is not set, so all operations use DATABASE_URI
-#
-# 3. Using a connection pooler like PgBouncer:
-# DATABASE_URI = "postgresql://...@pgbouncer:6432/..."
-# DATABASE_READ_URI = "postgresql://...@pgbouncer-readonly:6432/..."
+# Read replica (reads) - optional, falls back to primary if not set
+DATABASE_READ_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@db-replica/{DBNAME}"
 
 # Role configuration
 PRODUCTION = True
@@ -63,20 +39,12 @@ ROLE_MATCHER = True
 ROLE_CURATOR = True
 UI_ENABLED = True
 
-# Background tasks configuration
-# In a read/write split setup, you may want to run these on dedicated instances
-TASK_FETCHER = True  # This writes to the database
-TASK_INDEXER = True  # This writes to the database
-TASK_INDEX_CACHE = True  # This reads from the database
+# Background tasks
+TASK_FETCHER = True
+TASK_INDEXER = True
+TASK_INDEX_CACHE = True
 
-# Task intervals (in seconds)
-TASK_FETCHER_INTERVAL_SECONDS = 60 * 4  # 4 minutes
-TASK_INDEXER_INTERVAL_SECONDS = 60  # 1 minute
-TASK_INDEX_CACHE_INTERVAL_SECONDS = 30  # 30 seconds
-
-MAX_REMOTE_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-
-# Core functionality configuration
+# Core functionality
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     signal_types=[PdqSignal, VideoMD5Signal],
     content_types=[PhotoContent, VideoContent],
@@ -88,7 +56,7 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
     ],
 )
 
-# Logging configuration
+# Logging
 FLASK_LOGGING_CONFIG = dictConfig(
     {
         "version": 1,
@@ -107,25 +75,3 @@ FLASK_LOGGING_CONFIG = dictConfig(
         "root": {"level": "INFO", "handlers": ["wsgi"]},
     }
 )
-
-
-def on_flask_ready(app):
-    """
-    Hook called when Flask app is ready.
-    
-    In a read/write split configuration, you might want to:
-    - Validate database connectivity to both primary and replica
-    - Check replication lag
-    - Set up monitoring for database health
-    """
-    app.logger.info("Flask app is ready with read/write database separation!")
-    
-    # Log database configuration (without sensitive info)
-    if 'DATABASE_READ_URI' in app.config:
-        app.logger.info("Read/write database separation is ENABLED")
-    else:
-        app.logger.info("Read/write database separation is DISABLED (using single database)")
-
-
-APP_HOOK = on_flask_ready
-
