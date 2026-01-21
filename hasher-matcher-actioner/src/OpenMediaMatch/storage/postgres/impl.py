@@ -3,6 +3,7 @@
 """
 The default store for accessing persistent data on OMM.
 """
+
 from dataclasses import dataclass
 import pickle
 import time
