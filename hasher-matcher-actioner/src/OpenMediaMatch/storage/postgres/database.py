@@ -79,12 +79,12 @@ db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 def get_read_session():
     """
     Get a session bound to the read replica database.
-    
+
     Use for read-only queries that can tolerate slight staleness.
     Falls back to primary if no replica is configured.
     """
     try:
-        read_engine = db.get_engine(bind_key='read')
+        read_engine = db.get_engine(bind_key="read")
         return Session(read_engine)
     except (KeyError, RuntimeError):
         return db.session
@@ -93,7 +93,7 @@ def get_read_session():
 def get_write_session():
     """
     Get a session bound to the primary database.
-    
+
     Use for all write operations and reads requiring latest data.
     """
     return db.session

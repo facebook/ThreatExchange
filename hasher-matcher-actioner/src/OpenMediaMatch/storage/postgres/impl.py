@@ -101,9 +101,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
         explicit_settings = {
             s.api: s
-            for s in get_read_session().execute(
-                select(database.ExchangeAPIConfig)
-            ).scalars()
+            for s in get_read_session()
+            .execute(select(database.ExchangeAPIConfig))
+            .scalars()
         }
 
         ret = {}
@@ -177,20 +177,24 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     @staticmethod
     def _query_signal_type_overrides() -> dict[str, float]:
-        db_records = get_read_session().execute(
-            select(database.SignalTypeOverride)
-        ).all()
+        db_records = (
+            get_read_session().execute(select(database.SignalTypeOverride)).all()
+        )
         return {record.name: record.enabled_ratio for record, in db_records}
 
     # Index
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
-        db_record = get_read_session().execute(
-            select(database.SignalIndex).where(
-                database.SignalIndex.signal_type == signal_type.get_name()
+        db_record = (
+            get_read_session()
+            .execute(
+                select(database.SignalIndex).where(
+                    database.SignalIndex.signal_type == signal_type.get_name()
+                )
             )
-        ).scalar_one_or_none()
+            .scalar_one_or_none()
+        )
 
         if db_record is None or not db_record.index_lobj_exists():
             return None
@@ -219,11 +223,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
-        db_record = get_read_session().execute(
-            select(database.SignalIndex).where(
-                database.SignalIndex.signal_type == signal_type.get_name()
+        db_record = (
+            get_read_session()
+            .execute(
+                select(database.SignalIndex).where(
+                    database.SignalIndex.signal_type == signal_type.get_name()
+                )
             )
-        ).scalar_one_or_none()
+            .scalar_one_or_none()
+        )
 
         if db_record is None or not db_record.index_lobj_exists():
             return None
@@ -261,9 +269,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
         }
 
     def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
-        return get_read_session().execute(
-            select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
-        ).scalar_one_or_none()
+        return (
+            get_read_session()
+            .execute(
+                select(database.ExchangeConfig).where(
+                    database.ExchangeConfig.name == name
+                )
+            )
+            .scalar_one_or_none()
+        )
 
     def exchange_get_client(
         self, collab_config: CollaborationConfigBase
@@ -476,11 +490,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if cfg is None:
             raise KeyError(f"No such config '{collab_name}'")
 
-        res = get_read_session().execute(
-            select(database.ExchangeData)
-            .where(database.ExchangeData.collab_id == cfg.id)
-            .where(database.ExchangeData.fetch_id == str(key))
-        ).scalar_one_or_none()
+        res = (
+            get_read_session()
+            .execute(
+                select(database.ExchangeData)
+                .where(database.ExchangeData.collab_id == cfg.id)
+                .where(database.ExchangeData.fetch_id == str(key))
+            )
+            .scalar_one_or_none()
+        )
         if res is None:
             raise KeyError("No exchange data with name and key")
         dat = res.pickled_fetch_signal_metadata
@@ -495,16 +513,20 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
         """Override for more efficient lookup."""
-        bank = get_read_session().execute(
-            select(database.Bank).where(database.Bank.name == name)
-        ).scalar_one_or_none()
+        bank = (
+            get_read_session()
+            .execute(select(database.Bank).where(database.Bank.name == name))
+            .scalar_one_or_none()
+        )
 
         return None if bank is None else bank.as_storage_iface_cls()
 
     def _get_bank(self, name: str) -> t.Optional[database.Bank]:
-        return get_read_session().execute(
-            select(database.Bank).where(database.Bank.name == name)
-        ).scalar_one_or_none()
+        return (
+            get_read_session()
+            .execute(select(database.Bank).where(database.Bank.name == name))
+            .scalar_one_or_none()
+        )
 
     def bank_update(
         self,
@@ -527,16 +549,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_delete(self, name: str) -> None:
         sesh = get_write_session()
-        sesh.execute(
-            delete(database.Bank).where(database.Bank.name == name)
-        )
+        sesh.execute(delete(database.Bank).where(database.Bank.name == name))
         sesh.commit()
 
     def bank_content_get(
         self, ids: t.Iterable[int]
     ) -> t.Sequence[interface.BankContentConfig]:
         contents = (
-            get_read_session().query(database.BankContent)
+            get_read_session()
+            .query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .all()
         )
@@ -546,7 +567,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, ids: t.Iterable[int]
     ) -> t.Dict[int, t.Dict[str, str]]:
         contents = (
-            get_read_session().query(database.BankContent)
+            get_read_session()
+            .query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .options(joinedload(database.BankContent.signals))
             .all()
@@ -600,7 +622,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             delete(database.BankContent).where(database.BankContent.id == content_id)
         )
         sesh.commit()
-        return result.rowcount  # type: ignore[attr-defined]
+        return result.rowcount
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]

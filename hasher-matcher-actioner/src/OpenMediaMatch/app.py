@@ -138,12 +138,12 @@ def create_app() -> OpenAPI:
     # DATABASE_READ_URI (if provided) will be used for read operations
     database_uri = app.config.get("DATABASE_URI")
     database_read_uri = app.config.get("DATABASE_READ_URI", None)
-    
+
     sqlalchemy_config = {
         "SQLALCHEMY_DATABASE_URI": database_uri,
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
     }
-    
+
     # If a separate read database is configured, set up binds
     if database_read_uri:
         sqlalchemy_config["SQLALCHEMY_BINDS"] = {
@@ -155,7 +155,7 @@ def create_app() -> OpenAPI:
     else:
         app.logger.info("Using single database for all operations")
         app.logger.info(f"Database: {database_uri}")
-    
+
     app.config.update(sqlalchemy_config)
 
     logging_config = app.config.get("FLASK_LOGGING_CONFIG")

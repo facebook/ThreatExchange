@@ -92,6 +92,7 @@ FLASK_LOGGING_CONFIG = dictConfig(
     }
 )
 
+
 # If you need to add something to the Flask app, the following hook function can
 # be used. Note that adding functionality may or may not prevent the UI from
 # working, especially if authentication requirements are added to the API.
