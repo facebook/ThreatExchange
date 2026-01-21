@@ -37,8 +37,8 @@
           "**/*.egg-info": true,
           "**/__pycache__": true
         },
-        "mypy-type-checker.path": ["/usr/local/py-utils/bin/mypy"],
-        "black-formatter.path": ["/usr/local/py-utils/bin/black"]
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "black-formatter.importStrategy": "fromEnvironment"
       }
     }
   },
