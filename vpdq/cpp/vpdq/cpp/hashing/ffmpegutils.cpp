@@ -47,7 +47,7 @@ void saveFrameToFile(AVFramePtr frame, const std::string& filename) {
 
 AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   AVFramePtr frame(av_frame_alloc());
-  if (frame.get() == nullptr) {
+  if (frame == nullptr) {
     throw std::bad_alloc();
   }
 
@@ -55,8 +55,7 @@ AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   frame->width = width;
   frame->height = height;
 
-  if (av_image_alloc(
-          frame->data, frame->linesize, width, height, PIXEL_FORMAT, 1) < 0) {
+  if (av_frame_get_buffer(frame.get(), 0) < 0) {
     throw std::bad_alloc();
   }
   return frame;
