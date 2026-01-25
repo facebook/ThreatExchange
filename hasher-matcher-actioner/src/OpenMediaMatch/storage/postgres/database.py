@@ -77,6 +77,7 @@ db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 
 _last_read_session_warning_time: float = 0
 
+
 def get_read_session():
     """
     Get a session bound to the read replica database.
