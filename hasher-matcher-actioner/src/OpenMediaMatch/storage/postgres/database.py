@@ -75,18 +75,28 @@ class Base(DeclarativeBase):
 # Standard Flask-SQLAlchemy initialization
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 
+_last_read_session_warning_time: float = 0
 
 def get_read_session():
     """
     Get a session bound to the read replica database.
 
     Use for read-only queries that can tolerate slight staleness.
-    Falls back to primary if no replica is configured.
+    Falls back to primary if read engine is unavailable (e.g., during migrations).
     """
+    global _last_read_session_warning_time
     try:
         read_engine = db.get_engine(bind_key="read")
         return Session(read_engine)
-    except (KeyError, RuntimeError):
+    except RuntimeError as e:
+        # This can happen during migrations or if the app context isn't fully initialized.
+        # Rate-limit the warning to avoid log spam (once per 10 seconds).
+        now = time.monotonic()
+        if now - _last_read_session_warning_time > 10:
+            _last_read_session_warning_time = now
+            logging.warning(
+                "Failed to get read session, falling back to primary: %s", e
+            )
         return db.session
 
 
