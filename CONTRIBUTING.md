@@ -24,27 +24,31 @@ Here's an easy way to get started:
 Next, [fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo.
 Here's where you'll push development branches. Note the name, we'll need it in the next step.
 
-Next, we'll add your forked copy as a remote.
-
-    # From the root directory of your locally cloned repo
-    git remote add fork git@github.com:<USUALLY_YOUR_USERNAME>/ThreatExchange
-
 Lastly, we'll add the fork as the preferred repo to push to
 
     # From the root directory of your locally cloned repo
-     git config --global push.default fork
+     git config push.default fork
+
+There are some common [git aliases](https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases) you may use, which you can add if you'd like:
+
+    # you can add --global to these to affect all your repos
+    git config alias.co checkout
+    git config alias.br branch
+    git config alias.ci commit
+    git config alias.st status
 
 This will give you an easy development cycle for updating your copy:
 
-    git co main  # co is a common shortcut for `checkout`
-    git pull  # Get all the new commits from the upstream
+    git checkout main  # co is a common shortcut for `checkout`
+    git pull upstream # Get all the new commits from the upstream
 
 If you are a git expert, you likely know of other ways to set this up, to your preference!
 
 ## Branch locally and develop!
+
 First, make a branch in your cloned fork.
 
-    git co -b <MY_COOL_FEATURE_BRANCH_NAME>
+    git checkout -b <MY_COOL_FEATURE_BRANCH_NAME>
 
 We suggest naming the branch by feature name
 or “issue_XX” where XX is the issue number the branch is associated with. Make
