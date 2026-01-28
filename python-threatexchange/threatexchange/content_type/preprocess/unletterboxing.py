@@ -20,7 +20,7 @@ def detect_top_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for y in range(height):
-        row_pixels = list(image.crop((0, y, width, y + 1)).getdata())
+        row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
         if all(is_pixel_black(pixel, black_threshold) for pixel in row_pixels):
             continue
         return y
@@ -35,7 +35,7 @@ def detect_bottom_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for y in range(height - 1, -1, -1):
-        row_pixels = list(image.crop((0, y, width, y + 1)).getdata())
+        row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
         if all(is_pixel_black(pixel, black_threshold) for pixel in row_pixels):
             continue
         return height - y - 1
@@ -50,7 +50,7 @@ def detect_left_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for x in range(width):
-        col_pixels = list(image.crop((x, 0, x + 1, height)).getdata())
+        col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
         if all(is_pixel_black(pixel, black_threshold) for pixel in col_pixels):
             continue
         return x
@@ -65,7 +65,7 @@ def detect_right_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for x in range(width - 1, -1, -1):
-        col_pixels = list(image.crop((x, 0, x + 1, height)).getdata())
+        col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
         if all(is_pixel_black(pixel, black_threshold) for pixel in col_pixels):
             continue
         return width - x - 1
