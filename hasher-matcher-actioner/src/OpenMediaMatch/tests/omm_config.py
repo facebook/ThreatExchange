@@ -20,7 +20,7 @@ ROLE_CURATOR = True
 
 TASK_FETCHER = False
 TASK_INDEXER = False
-TASK_INDEX_CACHE = False
+TASK_INDEX_CACHE = False  # Sadly doesn't work well for tests
 MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB max file size
 
 # This can help debug tests on the database

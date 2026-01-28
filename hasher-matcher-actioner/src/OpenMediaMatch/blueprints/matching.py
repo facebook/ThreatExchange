@@ -70,6 +70,7 @@ class _SignalIndexInMemoryCache:
     index: SignalTypeIndex[int]
     checkpoint: interface.SignalTypeIndexBuildCheckpoint
     last_check_ts: float
+    sec_old_before_stale: int
 
     @property
     def is_ready(self):
@@ -80,15 +81,21 @@ class _SignalIndexInMemoryCache:
         """
         If we are overdue on refresh by too long, consider it stale.
         """
-        return time.time() - self.last_check_ts > 65
+        limit = self.sec_old_before_stale
+        if limit <= 0:  # 0 disables stale check
+            return False
+        return time.time() - self.last_check_ts > limit
 
     @classmethod
-    def get_initial(cls, signal_type: t.Type[SignalType]) -> t.Self:
+    def get_initial(
+        cls, signal_type: t.Type[SignalType], sec_old_before_stale: int
+    ) -> t.Self:
         return cls(
             signal_type,
             signal_type.get_index_cls().build([]),
             interface.SignalTypeIndexBuildCheckpoint.get_empty(),
             0,
+            sec_old_before_stale,
         )
 
     def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
@@ -545,7 +552,9 @@ def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
     assert not hasattr(app, "signal_type_index_cache"), "Aready initialized?"
     storage = get_storage()
     cache = {
-        st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(st.signal_type)
+        st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(
+            st.signal_type, int(app.config.get("INDEX_CACHE_MAX_STALE_SEC", 65))
+        )
         for st in storage.get_signal_type_configs().values()
     }
     if scheduler is not None:
@@ -566,6 +575,10 @@ def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
 
 def _get_index_cache() -> IndexCache:
     return t.cast(IndexCache, getattr(current_app, "signal_type_index_cache", {}))
+
+
+def index_cache_is_ready() -> bool:
+    return all(idx.is_ready for idx in _get_index_cache().values())
 
 
 def index_cache_is_stale() -> bool:

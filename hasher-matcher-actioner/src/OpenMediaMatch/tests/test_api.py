@@ -3,7 +3,9 @@
 from io import BytesIO
 import tempfile
 import typing as t
+import time
 
+from pytest import MonkeyPatch
 from flask.testing import FlaskClient
 from flask import Flask
 from PIL import Image
@@ -16,13 +18,55 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 from threatexchange.utils import dataclass_json
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
 
 from OpenMediaMatch.tests.utils import app, client, create_bank
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.blueprints import matching
+from OpenMediaMatch.storage import interface
 
 
-def test_status_response(client: FlaskClient):
+def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
+    response = client.get("/status")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    cache_val = matching._SignalIndexInMemoryCache(
+        PdqSignal,
+        PDQIndex2(),
+        interface.SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        last_check_ts=0.0,
+        sec_old_before_stale=0,
+    )
+
+    def fake_cache() -> matching.IndexCache:
+        return {PdqSignal.get_name(): cache_val}
+
+    # We can't easily run the caching tasks in tests,
+    # but we can fake it
+    monkeypatch.setattr(matching, "_get_index_cache", fake_cache)
+
+    assert not cache_val.is_ready
+    response = client.get("/status")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-NOT-LOADED"
+
+    # We also are okay if the cache is old but we configured to not care
+    cache_val.last_check_ts = 1
+
+    response = client.get("/status")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    # But if we do care, status should be no good
+    cache_val.sec_old_before_stale = 65
+
+    response = client.get("/status")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-STALE"
+
+    cache_val.last_check_ts = time.time()
     response = client.get("/status")
     assert response.status_code == 200
     assert response.data == b"I-AM-ALIVE"

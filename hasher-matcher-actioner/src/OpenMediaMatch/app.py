@@ -272,8 +272,10 @@ def create_app() -> OpenAPI:
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
         if app.config.get("ROLE_MATCHER", False):
+            if not matching.index_cache_is_ready():
+                return "INDEX-NOT-LOADED", 503
             if matching.index_cache_is_stale():
-                return f"INDEX-STALE", 503
+                return "INDEX-STALE", 503
         return "I-AM-ALIVE", 200
 
     @app.get(
