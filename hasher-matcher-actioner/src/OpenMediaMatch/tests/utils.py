@@ -15,7 +15,6 @@ from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres import database
 from sqlalchemy.sql import text
 
-
 IMAGE_URL_TO_PDQ = {
     "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
     "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true": "e64cc9d91c623882f8d1f1d9a398e78c9f199b3bd83924f2b7e11e0bf861b064",

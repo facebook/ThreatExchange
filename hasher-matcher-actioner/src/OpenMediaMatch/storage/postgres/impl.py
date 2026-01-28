@@ -3,6 +3,7 @@
 """
 The default store for accessing persistent data on OMM.
 """
+
 from dataclasses import dataclass
 import pickle
 import time
@@ -39,6 +40,11 @@ from threatexchange.exchanges.fetch_state import (
 from OpenMediaMatch.storage import interface
 from threatexchange.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.storage.postgres import database, flask_utils
+from OpenMediaMatch.storage.postgres.database import (
+    get_read_session,
+    get_write_session,
+    init_read_replica,
+)
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -100,9 +106,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
         explicit_settings = {
             s.api: s
-            for s in database.db.session.execute(
-                select(database.ExchangeAPIConfig)
-            ).scalars()
+            for s in get_read_session()
+            .execute(select(database.ExchangeAPIConfig))
+            .scalars()
         }
 
         ret = {}
@@ -129,7 +135,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
                     f" {cfg.credentials.__class__.__name__} for"
                     f" {api_cls.get_name()}"
                 )
-        sesh = database.db.session
+        sesh = get_write_session()
         config = sesh.execute(
             select(database.ExchangeAPIConfig).where(
                 database.ExchangeAPIConfig.api == api_cls.get_name()
@@ -157,7 +163,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, signal_type: str, enabled_ratio: float
     ) -> None:
         """Create or update database entry for a signal type, setting a new value."""
-        db_record = database.db.session.execute(
+        sesh = get_write_session()
+        db_record = sesh.execute(
             select(database.SignalTypeOverride).where(
                 database.SignalTypeOverride.name == signal_type
             )
@@ -165,30 +172,34 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if db_record is not None:
             db_record.enabled_ratio = enabled_ratio
         else:
-            database.db.session.add(
+            sesh.add(
                 database.SignalTypeOverride(
                     name=signal_type, enabled_ratio=enabled_ratio
                 )
             )
 
-        database.db.session.commit()
+        sesh.commit()
 
     @staticmethod
     def _query_signal_type_overrides() -> dict[str, float]:
-        db_records = database.db.session.execute(
-            select(database.SignalTypeOverride)
-        ).all()
+        db_records = (
+            get_read_session().execute(select(database.SignalTypeOverride)).all()
+        )
         return {record.name: record.enabled_ratio for record, in db_records}
 
     # Index
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
-        db_record = database.db.session.execute(
-            select(database.SignalIndex).where(
-                database.SignalIndex.signal_type == signal_type.get_name()
+        db_record = (
+            get_read_session()
+            .execute(
+                select(database.SignalIndex).where(
+                    database.SignalIndex.signal_type == signal_type.get_name()
+                )
             )
-        ).scalar_one_or_none()
+            .scalar_one_or_none()
+        )
 
         if db_record is None or not db_record.index_lobj_exists():
             return None
@@ -200,7 +211,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         index: SignalTypeIndex,
         checkpoint: interface.SignalTypeIndexBuildCheckpoint,
     ) -> None:
-        db_record = database.db.session.execute(
+        sesh = get_write_session()
+        db_record = sesh.execute(
             select(database.SignalIndex).where(
                 database.SignalIndex.signal_type == signal_type.get_name()
             )
@@ -209,18 +221,22 @@ class DefaultOMMStore(interface.IUnifiedStore):
             db_record = database.SignalIndex(
                 signal_type=signal_type.get_name(),
             )
-            database.db.session.add(db_record)
+            sesh.add(db_record)
         db_record.commit_signal_index(index, checkpoint)
-        database.db.session.commit()
+        sesh.commit()
 
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
     ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
-        db_record = database.db.session.execute(
-            select(database.SignalIndex).where(
-                database.SignalIndex.signal_type == signal_type.get_name()
+        db_record = (
+            get_read_session()
+            .execute(
+                select(database.SignalIndex).where(
+                    database.SignalIndex.signal_type == signal_type.get_name()
+                )
             )
-        ).scalar_one_or_none()
+            .scalar_one_or_none()
+        )
 
         if db_record is None or not db_record.index_lobj_exists():
             return None
@@ -230,33 +246,39 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
+        sesh = get_write_session()
         if create:
             bank = database.Bank(name=cfg.name)
             exchange = database.ExchangeConfig(import_bank=bank)
         else:
-            exchange = database.db.session.execute(
+            exchange = sesh.execute(
                 select(database.ExchangeConfig).where(
                     database.ExchangeConfig.name == cfg.name
                 )
             ).scalar_one()
         exchange.set_typed_config(cfg)
-        database.db.session.add(exchange)
-        database.db.session.commit()
+        sesh.add(exchange)
+        sesh.commit()
 
     def exchange_delete(self, name: str) -> None:
-        database.db.session.execute(
+        sesh = get_write_session()
+        sesh.execute(
             delete(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         )
-        database.db.session.commit()
+        sesh.commit()
 
     def exchanges_get(self) -> t.Dict[str, CollaborationConfigBase]:
-        results = database.db.session.execute(select(database.ExchangeConfig)).scalars()
+        results = get_read_session().execute(select(database.ExchangeConfig)).scalars()
         return {
             cfg.name: cfg.as_storage_iface_cls(self.exchange_types) for cfg in results
         }
 
-    def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
-        return database.db.session.execute(
+    def _exchange_get_cfg(
+        self, name: str, session=None
+    ) -> t.Optional[database.ExchangeConfig]:
+        if session is None:
+            session = get_read_session()
+        return session.execute(
             select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         ).scalar_one_or_none()
 
@@ -282,7 +304,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
             return interface.FetchStatus.get_default()
         ret = status.as_storage_iface_cls()
 
-        query = database.db.session.query(database.ExchangeData).where(
+        sesh = get_read_session()
+        query = sesh.query(database.ExchangeData).where(
             database.ExchangeData.collab_id == collab_config.id
         )
         statement = t.cast(Select[database.ExchangeData], query.statement)
@@ -300,33 +323,35 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return collab_config.as_checkpoint(self.exchange_apis_get_installed())
 
     def exchange_start_fetch(self, collab_name: str) -> None:
-        cfg = self._exchange_get_cfg(collab_name)
+        sesh = get_write_session()
+        cfg = self._exchange_get_cfg(collab_name, session=sesh)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         if fetch_status is None:
             fetch_status = database.ExchangeFetchStatus()
             fetch_status.collab = cfg
-            database.db.session.add(fetch_status)
+            sesh.add(fetch_status)
         fetch_status.running_fetch_start_ts = int(time.time())
-        database.db.session.commit()
+        sesh.commit()
 
     def exchange_complete_fetch(
         self, collab_name: str, *, is_up_to_date: bool, exception: bool
     ) -> None:
+        sesh = get_write_session()
         if exception is True:
-            database.db.session.rollback()
-        cfg = self._exchange_get_cfg(collab_name)
+            sesh.rollback()
+        cfg = self._exchange_get_cfg(collab_name, session=sesh)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         if fetch_status is None:
             fetch_status = database.ExchangeFetchStatus()
             fetch_status.collab = cfg
-            database.db.session.add(fetch_status)
+            sesh.add(fetch_status)
         fetch_status.running_fetch_start_ts = None
         fetch_status.last_fetch_complete_ts = int(time.time())
         fetch_status.last_fetch_succeeded = not exception
         fetch_status.is_up_to_date = is_up_to_date
-        database.db.session.commit()
+        sesh.commit()
 
     def exchange_commit_fetch(
         self,
@@ -335,7 +360,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
     ) -> None:
-        cfg = self._exchange_get_cfg(collab.name)
+        sesh = get_write_session()
+        cfg = self._exchange_get_cfg(collab.name, session=sesh)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         existing_checkpoint = cfg.as_checkpoint(self.exchange_apis_get_installed())
@@ -346,8 +372,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
         api_cls = self.exchange_apis_get_installed().get(collab.api)
         assert api_cls is not None, "Invalid API cls?"
         collab_config = cfg.as_storage_iface_cls_typed(api_cls)
-
-        sesh = database.db.session
 
         # To optimize what is essentially a bulk insert,
         # we break this up into four passes:
@@ -468,11 +492,15 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if cfg is None:
             raise KeyError(f"No such config '{collab_name}'")
 
-        res = database.db.session.execute(
-            select(database.ExchangeData)
-            .where(database.ExchangeData.collab_id == cfg.id)
-            .where(database.ExchangeData.fetch_id == str(key))
-        ).scalar_one_or_none()
+        res = (
+            get_read_session()
+            .execute(
+                select(database.ExchangeData)
+                .where(database.ExchangeData.collab_id == cfg.id)
+                .where(database.ExchangeData.fetch_id == str(key))
+            )
+            .scalar_one_or_none()
+        )
         if res is None:
             raise KeyError("No exchange data with name and key")
         dat = res.pickled_fetch_signal_metadata
@@ -482,19 +510,23 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
         return {
             b.name: b.as_storage_iface_cls()
-            for b in database.db.session.execute(select(database.Bank)).scalars().all()
+            for b in get_read_session().execute(select(database.Bank)).scalars().all()
         }
 
     def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
         """Override for more efficient lookup."""
-        bank = database.db.session.execute(
-            select(database.Bank).where(database.Bank.name == name)
-        ).scalar_one_or_none()
+        bank = (
+            get_read_session()
+            .execute(select(database.Bank).where(database.Bank.name == name))
+            .scalar_one_or_none()
+        )
 
         return None if bank is None else bank.as_storage_iface_cls()
 
-    def _get_bank(self, name: str) -> t.Optional[database.Bank]:
-        return database.db.session.execute(
+    def _get_bank(self, name: str, session=None) -> t.Optional[database.Bank]:
+        if session is None:
+            session = get_read_session()
+        return session.execute(
             select(database.Bank).where(database.Bank.name == name)
         ).scalar_one_or_none()
 
@@ -505,8 +537,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         create: bool = False,
         rename_from: t.Optional[str] = None,
     ) -> None:
+        sesh = get_write_session()
         if create:
-            database.db.session.add(database.Bank.from_storage_iface_cls(bank))
+            sesh.add(database.Bank.from_storage_iface_cls(bank))
         else:
             previous: database.Bank = database.Bank.query.filter_by(
                 name=rename_from if rename_from is not None else bank.name
@@ -514,19 +547,19 @@ class DefaultOMMStore(interface.IUnifiedStore):
             previous.name = bank.name
             previous.enabled_ratio = bank.matching_enabled_ratio
 
-        database.db.session.commit()
+        sesh.commit()
 
     def bank_delete(self, name: str) -> None:
-        database.db.session.execute(
-            delete(database.Bank).where(database.Bank.name == name)
-        )
-        database.db.session.commit()
+        sesh = get_write_session()
+        sesh.execute(delete(database.Bank).where(database.Bank.name == name))
+        sesh.commit()
 
     def bank_content_get(
         self, ids: t.Iterable[int]
     ) -> t.Sequence[interface.BankContentConfig]:
         contents = (
-            database.db.session.query(database.BankContent)
+            get_read_session()
+            .query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .all()
         )
@@ -536,7 +569,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self, ids: t.Iterable[int]
     ) -> t.Dict[int, t.Dict[str, str]]:
         contents = (
-            database.db.session.query(database.BankContent)
+            get_read_session()
+            .query(database.BankContent)
             .filter(database.BankContent.id.in_(ids))
             .options(joinedload(database.BankContent.signals))
             .all()
@@ -549,7 +583,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return signals_dict
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
-        sesh = database.db.session
+        sesh = get_write_session()
         bank_content = sesh.execute(
             select(database.BankContent).where(database.BankContent.id == val.id)
         ).scalar_one_or_none()
@@ -564,9 +598,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         signals: t.Dict[t.Type[SignalType], str],
         config: t.Optional[interface.BankContentConfig] = None,
     ) -> int:
-        sesh = database.db.session
+        sesh = get_write_session()
 
-        bank = self._get_bank(bank_name)
+        bank = self._get_bank(bank_name, session=sesh)
         content = database.BankContent(bank=bank)
         if config is not None:
             content.original_content_uri = config.original_media_uri
@@ -585,16 +619,18 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         # TODO: throw an exception if deleting imported content
-        result = database.db.session.execute(
+        sesh = get_write_session()
+        result = sesh.execute(
             delete(database.BankContent).where(database.BankContent.id == content_id)
         )
-        database.db.session.commit()
-        return result.rowcount  # type: ignore[attr-defined]
+        sesh.commit()
+        return result.rowcount
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
     ) -> interface.SignalTypeIndexBuildCheckpoint:
-        query = database.db.session.query(database.ContentSignal).where(
+        sesh = get_read_session()
+        query = sesh.query(database.ContentSignal).where(
             database.ContentSignal.signal_type == signal_type.get_name()
         )
         statement = t.cast(Select[database.ContentSignal], query.statement)
@@ -606,7 +642,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             return interface.SignalTypeIndexBuildCheckpoint.get_empty()
 
         # Count non-zero, so get where we are in the order
-        row = database.db.session.execute(
+        row = sesh.execute(
             select(
                 database.ContentSignal.create_time, database.ContentSignal.content_id
             )
@@ -647,7 +683,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
             )
 
         # Execute the query and stream results with the proper yield batch size
-        result = database.db.session.execute(query).yield_per(batch_size)
+        result = get_read_session().execute(query).yield_per(batch_size)
 
         for partition in result.partitions():
             # If there are no more results, break the loop
@@ -661,6 +697,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def init_flask(self, app: flask.Flask) -> None:
         migrate = flask_migrate.Migrate()
         database.db.init_app(app)
+        init_read_replica(app)
         migrate.init_app(app, database.db)
         flask_utils.add_cli_commands(app)
 
@@ -673,7 +710,7 @@ def _sync_bankable_content(
     """
     Middle pass: sync the expected state of bankable content
     """
-    sesh = database.db.session
+    sesh = get_write_session()
     bc_id_to_delete = []
     for xd_id in list(ops):
         op = ops[xd_id]
@@ -709,7 +746,7 @@ def _sync_content_signal(
     """
     Final pass: insert/delete content_signal
     """
-    sesh = database.db.session
+    sesh = get_write_session()
     to_add: list[dict[str, t.Any]] = []
     to_delete: list[database.ContentSignal] = []
     for op in ops.values():
@@ -794,7 +831,7 @@ def explain(q, analyze: bool = False):
     print(explain(q))
 
     """
-    return database.db.session.execute(_explain(q, analyze)).fetchall()
+    return get_read_session().execute(_explain(q, analyze)).fetchall()
 
 
 class _explain(Executable, ClauseElement):

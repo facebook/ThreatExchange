@@ -21,7 +21,6 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
 )
 
-
 bp = APIBlueprint("development", __name__, url_prefix="/dev")
 bp.register_error_handler(HTTPException, api_error_handler)
 

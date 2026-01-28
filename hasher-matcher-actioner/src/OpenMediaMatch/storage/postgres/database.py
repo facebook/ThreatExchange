@@ -19,6 +19,7 @@ import time
 import typing as t
 import os
 
+import flask
 from flask import current_app
 import flask_sqlalchemy
 from sqlalchemy import (
@@ -40,6 +41,9 @@ from sqlalchemy.orm import (
     DeclarativeBase,
     relationship,
     validates,
+    Session,
+    scoped_session,
+    sessionmaker,
 )
 from sqlalchemy.types import DateTime
 from sqlalchemy.sql import func
@@ -71,9 +75,52 @@ class Base(DeclarativeBase):
     pass
 
 
-# Initializing this at import time seems to be the only correct
-# way to do this
+# Standard Flask-SQLAlchemy initialization
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
+
+_read_scoped_session: t.Optional[scoped_session] = None
+
+
+def init_read_replica(app: flask.Flask) -> None:
+    """
+    Initialize the read replica scoped session. Call after db.init_app().
+
+    Creates a scoped session bound to the "read" engine with proper
+    per-request lifecycle management.
+    """
+    global _read_scoped_session
+
+    read_engine = db.engines["read"]
+    _read_scoped_session = scoped_session(
+        sessionmaker(bind=read_engine),
+        scopefunc=db.session.registry.scopefunc,
+    )
+
+    @app.teardown_appcontext
+    def cleanup_read_session(exc: t.Optional[BaseException] = None) -> None:
+        if _read_scoped_session is not None:
+            _read_scoped_session.remove()
+
+
+def get_read_session():
+    """
+    Get a session bound to the read replica database.
+
+    Use for read-only queries that can tolerate slight staleness.
+    Falls back to primary session if read replica not initialized.
+    """
+    if _read_scoped_session is not None:
+        return _read_scoped_session()
+    return db.session
+
+
+def get_write_session():
+    """
+    Get a session bound to the primary database.
+
+    Use for all write operations and reads requiring latest data.
+    """
+    return db.session
 
 
 def _bank_name_ok(name: str) -> bool:
