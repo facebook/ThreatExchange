@@ -4,6 +4,7 @@
 """
 Wrapper around the file content type.
 """
+
 import logging
 from pathlib import Path
 from .photo import PhotoContent

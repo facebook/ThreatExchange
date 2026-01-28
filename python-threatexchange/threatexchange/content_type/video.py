@@ -4,6 +4,7 @@
 """
 Wrapper around the video content type.
 """
+
 import typing as t
 
 from threatexchange.content_type.content_base import ContentType

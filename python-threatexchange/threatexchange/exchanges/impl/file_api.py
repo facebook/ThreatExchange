@@ -7,7 +7,6 @@ This is useful if you don't have access to an API, but still have a list of
 hashes from somewhere.
 """
 
-
 import os
 import typing as t
 from dataclasses import dataclass, field

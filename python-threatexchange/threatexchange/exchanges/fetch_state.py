@@ -7,7 +7,6 @@ Many implementations will choose to extend these to add additional metadata
 needed to power API features.
 """
 
-
 from dataclasses import dataclass
 from enum import IntEnum
 from abc import ABC, abstractmethod

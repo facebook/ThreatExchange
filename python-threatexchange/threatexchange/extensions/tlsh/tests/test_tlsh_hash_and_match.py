@@ -1,7 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 import unittest
 
-
 try:
     import tlsh as _
 
