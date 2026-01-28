@@ -40,7 +40,11 @@ from threatexchange.exchanges.fetch_state import (
 from OpenMediaMatch.storage import interface
 from threatexchange.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.storage.postgres import database, flask_utils
-from OpenMediaMatch.storage.postgres.database import get_read_session, get_write_session
+from OpenMediaMatch.storage.postgres.database import (
+    get_read_session,
+    get_write_session,
+    init_read_replica,
+)
 
 
 class DefaultOMMStore(interface.IUnifiedStore):
@@ -269,16 +273,14 @@ class DefaultOMMStore(interface.IUnifiedStore):
             cfg.name: cfg.as_storage_iface_cls(self.exchange_types) for cfg in results
         }
 
-    def _exchange_get_cfg(self, name: str) -> t.Optional[database.ExchangeConfig]:
-        return (
-            get_read_session()
-            .execute(
-                select(database.ExchangeConfig).where(
-                    database.ExchangeConfig.name == name
-                )
-            )
-            .scalar_one_or_none()
-        )
+    def _exchange_get_cfg(
+        self, name: str, session=None
+    ) -> t.Optional[database.ExchangeConfig]:
+        if session is None:
+            session = get_read_session()
+        return session.execute(
+            select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
+        ).scalar_one_or_none()
 
     def exchange_get_client(
         self, collab_config: CollaborationConfigBase
@@ -321,9 +323,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         return collab_config.as_checkpoint(self.exchange_apis_get_installed())
 
     def exchange_start_fetch(self, collab_name: str) -> None:
-        cfg = self._exchange_get_cfg(collab_name)
-        assert cfg is not None, "Config was deleted?"
         sesh = get_write_session()
+        cfg = self._exchange_get_cfg(collab_name, session=sesh)
+        assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         if fetch_status is None:
             fetch_status = database.ExchangeFetchStatus()
@@ -338,7 +340,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh = get_write_session()
         if exception is True:
             sesh.rollback()
-        cfg = self._exchange_get_cfg(collab_name)
+        cfg = self._exchange_get_cfg(collab_name, session=sesh)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         if fetch_status is None:
@@ -358,7 +360,8 @@ class DefaultOMMStore(interface.IUnifiedStore):
         dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
     ) -> None:
-        cfg = self._exchange_get_cfg(collab.name)
+        sesh = get_write_session()
+        cfg = self._exchange_get_cfg(collab.name, session=sesh)
         assert cfg is not None, "Config was deleted?"
         fetch_status = cfg.fetch_status
         existing_checkpoint = cfg.as_checkpoint(self.exchange_apis_get_installed())
@@ -369,8 +372,6 @@ class DefaultOMMStore(interface.IUnifiedStore):
         api_cls = self.exchange_apis_get_installed().get(collab.api)
         assert api_cls is not None, "Invalid API cls?"
         collab_config = cfg.as_storage_iface_cls_typed(api_cls)
-
-        sesh = get_write_session()
 
         # To optimize what is essentially a bulk insert,
         # we break this up into four passes:
@@ -522,12 +523,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         return None if bank is None else bank.as_storage_iface_cls()
 
-    def _get_bank(self, name: str) -> t.Optional[database.Bank]:
-        return (
-            get_read_session()
-            .execute(select(database.Bank).where(database.Bank.name == name))
-            .scalar_one_or_none()
-        )
+    def _get_bank(self, name: str, session=None) -> t.Optional[database.Bank]:
+        if session is None:
+            session = get_read_session()
+        return session.execute(
+            select(database.Bank).where(database.Bank.name == name)
+        ).scalar_one_or_none()
 
     def bank_update(
         self,
@@ -599,7 +600,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     ) -> int:
         sesh = get_write_session()
 
-        bank = self._get_bank(bank_name)
+        bank = self._get_bank(bank_name, session=sesh)
         content = database.BankContent(bank=bank)
         if config is not None:
             content.original_content_uri = config.original_media_uri
@@ -696,6 +697,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def init_flask(self, app: flask.Flask) -> None:
         migrate = flask_migrate.Migrate()
         database.db.init_app(app)
+        init_read_replica(app)
         migrate.init_app(app, database.db)
         flask_utils.add_cli_commands(app)
 

@@ -19,6 +19,7 @@ import time
 import typing as t
 import os
 
+import flask
 from flask import current_app
 import flask_sqlalchemy
 from sqlalchemy import (
@@ -41,6 +42,8 @@ from sqlalchemy.orm import (
     relationship,
     validates,
     Session,
+    scoped_session,
+    sessionmaker,
 )
 from sqlalchemy.types import DateTime
 from sqlalchemy.sql import func
@@ -75,7 +78,28 @@ class Base(DeclarativeBase):
 # Standard Flask-SQLAlchemy initialization
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
 
-_last_read_session_warning_time: float = 0
+_read_scoped_session: t.Optional[scoped_session] = None
+
+
+def init_read_replica(app: flask.Flask) -> None:
+    """
+    Initialize the read replica scoped session. Call after db.init_app().
+
+    Creates a scoped session bound to the "read" engine with proper
+    per-request lifecycle management.
+    """
+    global _read_scoped_session
+
+    read_engine = db.engines["read"]
+    _read_scoped_session = scoped_session(
+        sessionmaker(bind=read_engine),
+        scopefunc=db.session.registry.scopefunc,
+    )
+
+    @app.teardown_appcontext
+    def cleanup_read_session(exc: t.Optional[BaseException] = None) -> None:
+        if _read_scoped_session is not None:
+            _read_scoped_session.remove()
 
 
 def get_read_session():
@@ -83,22 +107,11 @@ def get_read_session():
     Get a session bound to the read replica database.
 
     Use for read-only queries that can tolerate slight staleness.
-    Falls back to primary if read engine is unavailable (e.g., during migrations).
+    Falls back to primary session if read replica not initialized.
     """
-    global _last_read_session_warning_time
-    try:
-        read_engine = db.get_engine(bind_key="read")
-        return Session(read_engine)
-    except RuntimeError as e:
-        # This can happen during migrations or if the app context isn't fully initialized.
-        # Rate-limit the warning to avoid log spam (once per 10 seconds).
-        now = time.monotonic()
-        if now - _last_read_session_warning_time > 10:
-            _last_read_session_warning_time = now
-            logging.warning(
-                "Failed to get read session, falling back to primary: %s", e
-            )
-        return db.session
+    if _read_scoped_session is not None:
+        return _read_scoped_session()
+    return db.session
 
 
 def get_write_session():
