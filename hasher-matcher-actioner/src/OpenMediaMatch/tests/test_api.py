@@ -37,7 +37,7 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
         PDQIndex2(),
         interface.SignalTypeIndexBuildCheckpoint(0, 0, 0),
         last_check_ts=0.0,
-        sec_old_before_stale=0
+        sec_old_before_stale=0,
     )
 
     def fake_cache() -> matching.IndexCache:
@@ -47,7 +47,7 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     # but we can fake it
     monkeypatch.setattr(matching, "_get_index_cache", fake_cache)
 
-    assert not cache_val.is_ready 
+    assert not cache_val.is_ready
     response = client.get("/status")
     assert response.status_code == 503
     assert response.data == b"INDEX-NOT-LOADED"
@@ -60,7 +60,7 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     assert response.data == b"I-AM-ALIVE"
 
     # But if we do care, status should be no good
-    cache_val.sec_old_before_stale = 65    
+    cache_val.sec_old_before_stale = 65
 
     response = client.get("/status")
     assert response.status_code == 503
@@ -70,9 +70,6 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     response = client.get("/status")
     assert response.status_code == 200
     assert response.data == b"I-AM-ALIVE"
-
-    
-
 
 
 def test_openapi_documentation_available(client: FlaskClient):
