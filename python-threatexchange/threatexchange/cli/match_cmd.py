@@ -33,7 +33,6 @@ from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type.signal_base import MatchesStr, TextHasher, FileHasher
 from threatexchange.cli import command_base
 
-
 TMatcher = t.Callable[[pathlib.Path], t.List[IndexMatch]]
 
 

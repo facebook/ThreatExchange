@@ -33,7 +33,6 @@ from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.storage import interfaces as iface
 from threatexchange.utils import dataclass_json
 
-
 CONFIG_FILENAME = "config.json"
 
 

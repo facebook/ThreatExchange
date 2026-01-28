@@ -2,7 +2,6 @@
 
 """SignalExchangeAPI implementation for StopNCII.org"""
 
-
 from functools import lru_cache
 import time
 import typing as t

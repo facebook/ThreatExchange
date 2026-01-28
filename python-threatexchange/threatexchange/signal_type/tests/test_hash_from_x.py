@@ -12,7 +12,6 @@ from threatexchange.signal_type.pdq import signal
 from threatexchange.signal_type.signal_base import TextHasher
 import typing as t
 
-
 SIGNAL_TYPES_TO_TEST = [
     md5.VideoMD5Signal,
     signal.PdqSignal,

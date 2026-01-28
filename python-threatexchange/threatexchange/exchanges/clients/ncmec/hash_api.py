@@ -23,7 +23,6 @@ import requests
 from urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
 
-
 _DATE_FORMAT_STR = "%Y-%m-%dT%H:%M:%SZ"
 _DEFAULT_ELE = ET.Element("")
 

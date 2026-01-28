@@ -12,7 +12,6 @@ from threatexchange.tests.hashing.utils import (
     get_similar_hash,
 )
 
-
 test_hashes = [
     "0000000000000000000000000000000000000000000000000000000000000000",
     "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",

@@ -8,7 +8,6 @@ See the README.md in this directory for more information.
 tl;dr: Have a module with TX_MANIFEST that is assigned this class.
 """
 
-
 from dataclasses import dataclass
 import importlib
 import typing as t

@@ -6,7 +6,6 @@ SignalExchangeAPI impl for the NCMEC hash exchange API
 @see NCMECSignalExchangeAPI
 """
 
-
 import logging
 import time
 import typing as t
@@ -22,7 +21,6 @@ from threatexchange.exchanges.collab_config import (
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.pdq.signal import PdqSignal
-
 
 _API_NAME: str = "ncmec"
 

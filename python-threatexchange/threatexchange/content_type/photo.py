@@ -4,6 +4,7 @@
 """
 Wrapper around the video content type.
 """
+
 from PIL import Image
 from pathlib import Path
 import io

@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 import typing as t
 
-
 PDQOutput = t.Tuple[
     str, int
 ]  # hexadecimal representation of the Hash vector and a numerical quality value

@@ -20,7 +20,7 @@ classifiers = [
 keywords = ["facebook", "threatexchange", "ncmec", "stopncii", "pdq"]
 requires-python = ">=3.8"
 dependencies = [
-    "python-Levenshtein",
+    "weighted-levenshtein",
     "requests",
     "urllib3",  # For allow_methods
     "python-dateutil",

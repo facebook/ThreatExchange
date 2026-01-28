@@ -10,7 +10,6 @@ from threatexchange.exchanges.clients.techagainstterrorism.api import (
     TATIdeology,
 )
 
-
 mock_hashes: t.List[TATHashListEntry] = [
     TATHashListEntry(
         hash_digest="123abc",
