@@ -45,6 +45,25 @@ If you're operating at the scale where this becomes necessary, you will more tha
 
 ## Deployment scenarios and scaling strategies
 
+### HMA Service Degredation Under Load
+A key part of right-sizing your deployment is understanding how HMA responds to different loads.
+
+You can see our target scaling goals in [goals.md](../goals.md).
+
+There are several critical measures for HMA's performance:
+1. Lookup query failure rate
+   1. If lookups are failing, you can't make an action decision
+1. Lookup query latency
+   1. If lookups take too long, they might as well be failing
+1. Latency of index build and distribution
+   1. This failure mode is more subtle - when you add a new hash to a bank, content cannot be detected until is loaded.
+
+In theory, it is possible to overload other components of the system (e.g. too many write operations), but these are unlikely to be hit during normal operation compared to the above three.
+
+Query failure rate and latency in theory can be managed with horizontal scaling. Simply add more instances or resources (see Horizontal scale-out). However, you will eventually hit the limits of your database for bank and bankcontent config lookups, which will require adding read replicas to postgres, or sticking a horizontally scaled cache in front of those settings.
+
+However, the current architecure of HMA has a bottleneck, which is the index build and distribution step. This currently is done fairly inefficiently, and will degrade linearly with the size of the index. If index distribution latency becomes your bottleneck, only some architecture change can help. A band-aid might be swapping out the index distribution method from postgres large blobs to another service like Amazon S3 (by overriding the implementation in the storage interface), or even using a dedicated vector search service (by overriding even more methods in the storing interface) but there are alternative building strategies that allow workers to tail new hashes in the database without a full rebuild.
+
 ### Single instance
 
 ![Single instance deployment](../diagrams/deployment-strategy-single-instance.svg)
