@@ -1,7 +1,15 @@
 ARG VARIANT=3.14-trixie
 FROM mcr.microsoft.com/vscode/devcontainers/python:${VARIANT}
 
-RUN apt-get update -y && apt-get upgrade -y && apt-get install -y cmake 
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \
+    cmake \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavcodec-dev \
+    libswresample-dev \
+    libswscale-dev \
+    libavutil-dev
 
 ARG NODE_VERSION="none"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
