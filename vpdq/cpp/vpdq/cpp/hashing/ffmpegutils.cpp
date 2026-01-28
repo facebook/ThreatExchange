@@ -55,8 +55,11 @@ AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   frame->width = width;
   frame->height = height;
 
-  if (av_frame_get_buffer(frame.get(), 0) < 0) {
-    throw std::bad_alloc();
+  int ret = av_frame_get_buffer(frame.get(), 1);
+  if (ret < 0) {
+    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+    av_strerror(ret, errbuf, sizeof(errbuf));
+    throw std::runtime_error(std::string("av_frame_get_buffer failed: ") + errbuf);
   }
   return frame;
 }
