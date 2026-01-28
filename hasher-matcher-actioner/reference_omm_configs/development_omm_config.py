@@ -46,6 +46,7 @@ TASK_INDEX_CACHE = True
 TASK_FETCHER_INTERVAL_SECONDS = 60 * 4
 TASK_INDEXER_INTERVAL_SECONDS = 60
 TASK_INDEX_CACHE_INTERVAL_SECONDS = 30
+INDEX_CACHE_MAX_STALE_SEC = 65  # You can disable this by setting it to 0
 MAX_REMOTE_FILE_SIZE = 100 * 1024 * 1024  # 100MB max file size
 
 # Core functionality configuration
@@ -73,7 +74,7 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 # Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
 
 # We always want some logging by default, otherwise it's hard to tell whats happening inside the container:
-FLASK_LOGGING_CONFIG = dictConfig(
+dictConfig(
     {
         "version": 1,
         "formatters": {
