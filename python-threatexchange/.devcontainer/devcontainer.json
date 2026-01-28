@@ -27,7 +27,7 @@
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": "pip install --editable .",
+  "postCreateCommand": "pip install --editable .[dev]",
   "mounts": [
     "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume"
   ]
