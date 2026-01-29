@@ -45,9 +45,9 @@ def fetch_all(
     for c in collabs.values():
         fetch(collab_store, signal_type_cfgs, c)
     logger.info(
-        "Completed %s background task - %s",
+        "Completed %s background task, took %s",
         fetch_all.__name__,
-        duration_to_human_str(int(time.time() - start)),
+        duration_to_human_str(time.time() - start),
     )
 
 
@@ -71,7 +71,7 @@ def fetch(
             "%s[%s] Completed - %s",
             collab.name,
             collab.api,
-            duration_to_human_str(int(time.time() - start)),
+            duration_to_human_str(time.time() - start),
         )
 
 

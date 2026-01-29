@@ -132,10 +132,10 @@ class _SignalIndexInMemoryCache:
             if prev_time == now_time:
                 return  # No reload
             app.logger.info(
-                "CachedIndex[%s] Updated %d -> %d",
+                "CachedIndex[%s] Updated checkpoint from %s -> %s",
                 self.signal_type.get_name(),
-                prev_time,
-                now_time,
+                _checkpoint_timestamp_to_str(prev_time),
+                _checkpoint_timestamp_to_str(now_time),
             )
 
 
@@ -246,6 +246,12 @@ def lookup_signal_with_distance(
         matches = [m for m in matches if m["bank_content_id"] in valid_content_ids]
 
     return matches
+
+
+def _checkpoint_timestamp_to_str(checkpoint: int) -> str:
+    if checkpoint < 1:
+        return "None"
+    return datetime.datetime.fromtimestamp(checkpoint).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _validate_and_transform_signal_type(
