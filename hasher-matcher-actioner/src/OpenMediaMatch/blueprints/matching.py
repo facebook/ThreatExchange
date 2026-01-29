@@ -240,10 +240,12 @@ def lookup_signal_with_distance(
 
     return matches
 
+
 def _checkpoint_timestamp_to_str(checkpoint: int) -> str:
-     if checkpoint < 1:
-         return "None"
-     return datetime.datetime.fromtimestamp(checkpoint).strftime('%Y-%m-%d %H:%M:%S')
+    if checkpoint < 1:
+        return "None"
+    return datetime.datetime.fromtimestamp(checkpoint).strftime("%Y-%m-%d %H:%M:%S")
+
 
 def _validate_and_transform_signal_type(
     signal_type_name: str, storage: interface.ISignalTypeConfigStore

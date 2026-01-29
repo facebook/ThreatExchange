@@ -192,7 +192,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
-        
+
         db_record = (
             get_read_session()
             .execute(

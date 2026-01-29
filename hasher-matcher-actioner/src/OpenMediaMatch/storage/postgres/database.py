@@ -497,7 +497,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                     "old lobject %d doesn't exist? "
                     + "This might be a previous partial failure",
                     self.serialized_index_large_object_oid,
-                    level=logging.WARNING
+                    level=logging.WARNING,
                 )
 
         self.serialized_index_large_object_oid = l_obj.oid
@@ -554,7 +554,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 "deserialize took %s",
                 duration_to_human_str(time.time() - deserialize_start),
             )
-        self._log("loading signal index took %s", duration_to_human_str(time.time() - load_start_time), level=logging.INFO)
+        self._log(
+            "loading signal index took %s",
+            duration_to_human_str(time.time() - load_start_time),
+            level=logging.INFO,
+        )
         return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:

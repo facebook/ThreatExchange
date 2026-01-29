@@ -18,11 +18,11 @@ def duration_to_human_str(sec: float, *, terse: bool = False) -> str:
 
     if sec < 0.001:
         return "0 seconds"
-    
+
     if sec < 1:
         ms = sec * 1000
         suffix = "ms" if terse else "milliseconds"
-        ms_str = f"{ms:.1f}" if ms < 10 else f"{ms:.0f}" 
+        ms_str = f"{ms:.1f}" if ms < 10 else f"{ms:.0f}"
         return f"{ms_str} {suffix}"
 
     delta = relativedelta(microsecond=int(sec))
