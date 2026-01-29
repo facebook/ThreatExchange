@@ -470,10 +470,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             self._log("serializing index to tmpfile %s", tmpfile.name)
             index.serialize(t.cast(t.BinaryIO, tmpfile.file))
             size = tmpfile.tell()
+        size_str = _human_friendly_bytesize(size)
         self._log(
-            "finished writing to tmpfile, %d signals %d bytes took %s",
+            "finished writing to tmpfile, %d signals %s bytes took %s",
             self.signal_count,
-            _human_friendly_bytesize(size),
+            size_str,
             duration_to_human_str(time.time() - serialize_start_time),
         )
 
@@ -502,6 +503,14 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         self.serialized_index_large_object_oid = l_obj.oid
         db.session.add(self)
         raw_conn.commit()
+
+        self._log(
+            "commited new index, %d signals %s took %s",
+            self.signal_count,
+            size_str,
+            duration_to_human_str(time.time() - serialize_start_time),
+            level=logging.INFO,
+        )
 
         try:
             os.unlink(tmpfile.name)
