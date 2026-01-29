@@ -43,9 +43,9 @@ def build_all_indices(
         build_index(st, bank_store, index_store)
 
     logger.info(
-        "Completed %s background task - %s",
+        "Completed %s background task, took %s",
         build_all_indices.__name__,
-        duration_to_human_str(int(time.time() - start)),
+        duration_to_human_str(time.time() - start),
     )
     # TODO cleanup disabled / deleted signal types
 
@@ -90,7 +90,7 @@ def build_index(
         "Indexed %d signals for %s - %s",
         signal_count,
         for_signal_type.get_name(),
-        duration_to_human_str(int(time.time() - start)),
+        duration_to_human_str(time.time() - start),
     )
 
 

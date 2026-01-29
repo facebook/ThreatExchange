@@ -41,7 +41,6 @@ from sqlalchemy.orm import (
     DeclarativeBase,
     relationship,
     validates,
-    Session,
     scoped_session,
     sessionmaker,
 )
@@ -472,10 +471,10 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             index.serialize(t.cast(t.BinaryIO, tmpfile.file))
             size = tmpfile.tell()
         self._log(
-            "finished writing to tmpfile, %d signals %d bytes - %s",
+            "finished writing to tmpfile, %d signals %d bytes took %s",
             self.signal_count,
-            size,
-            duration_to_human_str(int(time.time() - serialize_start_time)),
+            _human_friendly_bytesize(size),
+            duration_to_human_str(time.time() - serialize_start_time),
         )
 
         store_start_time = time.time()
@@ -483,9 +482,9 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         raw_conn = db.engine.raw_connection()
         l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)
         self._log(
-            "imported tmpfile as lobject oid %d - %s",
+            "imported tmpfile as lobject oid %d took %s",
             l_obj.oid,
-            duration_to_human_str(int(time.time() - store_start_time)),
+            duration_to_human_str(time.time() - store_start_time),
         )
         if self.serialized_index_large_object_oid is not None:
             if self.index_lobj_exists():
@@ -497,6 +496,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                     "old lobject %d doesn't exist? "
                     + "This might be a previous partial failure",
                     self.serialized_index_large_object_oid,
+                    level=logging.WARNING
                 )
 
         self.serialized_index_large_object_oid = l_obj.oid
@@ -530,9 +530,9 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             l_obj.export(tmpfile.name)
             tmpfile.seek(0, io.SEEK_END)
             self._log(
-                "loaded %d bytes to tmpfile - %s",
-                tmpfile.tell(),
-                duration_to_human_str(int(time.time() - load_start_time)),
+                "downloading %s to tmpfile took %s",
+                _human_friendly_bytesize(tmpfile.tell()),
+                duration_to_human_str(time.time() - load_start_time),
             )
             tmpfile.seek(0)
 
@@ -542,9 +542,10 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 SignalTypeIndex.deserialize(t.cast(t.BinaryIO, tmpfile.file)),
             )
             self._log(
-                "deserialized - %s",
-                duration_to_human_str(int(time.time() - deserialize_start)),
+                "deserialize took %s",
+                duration_to_human_str(time.time() - deserialize_start),
             )
+        self._log("loading signal index took %s", duration_to_human_str(time.time() - load_start_time), level=logging.INFO)
         return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
@@ -614,3 +615,11 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
                     self.default_credentials_json, api_cls.get_credential_cls()
                 )
         return SignalExchangeAPIConfig(api_cls, creds)
+
+
+def _human_friendly_bytesize(num: float) -> str:
+    num /= 1024 * 1024
+    if num < 750:
+        return f"{num:.2f}MiB"
+    num /= 1024
+    return f"{num:.2f}GiB"

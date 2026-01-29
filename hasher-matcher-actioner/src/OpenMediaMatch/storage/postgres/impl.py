@@ -6,6 +6,7 @@ The default store for accessing persistent data on OMM.
 
 from dataclasses import dataclass
 import pickle
+import logging
 import time
 import typing as t
 
@@ -191,6 +192,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
     def get_signal_type_index(
         self, signal_type: type[SignalType]
     ) -> t.Optional[SignalTypeIndex[int]]:
+        
         db_record = (
             get_read_session()
             .execute(
@@ -203,6 +205,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         if db_record is None or not db_record.index_lobj_exists():
             return None
+
         return db_record.load_signal_index()
 
     def store_signal_type_index(
