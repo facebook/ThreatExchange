@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include <vpdq/cpp/hashing/ffmpegutils.h>
@@ -55,6 +56,9 @@ AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   frame->width = width;
   frame->height = height;
 
+  // TODO: Alignment is forced to 1, but the alignment should be variable (0).
+  // This requires updating PDQFrameBufferHasher and VpdqHasher to pass the
+  // linesize as the row stride to PDQ (see GH #1918)
   int ret = av_frame_get_buffer(frame.get(), 1);
   if (ret < 0) {
     char errbuf[AV_ERROR_MAX_STRING_SIZE];
