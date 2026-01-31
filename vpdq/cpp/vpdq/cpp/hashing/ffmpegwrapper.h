@@ -31,11 +31,6 @@ constexpr int DOWNSAMPLE_METHOD = SWS_AREA;
 struct AVFrameDeleter {
   void operator()(AVFrame* ptr) const {
     if (ptr) {
-      if (ptr->data[0]) {
-        // Free memory allocated by image_alloc
-        // See createTargetFrame()
-        av_freep(&ptr->data[0]);
-      }
       av_frame_free(&ptr);
     }
   }
