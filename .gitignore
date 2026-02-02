@@ -1,12 +1,14 @@
 *.swp
 *.pyc
+*.egg-info/
+CLAUDE.md
 pytx/build
 pytx/dist
 pytx/docs/_build
 python-threatexchange/build/
 python-threatexchange/dist/
-*.egg-info/
 .DS_Store
+.claude/
 .tox/
 .coverage
 .pytx
