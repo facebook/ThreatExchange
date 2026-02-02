@@ -126,8 +126,10 @@ bool FFmpegVideo::createSwsContext() {
   return (swsContext.get() != nullptr);
 }
 
-FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber)
-    : m_frame(std::move(frame)), m_frameNumber(frameNumber) {}
+FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber, int linesize)
+    : m_frame(std::move(frame)),
+      m_frameNumber(frameNumber),
+      m_linesize(linesize) {}
 
 uint64_t FFmpegFrame::get_frame_number() const {
   return m_frameNumber;
@@ -135,6 +137,10 @@ uint64_t FFmpegFrame::get_frame_number() const {
 
 unsigned char* FFmpegFrame::get_buffer_ptr() {
   return m_frame->data[0];
+}
+
+int FFmpegFrame::get_linesize() const {
+  return m_linesize;
 }
 
 } // namespace ffmpeg

@@ -41,7 +41,10 @@ class AbstractFrameBufferHasher {
   virtual int getFeatureDimension() = 0;
 
   virtual bool hashFrame(
-      unsigned char* buffer, pdq::hashing::Hash256& hash, int& quality) = 0;
+      unsigned char* buffer,
+      int linesize,
+      pdq::hashing::Hash256& hash,
+      int& quality) = 0;
 };
 
 /**
@@ -76,6 +79,7 @@ class PDQFrameBufferHasher : public AbstractFrameBufferHasher {
   // Get PDQ Hash in Hash256 format
   bool hashFrame(
       unsigned char* buffer,
+      int linesize,
       pdq::hashing::Hash256& hash,
       int& quality) override;
 };

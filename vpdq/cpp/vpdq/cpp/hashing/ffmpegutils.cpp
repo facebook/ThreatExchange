@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 #include <vpdq/cpp/hashing/ffmpegutils.h>
@@ -47,7 +48,7 @@ void saveFrameToFile(AVFramePtr frame, const std::string& filename) {
 
 AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   AVFramePtr frame(av_frame_alloc());
-  if (frame.get() == nullptr) {
+  if (frame == nullptr) {
     throw std::bad_alloc();
   }
 
@@ -55,9 +56,15 @@ AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
   frame->width = width;
   frame->height = height;
 
-  if (av_image_alloc(
-          frame->data, frame->linesize, width, height, PIXEL_FORMAT, 1) < 0) {
-    throw std::bad_alloc();
+  int ret = av_frame_get_buffer(frame.get(), 0);
+  if (ret < 0) {
+    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+    int strerr = av_strerror(ret, errbuf, sizeof(errbuf));
+    if (strerr != 0) {
+      throw std::runtime_error("av_frame_get_buffer failed.");
+    }
+    throw std::runtime_error(
+        std::string("av_frame_get_buffer failed: ") + errbuf);
   }
   return frame;
 }
