@@ -3,3 +3,5 @@ build/
 dist/
 threatexchange.egg-info/
 .eggs/
+.claude/
+CLAUDE.md
