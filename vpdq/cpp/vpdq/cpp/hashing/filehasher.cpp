@@ -168,7 +168,7 @@ class FFmpegHasher {
 
         /*
         // Example of how hashing looks for GenericFrame:
-        GenericFrame frame{{}, get_frame_number()};
+        GenericFrame frame{{}, get_frame_number(), targetFrame->linesize[0]};
         frame.m_buffer.reserve(3 * m_video->width * m_video->height);
         std::copy_n(targetFrame->data[0], 3 * m_video->width * m_video->height,
         std::back_inserter(frame.m_buffer));
@@ -176,8 +176,11 @@ class FFmpegHasher {
         // to the GenericFrame buffer, which is slow.
         */
 
+        const int linesize = targetFrame->linesize[0];
         FFmpegFrame frame{
-            std::move(targetFrame), static_cast<uint64_t>(frameNumber)};
+            std::move(targetFrame),
+            static_cast<uint64_t>(frameNumber),
+            linesize};
         m_vpdqhasher.push_back(std::move(frame));
       }
     }

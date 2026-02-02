@@ -21,10 +21,12 @@ const int MIN_HASHABLE_DIM = 5;
 // ----------------------------------------------------------------
 bool PDQFrameBufferHasher::hashFrame(
     unsigned char* buffer,
+    int linesize,
     pdq::hashing::Hash256& hash, // The result pdq hash
     int& quality // Hashing Quality
 ) {
-  if (_frameHeight < MIN_HASHABLE_DIM || _frameWidth < MIN_HASHABLE_DIM) {
+  if (_frameHeight < MIN_HASHABLE_DIM || _frameWidth < MIN_HASHABLE_DIM ||
+      linesize < _frameWidth * 3) {
     hash.clear();
     quality = 0;
     return false;
@@ -35,7 +37,7 @@ bool PDQFrameBufferHasher::hashFrame(
       &buffer[2], // pBbase
       _frameHeight,
       _frameWidth,
-      3 * _frameWidth, // rowStride
+      linesize, // rowStride
       3, // colStride
       _fullLumaImageBuffer1.data());
 

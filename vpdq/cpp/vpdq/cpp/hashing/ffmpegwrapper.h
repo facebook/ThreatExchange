@@ -99,8 +99,10 @@ class FFmpegFrame {
    *
    *  @param frame The AVFrame.
    *  @param frameNumber The frame number in the video.
+   *  @param linesize The number of bytes per row in the buffer including
+   *padding.
    **/
-  FFmpegFrame(AVFramePtr frame, uint64_t frameNumber);
+  FFmpegFrame(AVFramePtr frame, uint64_t frameNumber, int linesize);
 
   /** @brief Get the frame number.
    *
@@ -113,6 +115,12 @@ class FFmpegFrame {
    *  @return Pointer to the frame data buffer.
    **/
   unsigned char* get_buffer_ptr();
+
+  /** @brief Get the linesize of the buffer.
+   *
+   *  @return The linesize.
+   **/
+  int get_linesize() const;
 
   // Copy
   FFmpegFrame(FFmpegFrame const&) = delete;
@@ -127,6 +135,7 @@ class FFmpegFrame {
  private:
   AVFramePtr m_frame;
   uint64_t m_frameNumber;
+  int m_linesize;
 };
 
 } // namespace ffmpeg

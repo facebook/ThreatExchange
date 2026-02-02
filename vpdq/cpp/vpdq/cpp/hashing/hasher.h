@@ -36,9 +36,14 @@ class GenericFrame {
    *
    *  @param buffer The pixel buffer used for PDQ hashing
    *  @param frameNumber The frame number in the video.
+   *  @param linesize The number of bytes per row in the buffer including
+   *padding.
    **/
-  GenericFrame(std::vector<unsigned char> buffer, uint64_t frameNumber)
-      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber) {}
+  GenericFrame(
+      std::vector<unsigned char> buffer, uint64_t frameNumber, int linesize)
+      : m_buffer(std::move(buffer)),
+        m_frameNumber(frameNumber),
+        m_linesize(linesize) {}
 
   /** @brief Get the frame number.
    *
@@ -52,8 +57,15 @@ class GenericFrame {
    **/
   unsigned char* get_buffer_ptr() { return m_buffer.data(); }
 
+  /** @brief Get the linesize (bytes per row) of the buffer.
+   *
+   *  @return The linesize.
+   **/
+  int get_linesize() const { return m_linesize; }
+
   std::vector<unsigned char> m_buffer;
   uint64_t m_frameNumber;
+  int m_linesize;
 };
 
 struct VideoMetadata {
@@ -168,8 +180,8 @@ vpdqFeature hashFrame(TFrame& frame, const VideoMetadata& video_metadata) {
 
   int quality;
   pdq::hashing::Hash256 pdqHash;
-  auto const is_hashing_successful =
-      phasher->hashFrame(frame.get_buffer_ptr(), pdqHash, quality);
+  auto const is_hashing_successful = phasher->hashFrame(
+      frame.get_buffer_ptr(), frame.get_linesize(), pdqHash, quality);
   if (!is_hashing_successful) {
     throw std::runtime_error(
         std::string{"Failed to hash frame buffer. Frame: "} +
