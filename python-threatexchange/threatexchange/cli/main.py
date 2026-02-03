@@ -88,6 +88,7 @@ from threatexchange.cli import (
     hash_cmd,
     match_cmd,
     config_cmd,
+    classify_cmd,
 )
 from threatexchange.signal_type.signal_base import SignalType
 
@@ -109,6 +110,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         label_cmd.LabelCommand,
         dataset_cmd.DatasetCommand,
         hash_cmd.HashCommand,
+        classify_cmd.ClassifyCommand,
     ]
 
 
