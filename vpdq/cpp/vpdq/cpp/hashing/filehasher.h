@@ -2,14 +2,13 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#ifndef FILEHASHER_H
-#define FILEHASHER_H
+#ifndef VPDQ_HASHING_FILEHASHER_H
+#define VPDQ_HASHING_FILEHASHER_H
+
+#include <vpdq/cpp/hashing/vpdqHashType.h>
 
 #include <string>
 #include <vector>
-
-#include <pdq/cpp/common/pdqhashtypes.h>
-#include <vpdq/cpp/hashing/vpdqHashType.h>
 
 namespace facebook {
 namespace vpdq {
@@ -32,7 +31,7 @@ namespace hashing {
  */
 bool hashVideoFile(
     const std::string& inputVideoFileName,
-    std::vector<hashing::vpdqFeature>& pdqHashes,
+    std::vector<facebook::vpdq::hashing::vpdqFeature>& pdqHashes,
     bool verbose = false,
     const double secondsPerHash = 1,
     const int downsampleWidth = 0,
@@ -43,4 +42,4 @@ bool hashVideoFile(
 } // namespace vpdq
 } // namespace facebook
 
-#endif // FILEHASHER_H
+#endif // VPDQ_HASHING_FILEHASHER_H

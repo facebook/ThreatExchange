@@ -11,16 +11,14 @@
 #include <tmk/cpp/algo/tmkfv.h>
 #include <tmk/cpp/lib/vec.h>
 
-#if defined(_WIN32)
-#define _USE_MATH_DEFINES
-#endif
-
 #include <cmath>
 #include <stdexcept>
 
 namespace facebook {
 namespace tmk {
 namespace algo {
+
+static const double pi = 3.14159265358979323846;
 
 // ----------------------------------------------------------------
 // See comments in tmkfv.h.
@@ -244,7 +242,7 @@ void TMKFeatureVectors::ingestFrameFeature(
     }
 
     for (int j = 1; j < _fourierCoefficients.size(); j++) {
-      double arg = 2.0 * M_PI * (double)j * (double)t / (double)T;
+      double arg = 2.0 * pi * (double)j * (double)t / (double)T;
       double cosArg = cos(arg);
       double sinArg = sin(arg);
       for (int k = 0; k < normalizedFrameFeature.size(); k++) {
@@ -611,7 +609,7 @@ void TMKFeatureVectors::findPairOffsetsModuloPeriods(
     int period = fva._periods[i];
     std::vector<float> K_deltas(period);
     for (int offset = 0; offset < period; offset++) {
-      float delta = 2.0 * M_PI * (float)offset / (float)period;
+      float delta = 2.0 * pi * (float)offset / (float)period;
       float K_delta = dotCosCos[i][0];
 #if 0
       // Direct evaluation

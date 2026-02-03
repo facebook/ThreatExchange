@@ -13,7 +13,7 @@
 #define cimg_display 0
 #include "CImg.h"
 
-typedef unsigned char uint8_t;
+#include <cstdint>
 
 namespace facebook {
 namespace pdq {
