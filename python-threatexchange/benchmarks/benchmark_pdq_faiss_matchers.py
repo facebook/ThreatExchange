@@ -2,7 +2,6 @@
 
 import argparse
 import binascii
-import os
 import time
 import pickle
 
@@ -205,11 +204,11 @@ for threshold in args.thresholds:
         end_multi_search - start_multi_search,
     )
     print(
-        "\tPDQFlatHashIndex - Precent of targets found: ",
+        "\tPDQFlatHashIndex - Percent of targets found: ",
         flat_found_targets / len(queries) * 100,
     )
     print(
-        "\tPDQMultiHashIndex - Precent of targets found: ",
+        "\tPDQMultiHashIndex - Percent of targets found: ",
         multi_found_targets / len(queries) * 100,
     )
 

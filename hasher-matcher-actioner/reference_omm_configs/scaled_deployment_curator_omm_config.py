@@ -4,7 +4,7 @@
 A production-ish OMM config, for the curator role.
 
 The curator role only gets internal traffic, and so you can probably
-get away with a single instance for a long time. 
+get away with a single instance for a long time.
 """
 
 import os
@@ -13,10 +13,13 @@ import os
 # Database configuration
 DBUSER = os.environ.get("POSTGRES_USER", "media_match")
 DBPASS = os.environ.get("POSTGRES_PASSWORD", "hunter2")
-DBHOST = os.environ.get("POSTGRESS_HOST", "db")
-DBNAME = os.environ.get("POSTGRESS_DBNAME", "media_match")
+DBHOST = os.environ.get("POSTGRES_HOST", os.environ.get("POSTGRESS_HOST", "db"))
+DBNAME = os.environ.get(
+    "POSTGRES_DBNAME", os.environ.get("POSTGRESS_DBNAME", "media_match")
+)
 DATABASE_URI = f"postgresql+psycopg2://{DBUSER}:{DBPASS}@{DBHOST}/{DBNAME}"
 
 # Role configuration
 PRODUCTION = True
 ROLE_CURATOR = True
+UI_ENABLED = True

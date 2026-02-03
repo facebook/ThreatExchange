@@ -1,6 +1,6 @@
 This file contains reference information.  Please see 
 [README.md](https://github.com/facebook/ThreatExchange/blob/main/hashing/tmk/README.md)
-for a higher-level walkthrough. 
+for a higher-level walkthrough.
 
 # Important executables
 
@@ -35,7 +35,7 @@ Required:
 -o|--output-feature-vectors-file-name ...
 Optional:
 -v|--verbose
--d|--output-directory ...: instead of specifiying output-file name, just give a
+-d|--output-directory ...: instead of specifying output-file name, just give a
   directory and the output file name will be auto-computed from the input video
   file name.
 ```

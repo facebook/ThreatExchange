@@ -1,0 +1,144 @@
+{# Copyright (c) Meta Platforms, Inc. and affiliates. #}
+<div class="card">
+    <div class="card-header">Find Content in Banks</div>
+    <div class="alert alert-info alert-dismissible fade show mx-3 mt-3 mb-0" role="alert" id="bypass-warning">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <small><strong>Note:</strong> Bypass enabled ratio is checked - this will search all banks regardless of their matching enabled ratio.</small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="card-body">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs" id="match-content-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="file-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#file-match-pane" type="button" role="tab">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload File
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="url-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#url-match-pane" type="button" role="tab">
+                    <i class="bi bi-link-45deg me-2"></i>Match by URL
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="hash-match-tab" data-bs-toggle="tab" 
+                        data-bs-target="#hash-match-pane" type="button" role="tab">
+                    <i class="bi bi-hash me-2"></i>Match by Hash
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content mt-3" id="match-content-tab-content">
+            <!-- File Upload Tab -->
+            <div class="tab-pane fade show active" id="file-match-pane" role="tabpanel">
+                <form id="match_file">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">File</label>
+                            <input class="form-control" type="file" name="file" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" name="media" id="content-type" required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                    {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- URL Tab -->
+            <div class="tab-pane fade" id="url-match-pane" role="tabpanel">
+                <form id="match_url">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">URL</label>
+                            <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required />
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Content Type</label>
+                            <select class="form-select" name="media" required>
+                                <option selected disabled value="">Select content type</option>
+                                {% for c in content %}
+                                    {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Hash Tab -->
+            <div class="tab-pane fade" id="hash-match-pane" role="tabpanel">
+                <form id="match_hash">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Signal Type</label>
+                            <select class="form-select" name="signal_type" required>
+                                <option selected disabled value="">Select signal type</option>
+                                {% for s in signal %}
+                                    <option value="{{s['name']}}">{{s['name']}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hash Value</label>
+                            <input class="form-control" type="text" name="signal_value" 
+                                   placeholder="Enter hash value (e.g., PDQ hash, MD5 hash)" 
+                                   pattern="[a-fA-F0-9]+" 
+                                   title="Please enter a valid hexadecimal hash value"
+                                   required />
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Enter the exact hash value you want to search for.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col d-flex align-items-center">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-2"></i>Find Matches
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Bypass Option (applies to both tabs) -->
+        <div class="row mt-3">
+            <div class="col">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="bypass_enabled_ratio" id="bypass-enabled-ratio" checked>
+                    <label class="form-check-label" for="bypass-enabled-ratio">
+                        <small>Bypass enabled ratio check (search all banks regardless of their matching enabled ratio)</small>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="matches">
+        <!-- Added to by javascript -->
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/match-form.js') }}"></script>

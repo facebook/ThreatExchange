@@ -31,6 +31,7 @@ def test_config_signal(cli: ThreatExchangeCLIE2eHelper) -> None:
 
 def test_config_content(cli: ThreatExchangeCLIE2eHelper) -> None:
     expected = [
+        "file threatexchange.content_type.file.FileContent",
         "photo threatexchange.content_type.photo.PhotoContent",
         "text threatexchange.content_type.text.TextContent",
         "url threatexchange.content_type.url.URLContent",

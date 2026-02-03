@@ -27,16 +27,18 @@
                         <label for="exchange_create_form_bank" class="form-label">New bank name</label>
                         <input type="text" class="form-control" name="bank" id="exchange_create_form_bank"
                             placeholder="BANK_NAME" required>
+                            <span id="bank-name-error" class="text-danger"></span>
                     </div>
                     <div class="mb-3">
                         <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
                         <textarea type="text" class="form-control" name="api_json" id="exchange_create_form_json" rows=5
                             placeholder="{}" onblur="validatePrettyFormJSON(this)"></textarea>
+                        <span id="json-error" class="text-danger"></span>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Create</button>
+                    <button type="submit" class="btn btn-primary" id="exchange_create_form_submit">Create</button>
                 </div>
             </form>
         </div>
@@ -44,17 +46,49 @@
 </div>
 <script>
     function validatePrettyFormJSON(elem) {
+        const errorSpan = document.getElementById('json-error');
+        errorSpan.textContent = ''; // Clear previous error message
         try {
             const obj = JSON.parse(elem.value || "{}");
             const pretty = JSON.stringify(obj, undefined, 4);
             elem.value = pretty;
             elem.classList.remove("is-invalid");
             elem.classList.add("is-valid");
+            submitButton.disabled = false;
         } catch (e) {
+            errorSpan.textContent = 'Invalid JSON';
             elem.classList.remove("is-valid");
             elem.classList.add("is-invalid");
+            submitButton.disabled = true;
         }
     }
+
+    document.getElementById('exchange_create_form_bank').addEventListener('blur', function() {
+        const bankNameField = this;
+        // auto uppercase and trim input
+        bankNameField.value = bankNameField.value.trim().toUpperCase();
+        const submitButton = document.getElementById('exchange_create_form_submit');
+        submitButton.disabled = true;
+        const errorSpan = document.getElementById('bank-name-error');
+        errorSpan.textContent = ''; // Clear previous error message
+
+        const regex = /^[A-Z0-9_]+$/;
+
+        // Validate the input
+        if (bankNameField.value.trim() === '') {
+            errorSpan.textContent = 'This field is required!';
+            bankNameField.classList.remove("is-valid");
+            bankNameField.classList.add("is-invalid");
+        } else if (!regex.test(bankNameField.value)) {
+            errorSpan.textContent = 'Bank name must be all uppercase and snake cased';
+            bankNameField.classList.remove("is-valid");
+            bankNameField.classList.add("is-invalid");
+        } else {
+            submitButton.disabled = false;
+            bankNameField.classList.remove("is-invalid");
+            bankNameField.classList.add("is-valid");
+        }
+    });
 
     document.getElementById("exchange_create_form").addEventListener("submit", async event => {
         event.preventDefault();

@@ -2,13 +2,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <cstdlib>
-#include <string>
-#include <vector>
-
 #include <vpdq/cpp/hashing/filehasher.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
+
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
@@ -23,13 +25,13 @@ static void usage(char* argv0, int rc) {
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
   fprintf(
       fp,
-      "-d|--output-directory ...: instead of specifiying "
+      "-d|--output-directory ...: instead of specifying "
       "output-file name, just give a directory and the output file name will "
       "be auto-computed from the input video file name. For example, avideofile.mp4 -> output_directory>/avideofile.txt\n");
   fprintf(
       fp,
       "-s|--downsample-frame-dimension ...: The down scaling resolution for video. The input number will be the height and width of the downscaled video. For example, -s 160 -> will make video of 1080x720 to 160x160.\n");
-  exit(rc);
+  std::exit(rc);
 }
 
 /**
@@ -71,9 +73,9 @@ std::string stripExtension(const std::string& filename) {
 int main(int argc, char** argv) {
   int argi = 1;
   bool verbose = false;
-  std::string inputVideoFileName = "";
-  std::string outputHashFileName = "";
-  std::string outputDirectory = "";
+  std::string inputVideoFileName;
+  std::string outputHashFileName;
+  std::string outputDirectory;
   double secondsPerHash = 0;
   int downsampleFrameDimension = 0;
   unsigned int thread_count = 0;
@@ -109,7 +111,7 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      secondsPerHash = std::atof(argv[argi++]);
+      secondsPerHash = std::stof(argv[argi++]);
       continue;
     }
     if (flag == "-d" || flag == "--output-directory") {
@@ -123,14 +125,14 @@ int main(int argc, char** argv) {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      downsampleFrameDimension = std::atoi(argv[argi++]);
+      downsampleFrameDimension = std::stoi(argv[argi++]);
       continue;
     }
     if (flag == "-t" || flag == "--thread-count") {
       if ((argc - argi) < 1) {
         usage(argv[0], 1);
       }
-      thread_count = std::atoi(argv[argi++]);
+      thread_count = std::stoi(argv[argi++]);
       continue;
     }
     usage(argv[0], 1);

@@ -14,7 +14,8 @@ from threatexchange.exchanges.fetch_state import (
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.storage.interface import ISignalExchangeStore, SignalTypeConfig
+from OpenMediaMatch.storage.interface import ISignalExchangeStore
+from threatexchange.storage.interfaces import SignalTypeConfig
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 
 logger = logging.getLogger(__name__)
@@ -44,9 +45,9 @@ def fetch_all(
     for c in collabs.values():
         fetch(collab_store, signal_type_cfgs, c)
     logger.info(
-        "Completed %s background task - %s",
+        "Completed %s background task, took %s",
         fetch_all.__name__,
-        duration_to_human_str(int(time.time() - start)),
+        duration_to_human_str(time.time() - start),
     )
 
 
@@ -70,7 +71,7 @@ def fetch(
             "%s[%s] Completed - %s",
             collab.name,
             collab.api,
-            duration_to_human_str(int(time.time() - start)),
+            duration_to_human_str(time.time() - start),
         )
 
 

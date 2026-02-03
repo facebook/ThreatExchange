@@ -30,14 +30,15 @@ jobs:
           python-version: "3.11"
       - name: Install vpdq dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y python3-dev pkg-config cmake ffmpeg libavcodec-dev libavformat-dev libavdevice-dev libavutil-dev libswscale-dev libswresample-dev libavfilter-dev
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python3 -m pip install -e .[all]
+          python3 -m pip install -e .[dev]
       - name: Check code format
         run: |
-          black --check .
+          black --check . --diff
       - name: Check python types
         run: |
           python -m mypy threatexchange
@@ -45,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.8', '3.9', '3.11']
+        python-version: ['3.10', '3.14']
     steps:
       - uses: actions/checkout@v4
       - name: Setup Python ${{ matrix.python-version }}
@@ -63,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[test]"
+          python3 -m pip install -e .[dev,extensions]
       - name: Test with pytest
         run: |
           py.test

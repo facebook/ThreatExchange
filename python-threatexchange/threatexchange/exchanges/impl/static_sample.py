@@ -9,7 +9,6 @@ access to any API.
 The CLI defaults to this being the only collaboration.
 """
 
-
 import typing as t
 
 from threatexchange.signal_type.signal_base import SignalType

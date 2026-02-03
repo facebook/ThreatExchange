@@ -19,6 +19,7 @@ import time
 import typing as t
 import os
 
+import flask
 from flask import current_app
 import flask_sqlalchemy
 from sqlalchemy import (
@@ -31,6 +32,7 @@ from sqlalchemy import (
     UniqueConstraint,
     BigInteger,
     event,
+    text,
 )
 from sqlalchemy.dialects.postgresql import OID
 from sqlalchemy.orm import (
@@ -39,9 +41,12 @@ from sqlalchemy.orm import (
     DeclarativeBase,
     relationship,
     validates,
+    scoped_session,
+    sessionmaker,
 )
 from sqlalchemy.types import DateTime
 from sqlalchemy.sql import func
+
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges import auth
@@ -69,9 +74,52 @@ class Base(DeclarativeBase):
     pass
 
 
-# Initializing this at import time seems to be the only correct
-# way to do this
+# Standard Flask-SQLAlchemy initialization
 db = flask_sqlalchemy.SQLAlchemy(model_class=Base)
+
+_read_scoped_session: t.Optional[scoped_session] = None
+
+
+def init_read_replica(app: flask.Flask) -> None:
+    """
+    Initialize the read replica scoped session. Call after db.init_app().
+
+    Creates a scoped session bound to the "read" engine with proper
+    per-request lifecycle management.
+    """
+    global _read_scoped_session
+
+    read_engine = db.engines["read"]
+    _read_scoped_session = scoped_session(
+        sessionmaker(bind=read_engine),
+        scopefunc=db.session.registry.scopefunc,
+    )
+
+    @app.teardown_appcontext
+    def cleanup_read_session(exc: t.Optional[BaseException] = None) -> None:
+        if _read_scoped_session is not None:
+            _read_scoped_session.remove()
+
+
+def get_read_session():
+    """
+    Get a session bound to the read replica database.
+
+    Use for read-only queries that can tolerate slight staleness.
+    Falls back to primary session if read replica not initialized.
+    """
+    if _read_scoped_session is not None:
+        return _read_scoped_session()
+    return db.session
+
+
+def get_write_session():
+    """
+    Get a session bound to the primary database.
+
+    Use for all write operations and reads requiring latest data.
+    """
+    return db.session
 
 
 def _bank_name_ok(name: str) -> bool:
@@ -79,6 +127,11 @@ def _bank_name_ok(name: str) -> bool:
 
 
 class Bank(db.Model):  # type: ignore[name-defined]
+    """
+    A collection of content that has been labeled with similar labels. Basically a folder.
+    Matches to the contents of this bank should be classified with those labels.
+    """
+
     __tablename__ = "bank"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -114,6 +167,12 @@ class Bank(db.Model):  # type: ignore[name-defined]
 
 
 class BankContent(db.Model):  # type: ignore[name-defined]
+    """
+    A single piece of content that has been labeled.
+    Due to data retention limits for harmful content, and hash sharing,
+    this may no longer point to any original content, but represent the idea of a single piece of content.
+    """
+
     __tablename__ = "bank_content"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -141,6 +200,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
         back_populates="content", cascade="all, delete"
     )
 
+    def set_typed_config(self, cfg: BankContentConfig) -> t.Self:
+        self.disable_until_ts = cfg.disable_until_ts
+        return self
+
     def as_storage_iface_cls(self) -> BankContentConfig:
         return BankContentConfig(
             self.id,
@@ -152,6 +215,10 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
 
 class ContentSignal(db.Model):  # type: ignore[name-defined]
+    """
+    The signals for a single piece of labeled content.
+    """
+
     content_id: Mapped[int] = mapped_column(
         ForeignKey(BankContent.id, ondelete="CASCADE"),
         primary_key=True,
@@ -374,6 +441,23 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
 
     serialized_index_large_object_oid: Mapped[int | None] = mapped_column(OID)
 
+    def index_lobj_exists(self) -> bool:
+        """
+        Return true if the index lobj exists and load_signal_index should work.
+
+        In normal operation, this should always return true. However,
+        we've observed in github.com/facebook/ThreatExchange/issues/1673
+        that some partial failure is possible. This can be used to
+        detect that condition.
+        """
+        count = db.session.execute(
+            text(
+                "SELECT count(1) FROM pg_largeobject_metadata "
+                + f"WHERE oid = {self.serialized_index_large_object_oid};"
+            )
+        ).scalar_one()
+        return count == 1
+
     def commit_signal_index(
         self, index: SignalTypeIndex[int], checkpoint: SignalTypeIndexBuildCheckpoint
     ) -> t.Self:
@@ -386,30 +470,47 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
             self._log("serializing index to tmpfile %s", tmpfile.name)
             index.serialize(t.cast(t.BinaryIO, tmpfile.file))
             size = tmpfile.tell()
+        size_str = _human_friendly_bytesize(size)
         self._log(
-            "finished writing to tmpfile, %d signals %d bytes - %s",
+            "finished writing to tmpfile, %d signals %s bytes took %s",
             self.signal_count,
-            size,
-            duration_to_human_str(int(time.time() - serialize_start_time)),
+            size_str,
+            duration_to_human_str(time.time() - serialize_start_time),
         )
 
         store_start_time = time.time()
         # Deep dark magic - direct access postgres large object API
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)  # type: ignore[attr-defined]
+        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)
         self._log(
-            "imported tmpfile as lobject oid %d - %s",
+            "imported tmpfile as lobject oid %d took %s",
             l_obj.oid,
-            duration_to_human_str(int(time.time() - store_start_time)),
+            duration_to_human_str(time.time() - store_start_time),
         )
         if self.serialized_index_large_object_oid is not None:
-            old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")  # type: ignore[attr-defined]
-            self._log("deallocating old lobject %d", old_obj.oid)
-            old_obj.unlink()
+            if self.index_lobj_exists():
+                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")
+                self._log("deallocating old lobject %d", old_obj.oid)
+                old_obj.unlink()
+            else:
+                self._log(
+                    "old lobject %d doesn't exist? "
+                    + "This might be a previous partial failure",
+                    self.serialized_index_large_object_oid,
+                    level=logging.WARNING,
+                )
 
         self.serialized_index_large_object_oid = l_obj.oid
         db.session.add(self)
         raw_conn.commit()
+
+        self._log(
+            "commited new index, %d signals %s took %s",
+            self.signal_count,
+            size_str,
+            duration_to_human_str(time.time() - serialize_start_time),
+            level=logging.INFO,
+        )
 
         try:
             os.unlink(tmpfile.name)
@@ -431,16 +532,16 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # I'm sorry future debugger finding this comment.
         load_start_time = time.time()
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(oid, "rb")  # type: ignore[attr-defined]
+        l_obj = raw_conn.lobject(oid, "rb")
 
         with tempfile.NamedTemporaryFile("rb") as tmpfile:
             self._log("importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name)
             l_obj.export(tmpfile.name)
             tmpfile.seek(0, io.SEEK_END)
             self._log(
-                "loaded %d bytes to tmpfile - %s",
-                tmpfile.tell(),
-                duration_to_human_str(int(time.time() - load_start_time)),
+                "downloading %s to tmpfile took %s",
+                _human_friendly_bytesize(tmpfile.tell()),
+                duration_to_human_str(time.time() - load_start_time),
             )
             tmpfile.seek(0)
 
@@ -450,9 +551,14 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 SignalTypeIndex.deserialize(t.cast(t.BinaryIO, tmpfile.file)),
             )
             self._log(
-                "deserialized - %s",
-                duration_to_human_str(int(time.time() - deserialize_start)),
+                "deserialize took %s",
+                duration_to_human_str(time.time() - deserialize_start),
             )
+        self._log(
+            "loading signal index took %s",
+            duration_to_human_str(time.time() - load_start_time),
+            level=logging.INFO,
+        )
         return index
 
     def as_checkpoint(self) -> SignalTypeIndexBuildCheckpoint:
@@ -522,3 +628,11 @@ class ExchangeAPIConfig(db.Model):  # type: ignore[name-defined]
                     self.default_credentials_json, api_cls.get_credential_cls()
                 )
         return SignalExchangeAPIConfig(api_cls, creds)
+
+
+def _human_friendly_bytesize(num: float) -> str:
+    num /= 1024 * 1024
+    if num < 750:
+        return f"{num:.2f}MiB"
+    num /= 1024
+    return f"{num:.2f}GiB"

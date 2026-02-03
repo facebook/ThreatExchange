@@ -10,21 +10,58 @@ import random
 import typing as t
 import time
 
-from flask import Blueprint, Flask, abort, current_app, request
+from flask_openapi3 import APIBlueprint
+from flask_openapi3.models import Tag
+from flask import Flask, Response, abort, current_app, request
+from werkzeug.datastructures import Headers
+
+# Needed so typing.get_type_hints resolves ResponseReturnValue's WSGIApplication during tests.
+WSGIApplication = t.Callable[..., t.Any]
+from flask.typing import ResponseReturnValue
 from flask_apscheduler import APScheduler
 from werkzeug.exceptions import HTTPException
 
 from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.index import SignalTypeIndex
+from threatexchange.signal_type.index import (
+    IndexMatchUntyped,
+    SignalSimilarityInfo,
+    SignalTypeIndex,
+)
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.blueprints import hashing
-from OpenMediaMatch.utils.flask_utils import require_request_param, api_error_handler
+from OpenMediaMatch.utils.flask_utils import (
+    api_error_handler,
+)
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.utils.memory_utils import trim_process_memory
+from OpenMediaMatch.schemas.matching import (
+    CompareRequest,
+    CompareResponse,
+    IndexStatusResponse,
+    LookupRequest,
+    LookupResponse,
+    MatchWithDistance as MatchWithDistanceModel,
+    RawLookupRequest,
+    RawLookupResponse,
+)
+from OpenMediaMatch.schemas.shared import ErrorResponse
 
-bp = Blueprint("matching", __name__)
+bp = APIBlueprint("matching", __name__, url_prefix="/m")
 bp.register_error_handler(HTTPException, api_error_handler)
+
+
+# Type helpers
+
+
+class MatchWithDistancePayload(t.TypedDict):
+    bank_content_id: int
+    distance: str
+
+
+TMatchByBank = dict[str, list[MatchWithDistancePayload]]
+TBankMatchBySignalType = dict[str, TMatchByBank]
 
 
 @dataclass
@@ -33,6 +70,7 @@ class _SignalIndexInMemoryCache:
     index: SignalTypeIndex[int]
     checkpoint: interface.SignalTypeIndexBuildCheckpoint
     last_check_ts: float
+    sec_old_before_stale: int
 
     @property
     def is_ready(self):
@@ -43,15 +81,21 @@ class _SignalIndexInMemoryCache:
         """
         If we are overdue on refresh by too long, consider it stale.
         """
-        return time.time() - self.last_check_ts > 65
+        limit = self.sec_old_before_stale
+        if limit <= 0:  # 0 disables stale check
+            return False
+        return time.time() - self.last_check_ts > limit
 
     @classmethod
-    def get_initial(cls, signal_type: t.Type[SignalType]) -> t.Self:
+    def get_initial(
+        cls, signal_type: t.Type[SignalType], sec_old_before_stale: int
+    ) -> t.Self:
         return cls(
             signal_type,
             signal_type.get_index_cls().build([]),
             interface.SignalTypeIndexBuildCheckpoint.get_empty(),
             0,
+            sec_old_before_stale,
         )
 
     def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
@@ -60,9 +104,22 @@ class _SignalIndexInMemoryCache:
         curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
         if curr_checkpoint is not None and self.checkpoint != curr_checkpoint:
             new_index = store.get_signal_type_index(self.signal_type)
-            assert new_index is not None
+            if new_index is None:
+                app: Flask = get_apscheduler().app
+                app.logger.error(
+                    "CachedIndex[%s] index checkpoint(%r)"
+                    + " says new index available but unable to get it",
+                    self.signal_type.get_name(),
+                    curr_checkpoint,
+                )
+                return
+
             self.index = new_index
             self.checkpoint = curr_checkpoint
+
+            # Force garbage collection to reclaim memory and attempt to free pages
+            trim_process_memory()
+
         self.last_check_ts = now
 
     def periodic_task(self) -> None:
@@ -75,10 +132,10 @@ class _SignalIndexInMemoryCache:
             if prev_time == now_time:
                 return  # No reload
             app.logger.info(
-                "CachedIndex[%s] Updated %d -> %d",
+                "CachedIndex[%s] Updated checkpoint from %s -> %s",
                 self.signal_type.get_name(),
-                prev_time,
-                now_time,
+                _checkpoint_timestamp_to_str(prev_time),
+                _checkpoint_timestamp_to_str(now_time),
             )
 
 
@@ -86,30 +143,60 @@ class _SignalIndexInMemoryCache:
 IndexCache = t.Mapping[str, _SignalIndexInMemoryCache]
 
 
-@bp.route("/raw_lookup")
-def raw_lookup():
+@bp.get(
+    "/raw_lookup",
+    tags=[Tag(name="Matching")],
+    responses={"200": RawLookupResponse, "400": ErrorResponse, "503": ErrorResponse},
+    summary="Raw hash lookup",
+    description="Look up a hash in the similarity index",
+)
+def raw_lookup(query: RawLookupRequest) -> ResponseReturnValue:
     """
-    Look up a hash in the similarity index
+    Look up a hash in the similarity index.
+
+    Note that enable/disable status is NOT checked - you'll need to do it
+    yourself or call /lookup instead.
+
     Input:
      * Signal type (hash type)
      * Signal value (the hash)
      * Optional list of banks to restrict search to
+     * Optional include_distance (bool) whether or not to return distance values on match
     Output:
-     * List of matching content items
+     * List of matching with content_id and, if included, distance values
     """
-    signal = require_request_param("signal")
-    signal_type_name = require_request_param("signal_type")
-    return lookup_signal(signal, signal_type_name)
+    # Parse optional banks parameter
+    requested_banks = set(query.banks.split(",")) if query.banks else None
+
+    lookup_signal_func = (
+        lookup_signal_with_distance if query.include_distance else lookup_signal
+    )
+
+    matches = lookup_signal_func(query.signal, query.signal_type, requested_banks)
+
+    if query.include_distance:
+        distance_matches = t.cast(list[MatchWithDistancePayload], matches)
+        response = RawLookupResponse(
+            matches=[MatchWithDistanceModel(**match) for match in distance_matches]
+        )
+        return response.model_dump()
+
+    matches_union: list[int | MatchWithDistanceModel] = [
+        t.cast(int | MatchWithDistanceModel, match) for match in matches
+    ]
+    return RawLookupResponse(matches=matches_union).model_dump()
 
 
-def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
+def query_index(
+    signal: str, signal_type_name: str
+) -> t.Sequence[IndexMatchUntyped[SignalSimilarityInfo, int]]:
     storage = get_storage()
     signal_type = _validate_and_transform_signal_type(signal_type_name, storage)
 
     try:
         signal = signal_type.validate_signal_str(signal)
     except Exception as e:
-        abort(400, f"invalid signal type: {e}")
+        abort(400, f"invalid signal: {e}")
 
     index = _get_index(signal_type)
 
@@ -118,7 +205,53 @@ def lookup_signal(signal: str, signal_type_name: str) -> dict[str, list[int]]:
     current_app.logger.debug("[lookup_signal] querying index")
     results = index.query(signal)
     current_app.logger.debug("[lookup_signal] query complete")
-    return {"matches": [m.metadata for m in results]}
+    return results
+
+
+def lookup_signal(
+    signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
+) -> list[int]:
+    results = query_index(signal, signal_type_name)
+    content_ids = [m.metadata for m in results]
+
+    # Filter by banks if specified
+    if banks is not None:
+        storage = get_storage()
+        contents = storage.bank_content_get(content_ids)
+        content_ids = [c.id for c in contents if c.bank.name in banks]
+
+    return content_ids
+
+
+def lookup_signal_with_distance(
+    signal: str, signal_type_name: str, banks: t.Optional[t.Set[str]] = None
+) -> list[MatchWithDistancePayload]:
+    results = query_index(signal, signal_type_name)
+    matches: list[MatchWithDistancePayload] = [
+        {
+            "bank_content_id": m.metadata,
+            "distance": m.similarity_info.pretty_str(),
+        }
+        for m in results
+    ]
+
+    # Filter by banks if specified
+    if banks is not None:
+        storage = get_storage()
+        content_ids = [m["bank_content_id"] for m in matches]
+        contents = storage.bank_content_get(content_ids)
+        # Create a set of valid content IDs
+        valid_content_ids = {c.id for c in contents if c.bank.name in banks}
+        # Filter matches to only include valid content IDs
+        matches = [m for m in matches if m["bank_content_id"] in valid_content_ids]
+
+    return matches
+
+
+def _checkpoint_timestamp_to_str(checkpoint: int) -> str:
+    if checkpoint < 1:
+        return "None"
+    return datetime.datetime.fromtimestamp(checkpoint).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def _validate_and_transform_signal_type(
@@ -136,8 +269,14 @@ def _validate_and_transform_signal_type(
     return signal_type_config.signal_type
 
 
-@bp.route("/lookup", methods=["GET"])
-def lookup_get():
+@bp.get(
+    "/lookup",
+    tags=[Tag(name="Matching")],
+    responses={"200": LookupResponse, "400": ErrorResponse, "403": ErrorResponse},
+    summary="Content lookup",
+    description="Look up content by URL or hash in the similarity index",
+)
+def lookup_get(query: LookupRequest) -> ResponseReturnValue:
     """
     Look up a hash in the similarity index. The hash can either be specified via
     `signal_type` and `signal` query params, or a file url can be provided in the
@@ -153,73 +292,162 @@ def lookup_get():
      Also (applies to both cases):
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object keyed by signal type, to a JSON object of bank
+       matches. If Signal Type is given, the outer JSON object is
+       elided.
+
+    Example output:
+    {
+        "pdq": {
+            "BANK_A": [
+                {"bank_content_id": 1001, "distance": 4},
+                {"bank_content_id": 1002, "distance": 0},
+            ],
+            "BANK_B": [
+                {"bank_content_id": 4434, "distance": 0},
+            ]
+        },
+    }
+
+    Example output (with signal type set)
+    {
+        "BANK_A": [
+            {"bank_content_id": 1001, "distance": 4},
+            {"bank_content_id": 1002, "distance": 0},
+        ],
+        "BANK_B": [
+            {"bank_content_id": 4434, "distance": 0},
+        ]
+    }
     """
-    # Url was passed as a query param?
-    if request.args.get("url", None):
-        hashes = hashing.hash_media()
-        resp = {}
+    # Parse optional banks parameter
+    requested_banks = set(query.banks.split(",")) if query.banks else None
+
+    resp: TBankMatchBySignalType = {}
+    if query.url:
+        if not current_app.config.get("ROLE_HASHER", False):
+            abort(403, "Hashing is disabled, missing role")
+
+        hashes = hashing.hash_url_content(
+            query.url,
+            content_type_hint=query.content_type,
+            signal_type_names=query.types,
+        )
+
         for signal_type in hashes.keys():
             signal = hashes[signal_type]
-            resp[signal_type] = lookup(signal, signal_type)
+            resp[signal_type] = lookup(signal, signal_type, banks=requested_banks)
     else:
-        signal = require_request_param("signal")
-        signal_type = require_request_param("signal_type")
-        resp = lookup(signal, signal_type)
+        if not query.signal or not query.signal_type:
+            abort(400, "Either url or both signal and signal_type are required")
+        matches = lookup(query.signal, query.signal_type, banks=requested_banks)
+        return LookupResponse(**matches).model_dump()
 
-    return resp
+    selected_st = query.signal_type
+    if selected_st is not None:
+        selected_matches = resp.get(selected_st, {})
+        return LookupResponse(**selected_matches).model_dump()
+    return LookupResponse(**resp).model_dump()
 
 
-@bp.route("/lookup", methods=["POST"])
-def lookup_post():
+@bp.post(
+    "/lookup",
+    tags=[Tag(name="Matching")],
+    responses={"200": LookupResponse, "400": ErrorResponse, "403": ErrorResponse},
+    summary="Content lookup from file",
+    description="Look up uploaded file content in the similarity index",
+)
+def lookup_post() -> ResponseReturnValue:
     """
     Look up the hash for the uploaded file in the similarity index.
-    @see OpenMediaMatch.blueprints.hashing hash_media_post()
+    @see OpenMediaMatch.blueprints.hashing hash_media_from_form_data()
 
     Input:
      * Uploaded file.
      * Optional seed (content id) for consistent coinflip
     Output:
-     * List of matching banks
+     * JSON object keyed by signal type to bank matches
+       (@see lookup_get)
     """
-    hashes = hashing.hash_media_post()
+    if not current_app.config.get("ROLE_HASHER", False):
+        abort(403, "Hashing is disabled, missing role")
+
+    hashes = hashing.hash_media_from_form_data()
+    bypass_coinflip = request.args.get("bypass_coinflip", "false") == "true"
+
+    # Parse optional banks parameter
+    banks_param = request.args.get("banks")
+    requested_banks = set(banks_param.split(",")) if banks_param else None
 
     resp = {}
     for signal_type in hashes.keys():
         signal = hashes[signal_type]
-        resp[signal_type] = lookup(signal, signal_type)
+        resp[signal_type] = lookup(
+            signal, signal_type, bypass_coinflip, requested_banks
+        )
 
-    return resp
+    return LookupResponse(**resp).model_dump()
 
 
-def lookup(signal, signal_type_name):
+def lookup(
+    signal: str,
+    signal_type_name: str,
+    bypass_coinflip: bool = False,
+    banks: t.Optional[t.Set[str]] = None,
+) -> TMatchByBank:
     current_app.logger.debug("performing lookup")
-    raw_results = lookup_signal(signal, signal_type_name)
+    results_by_bank_content_id = {
+        r.metadata: r for r in query_index(signal, signal_type_name)
+    }
     storage = get_storage()
     current_app.logger.debug("getting bank content")
-    contents = storage.bank_content_get(
-        {cid for l in raw_results.values() for cid in l}
-    )
-    enabled = [c for c in contents if c.enabled]
+    contents = storage.bank_content_get(list(results_by_bank_content_id.keys()))
+    enabled_content = [c for c in contents if c.enabled]
     current_app.logger.debug(
-        "lookup matches %d content ids (%d enabled)", len(contents), len(enabled)
+        "lookup matches %d content ids (%d enabled_content)",
+        len(contents),
+        len(enabled_content),
     )
-    if not enabled:
-        return []
-    banks = {c.bank.name: c.bank for c in enabled}
+    all_banks = {c.bank.name: c.bank for c in enabled_content}
+
+    # Always allow all banks, whether matching is enabled or not if bypass_coinflip is True
     rand = random.Random(request.args.get("seed"))
-    coinflip = rand.random()
-    enabled_banks = [
-        b.name for b in banks.values() if b.matching_enabled_ratio >= coinflip
-    ]
+    coinflip = rand.random() if not bypass_coinflip else 0
+    current_app.logger.debug("coinflip: %s", coinflip)
+    enabled_banks = {
+        b.name for b in all_banks.values() if b.matching_enabled_ratio >= coinflip
+    }
+
+    # Filter by requested banks if specified
+    if banks is not None:
+        enabled_banks = enabled_banks.intersection(banks)
+
+    current_app.logger.debug("enabled_banks: %s", enabled_banks)
     current_app.logger.debug(
-        "lookup matches %d banks (%d enabled)", len(banks), len(enabled_banks)
+        "lookup matches %d banks (%d enabled_banks)", len(all_banks), len(enabled_banks)
     )
-    return enabled_banks
+    results: TMatchByBank = {}
+    for content in enabled_content:
+        if content.bank.name not in enabled_banks:
+            continue
+
+        matched_content = results_by_bank_content_id[content.id]
+        match: MatchWithDistancePayload = {
+            "bank_content_id": content.id,
+            "distance": matched_content.similarity_info.pretty_str(),
+        }
+        results.setdefault(content.bank.name, []).append(match)
+    return results
 
 
-@bp.route("/index/status")
-def index_status():
+@bp.get(
+    "/index/status",
+    tags=[Tag(name="Matching")],
+    responses={"200": IndexStatusResponse, "400": ErrorResponse},
+    summary="Index status",
+    description="Get the status of matching indices",
+)
+def index_status() -> ResponseReturnValue:
     """
     Get the status of matching indices.
 
@@ -264,14 +492,75 @@ def index_status():
                 "size": checkpoint.total_hash_count,
             }
         status_by_name[name] = status
-    return status_by_name
+    return IndexStatusResponse(**status_by_name).model_dump()
+
+
+@bp.post(
+    "/compare",
+    tags=[Tag(name="Matching")],
+    responses={"200": CompareResponse, "400": ErrorResponse},
+    summary="Compare hashes",
+    description="Compare pairs of hashes and get the match distance between them",
+)
+def compare() -> ResponseReturnValue:
+    """
+    Compare pairs of hashes and get the match distance between them.
+    Example input:
+    {
+        "pdq": ["facd8b...", "facd8b..."],
+        "not_pdq": ["bdec19...","bdec19..."]
+    }
+    Example output
+    {
+        "pdq": [
+            true,
+            {
+                "distance": 9
+            }
+        ],
+        "not_pdq": 20
+            true,
+            {
+                "distance": 341
+            }
+        }
+    }
+    """
+    request_data = request.get_json()
+    if type(request_data) != dict:
+        abort(400, "Request input was not a dict")
+    request_model = CompareRequest(**request_data)
+    request_data = request_model.model_dump()
+    storage = get_storage()
+    results = {}
+    for signal_type_str in request_data.keys():
+        hashes_to_compare = request_data.get(signal_type_str)
+        if type(hashes_to_compare) != list:
+            abort(400, f"Comparison hashes for {signal_type_str} was not a list")
+        if hashes_to_compare.__len__() != 2:
+            abort(400, f"Comparison hash list length must be exactly 2")
+        signal_type = _validate_and_transform_signal_type(signal_type_str, storage)
+        try:
+            left = signal_type.validate_signal_str(hashes_to_compare[0])
+            right = signal_type.validate_signal_str(hashes_to_compare[1])
+            compare_fn = getattr(signal_type, "compare_hash", None)
+            if not callable(compare_fn):
+                abort(400, f"{signal_type_str} does not support hash comparison")
+            comparison_callable = t.cast(t.Callable[[str, str], t.Any], compare_fn)
+            comparison = comparison_callable(left, right)
+            results[signal_type_str] = comparison
+        except Exception as e:
+            abort(400, f"Invalid {signal_type_str} hash: {e}")
+    return CompareResponse(**results).model_dump()
 
 
 def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
     assert not hasattr(app, "signal_type_index_cache"), "Aready initialized?"
     storage = get_storage()
     cache = {
-        st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(st.signal_type)
+        st.signal_type.get_name(): _SignalIndexInMemoryCache.get_initial(
+            st.signal_type, int(app.config.get("INDEX_CACHE_MAX_STALE_SEC", 65))
+        )
         for st in storage.get_signal_type_configs().values()
     }
     if scheduler is not None:
@@ -280,7 +569,7 @@ def initiate_index_cache(app: Flask, scheduler: APScheduler | None) -> None:
                 f"Match Index Refresh[{name}]",
                 entry.periodic_task,
                 trigger="interval",
-                seconds=30,
+                seconds=int(app.config.get("TASK_INDEX_CACHE_INTERVAL_SECONDS", 30)),
                 start_date=datetime.datetime.now() - datetime.timedelta(seconds=29),
             )
         scheduler.app.logger.info(
@@ -294,12 +583,17 @@ def _get_index_cache() -> IndexCache:
     return t.cast(IndexCache, getattr(current_app, "signal_type_index_cache", {}))
 
 
+def index_cache_is_ready() -> bool:
+    return all(idx.is_ready for idx in _get_index_cache().values())
+
+
 def index_cache_is_stale() -> bool:
     return any(idx.is_stale for idx in _get_index_cache().values())
 
 
 def _get_index(signal_type: t.Type[SignalType]) -> SignalTypeIndex[int] | None:
     entry = _get_index_cache().get(signal_type.get_name())
+
     if entry is None:
         current_app.logger.debug("[lookup_signal] no cache, loading index")
         return get_storage().get_signal_type_index(signal_type)

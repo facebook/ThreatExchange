@@ -21,7 +21,7 @@ from threatexchange.exchanges.fetch_state import (
 )
 
 from OpenMediaMatch.storage import interface
-from OpenMediaMatch.storage.interface import SignalTypeConfig
+from threatexchange.storage.interfaces import SignalTypeConfig
 
 
 class MockedUnifiedStore(interface.IUnifiedStore):
@@ -49,7 +49,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
         # Needed to bamboozle mypy into working
         s_types: t.Sequence[t.Type[SignalType]] = (PdqSignal, VideoMD5Signal)
-        return {s.get_name(): interface.SignalTypeConfig(1.0, s) for s in s_types}
+        return {s.get_name(): SignalTypeConfig(1.0, s) for s in s_types}
 
     def _create_or_update_signal_type_override(
         self, signal_type: str, enabled_ratio: float
@@ -174,8 +174,30 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     def bank_content_get(
         self, id: t.Iterable[int]
     ) -> t.Sequence[interface.BankContentConfig]:
-        # TODO
-        raise Exception("Not implemented")
+        # For the mock, just return a config
+        content_configs = []
+        for content_id in id:
+            cfg = interface.BankContentConfig(
+                id=content_id,
+                disable_until_ts=interface.BankContentConfig.ENABLED,
+                collab_metadata={},
+                original_media_uri=None,
+                bank=interface.BankConfig(name="MOCK_BANK", matching_enabled_ratio=1.0),
+            )
+            content_configs.append(cfg)
+        return content_configs
+
+    def bank_content_get_signals(
+        self, id: t.Iterable[int]
+    ) -> t.Dict[int, t.Dict[str, str]]:
+        # For the mock, return sample signals
+        signals_dict = {}
+        for content_id in id:
+            signals_dict[content_id] = {
+                "pdq": "facefacefacefacefacefaceface",
+                "vmd5": "ecafecafecafecafecafecafecaf",
+            }
+        return signals_dict
 
     def bank_content_update(self, val: interface.BankContentConfig) -> None:
         # TODO
@@ -190,7 +212,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         # TODO
         raise Exception("Not implemented")
 
-    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         # TODO
         raise Exception("Not implemented")
 

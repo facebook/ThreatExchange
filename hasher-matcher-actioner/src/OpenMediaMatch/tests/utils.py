@@ -7,7 +7,10 @@ import typing as t
 from flask import Flask
 from flask.testing import FlaskClient
 
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+
 from OpenMediaMatch.app import create_app
+from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres import database
 from sqlalchemy.sql import text

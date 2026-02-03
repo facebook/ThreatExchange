@@ -1,0 +1,113 @@
+<!-- Remove Content Modal -->
+<div class="modal fade" id="remove-content-modal-{{bank_title}}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="width: 70%; max-width: none;">
+        <div class="modal-content modal-xl" style="padding: 20px">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Remove Content from {{ bank_title }}</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Tab Navigation -->
+                <ul class="nav nav-tabs" id="remove-content-tabs-{{bank_title}}" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="remove-url-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#remove-url-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-link-45deg me-2"></i>Remove by URL
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="remove-hash-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#remove-hash-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-hash me-2"></i>Remove by Hash
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="remove-id-tab-{{bank_title}}" data-bs-toggle="tab" 
+                                data-bs-target="#remove-id-pane-{{bank_title}}" type="button" role="tab">
+                            <i class="bi bi-123 me-2"></i>Remove by ID
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content mt-3" id="remove-content-tab-content-{{bank_title}}">
+                    <!-- Remove by URL Tab -->
+                    <div class="tab-pane fade show active" id="remove-url-pane-{{bank_title}}" role="tabpanel">
+                        <form id="remove_content_url_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Content Type</label>
+                                    <select class="form-select" name="content_type" required>
+                                        <option selected disabled value="">Select content type</option>
+                                        {% for c in content %}
+                                        {% if c['enabled'] %}
+                                        <option value="{{c['name']}}">{{c['name'].capitalize()}}</option>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">URL</label>
+                                    <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash me-2"></i>Find & Remove
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Remove by Hash Tab -->
+                    <div class="tab-pane fade" id="remove-hash-pane-{{bank_title}}" role="tabpanel">
+                        <form id="remove_content_hash_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Signal Type</label>
+                                    <select class="form-select" name="signal_type" required>
+                                        <option selected disabled value="">Select signal type</option>
+                                        {% for s in signal %}
+                                        <option value="{{s['name']}}">{{s['name'].capitalize()}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Hash Value</label>
+                                    <input class="form-control font-monospace" type="text" name="signal_value" 
+                                           placeholder="Enter hash value" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash me-2"></i>Find & Remove
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Remove by ID Tab -->
+                    <div class="tab-pane fade" id="remove-id-pane-{{bank_title}}" role="tabpanel">
+                        <form id="remove_content_id_{{ bank_title }}" data-bank-name="{{ bank_title }}">
+                            <div class="row">
+                                <div class="col">
+                                    <label class="form-label">Content ID</label>
+                                    <input class="form-control" type="number" name="content_id" 
+                                           placeholder="Enter content ID" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-trash me-2"></i>Remove Content
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div id="remove_result_{{ bank_title }}">
+                <!-- Results added by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,59 @@
+{# Copyright (c) Meta Platforms, Inc. and affiliates. #}
+<h1>Banks</h1>
+<p class="text-secondary">Banks are like folders. You can do the following on this page:</p>
+<ul class="text-secondary">
+    <li>Create new banks</li>
+    <li>Add content: Add content to each bank</li>
+    <li>Search by content: Find banks that contain a certain piece of content</li>
+</ul>
+{% include 'components/banks/actions_bar.html.j2' %}
+
+<div class="row row-cols-1 row-cols-md-4 g-4">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Bank Name</th>
+                <th scope="col">Matching Enabled Ratio</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bank in bankList %}
+            <tr id="bank_item_{{bank['name']}}">
+                <th scope="row" style="background-color: transparent;">{{ loop.index }}</th>
+                <td style="background-color: transparent;">{{ bank['name'] }}</td>
+                <td style="background-color: transparent;">
+                    {% if bank['matching_enabled_ratio'] < 1.0 %}
+                        <span class="badge bg-warning rounded-pill" title="Partial rollout: Only {{ (bank['matching_enabled_ratio'] * 100) | round(1) }}% chance this bank will match in production">
+                            {{ (bank['matching_enabled_ratio'] * 100) | round(1) }}%
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success rounded-pill" title="100% chance this bank will match in production">
+                            {{ (bank['matching_enabled_ratio'] * 100) | round(1) }}%
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="background-color: transparent;">
+                    {% with bank_title=bank['name'] %}
+                    {% include 'components/banks/add_to_bank_form.html.j2' %}
+                    {% include 'components/banks/remove_content_modal.html.j2' %}
+                    {% endwith %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="{{ url_for('static', filename='js/bank-management.js') }}"></script>
+<script>
+    // Make banksData available globally for the bank management script
+    window.banksData = [
+        {% for bank in bankList %}
+    {
+        name: "{{ bank.name|e }}"
+    } {% if not loop.last %}, {% endif %}
+    {% endfor %}
+    ];
+</script>

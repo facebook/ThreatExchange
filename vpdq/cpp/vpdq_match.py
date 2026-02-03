@@ -4,6 +4,10 @@ import subprocess
 import os
 import sys
 import argparse
+from pathlib import Path
+
+VPDQ_BIN_DIR = Path(__file__).parent.parent
+MATCH_HASHES_BRUTE_BIN = VPDQ_BIN_DIR / "build/cpp/apps/match-hashes-brute"
 
 
 def get_argparse() -> argparse.ArgumentParser:
@@ -79,7 +83,7 @@ def main():
             if verbose:
                 subprocess.call(
                     [
-                        "./build/match-hashes-brute",
+                        MATCH_HASHES_BRUTE_EXE,
                         "-v",
                         query_file,
                         targetHashFile,
@@ -90,7 +94,7 @@ def main():
             else:
                 subprocess.call(
                     [
-                        "./build/match-hashes-brute",
+                        MATCH_HASHES_BRUTE_EXE,
                         query_file,
                         targetHashFile,
                         distanceTolerance,

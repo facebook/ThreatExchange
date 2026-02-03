@@ -1,4 +1,4 @@
-ARG VARIANT=3.11-bullseye
+ARG VARIANT=3.14-trixie
 FROM mcr.microsoft.com/vscode/devcontainers/python:${VARIANT}
 
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y \

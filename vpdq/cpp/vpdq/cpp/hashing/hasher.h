@@ -2,26 +2,25 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#ifndef HASHER_H
-#define HASHER_H
+#ifndef VPDQ_HASHING_HASHER_H
+#define VPDQ_HASHING_HASHER_H
+
+#include <pdq/cpp/common/pdqhashtypes.h>
+#include <vpdq/cpp/hashing/bufferhasher.h>
+#include <vpdq/cpp/hashing/bufferhasherfactory.h>
+#include <vpdq/cpp/hashing/vpdqHashType.h>
 
 #include <algorithm>
-#include <atomic>
-#include <cmath>
 #include <condition_variable>
-#include <cstdio>
-#include <fstream>
-#include <functional>
-#include <iostream>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
-
-#include <vpdq/cpp/hashing/bufferhasher.h>
-#include <vpdq/cpp/hashing/vpdqHashType.h>
 
 namespace facebook {
 namespace vpdq {
@@ -36,9 +35,14 @@ class GenericFrame {
    *
    *  @param buffer The pixel buffer used for PDQ hashing
    *  @param frameNumber The frame number in the video.
+   *  @param linesize The number of bytes per row in the buffer including
+   *padding.
    **/
-  GenericFrame(std::vector<unsigned char> buffer, uint64_t frameNumber)
-      : m_buffer(std::move(buffer)), m_frameNumber(frameNumber){};
+  GenericFrame(
+      std::vector<unsigned char> buffer, uint64_t frameNumber, int linesize)
+      : m_buffer(std::move(buffer)),
+        m_frameNumber(frameNumber),
+        m_linesize(linesize) {}
 
   /** @brief Get the frame number.
    *
@@ -52,8 +56,15 @@ class GenericFrame {
    **/
   unsigned char* get_buffer_ptr() { return m_buffer.data(); }
 
+  /** @brief Get the linesize (bytes per row) of the buffer.
+   *
+   *  @return The linesize.
+   **/
+  int get_linesize() const { return m_linesize; }
+
   std::vector<unsigned char> m_buffer;
   uint64_t m_frameNumber;
+  int m_linesize;
 };
 
 struct VideoMetadata {
@@ -74,7 +85,7 @@ class VpdqHasher {
    *  @note Spawns hashing threads and begins hashing. Frames are hashed as they
    *        are added to the queue.
    **/
-  VpdqHasher(size_t thread_count, VideoMetadata video_metadata);
+  VpdqHasher(unsigned int thread_count, VideoMetadata video_metadata);
 
   /** @brief Add a frame to the hashing queue.
    *
@@ -106,6 +117,14 @@ class VpdqHasher {
   ~VpdqHasher() { stop_hashing(); }
 
  private:
+  /** @brief State of video hashing.
+   **/
+  bool m_done_hashing;
+
+  /** @brief Video metadata.
+   **/
+  VideoMetadata m_video_metadata;
+
   /** @brief True if hashing is multithreaded, false if singlethreaded.
    **/
   bool m_multithreaded;
@@ -135,14 +154,6 @@ class VpdqHasher {
    **/
   std::vector<vpdqFeature> m_result;
 
-  /** @brief State of video hashing.
-   **/
-  bool m_done_hashing;
-
-  /** @brief Video metadata.
-   **/
-  VideoMetadata m_video_metadata;
-
   /** @brief Hashes frames from the queue and inserts the PDQ hash into the
    *         result.
    **/
@@ -167,9 +178,9 @@ vpdqFeature hashFrame(TFrame& frame, const VideoMetadata& video_metadata) {
       video_metadata.height, video_metadata.width);
 
   int quality;
-  pdq::hashing::Hash256 pdqHash;
-  auto const is_hashing_successful =
-      phasher->hashFrame(frame.get_buffer_ptr(), pdqHash, quality);
+  facebook::pdq::hashing::Hash256 pdqHash;
+  auto const is_hashing_successful = phasher->hashFrame(
+      frame.get_buffer_ptr(), frame.get_linesize(), pdqHash, quality);
   if (!is_hashing_successful) {
     throw std::runtime_error(
         std::string{"Failed to hash frame buffer. Frame: "} +
@@ -185,19 +196,24 @@ vpdqFeature hashFrame(TFrame& frame, const VideoMetadata& video_metadata) {
 
 template <typename TFrame>
 VpdqHasher<TFrame>::VpdqHasher(
-    size_t thread_count, VideoMetadata video_metadata)
-    : m_done_hashing(false), m_video_metadata(video_metadata) {
-  // Set thread count if specified
+    unsigned int thread_count, VideoMetadata video_metadata)
+    : m_done_hashing(false), m_video_metadata(std::move(video_metadata)) {
+  // Set thread count, if specified.
   if (thread_count == 0) {
     thread_count = std::thread::hardware_concurrency();
+    // Some platforms may return 0 for hardware_concurrency(), per the standard.
+    // If that occurs, set it to single-threaded.
+    if (thread_count == 0) {
+      thread_count = 1;
+    }
   }
 
-  m_multithreaded = (thread_count != 1);
+  m_multithreaded = (thread_count > 1);
 
-  // Create consumer hasher threads if multithreading
+  // Create consumer hasher threads (multithreaded only)
   if (m_multithreaded) {
     consumer_threads.reserve(thread_count);
-    for (size_t thread_idx{0}; thread_idx < thread_count; ++thread_idx) {
+    for (unsigned int thread_idx{0}; thread_idx < thread_count; ++thread_idx) {
       consumer_threads.emplace_back(std::thread(&VpdqHasher::consumer, this));
     }
   }
@@ -232,6 +248,10 @@ void VpdqHasher<TFrame>::stop_hashing() {
     for (auto& thread : consumer_threads) {
       thread.join();
     }
+  } else {
+    // This variable isn't currently used for single-threaded hashing, but
+    // update it anyway for good measure.
+    m_done_hashing = true;
   }
 }
 
@@ -241,8 +261,8 @@ std::vector<vpdqFeature> VpdqHasher<TFrame>::finish() {
 
   // Sort out of order frames by frame number
   std::sort(
-      std::begin(m_result),
-      std::end(m_result),
+      m_result.begin(),
+      m_result.end(),
       [](const vpdqFeature& a, const vpdqFeature& b) {
         return a.frameNumber < b.frameNumber;
       });
@@ -279,4 +299,4 @@ void VpdqHasher<TFrame>::consumer() {
 } // namespace vpdq
 } // namespace facebook
 
-#endif // HASHER_H
+#endif // VPDQ_HASHING_HASHER_H

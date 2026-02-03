@@ -1,27 +1,28 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-"""SignalExchangeAPI implementation for Tech Against Terrorism Hash List API"""
-
-
 import typing as t
 from dataclasses import dataclass
 
+from threatexchange.exchanges import auth, fetch_state as state, signal_exchange_api
 from threatexchange.exchanges.clients.techagainstterrorism import api
-from threatexchange.exchanges import fetch_state as state
-from threatexchange.exchanges import signal_exchange_api
-from threatexchange.exchanges import auth
-from threatexchange.exchanges.collab_config import (
-    CollaborationConfigWithDefaults,
-)
-from threatexchange.signal_type.signal_base import SignalType
-from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.signal_base import SignalType
 
-_TypedDelta = state.FetchDelta[
-    t.Tuple[str, str],
-    state.FetchedSignalMetadata,
-    state.NoCheckpointing,
-]
+
+@dataclass
+class TATCheckpoint(state.FetchCheckpointBase):
+    checkpoint: str
+
+    def get_progress_timestamp(self) -> t.Optional[int]:
+        if self.checkpoint:
+            return int(float(self.checkpoint.partition(",")[0]))
+        return None
+
+    @classmethod
+    def from_tat_fetch(cls, response: api.TATHashListResponse) -> "TATCheckpoint":
+        return cls(response.checkpoint)
 
 
 @dataclass
@@ -45,12 +46,12 @@ class TATSignalExchangeAPI(
     auth.SignalExchangeWithAuth[CollaborationConfigWithDefaults, TATCredentials],
     signal_exchange_api.SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigWithDefaults,
-        state.NoCheckpointing,
+        TATCheckpoint,
         state.FetchedSignalMetadata,
     ],
 ):
 
-    def __init__(self, username, password) -> None:
+    def __init__(self, username: str, password: str) -> None:
         super().__init__()
         self.username = username
         self.password = password
@@ -60,8 +61,8 @@ class TATSignalExchangeAPI(
         return CollaborationConfigWithDefaults
 
     @staticmethod
-    def get_checkpoint_cls() -> t.Type[state.NoCheckpointing]:
-        return state.NoCheckpointing
+    def get_checkpoint_cls() -> t.Type[TATCheckpoint]:
+        return TATCheckpoint
 
     @staticmethod
     def get_record_cls() -> t.Type[state.FetchedSignalMetadata]:
@@ -90,27 +91,35 @@ class TATSignalExchangeAPI(
     def fetch_iter(
         self,
         _supported_signal_types: t.Sequence[t.Type[SignalType]],
-        checkpoint: t.Optional[state.TFetchCheckpoint],
-    ) -> t.Iterator[_TypedDelta]:
+        checkpoint: t.Optional[TATCheckpoint],
+    ) -> t.Iterator[
+        state.FetchDelta[t.Tuple[str, str], state.FetchedSignalMetadata, TATCheckpoint]
+    ]:
 
         client = self.get_client()
-        result = client.get_hash_list()
 
-        translated = (_get_delta_mapping(entry) for entry in result)
+        _checkpoint = ""
 
-        yield state.FetchDelta(
-            dict(t for t in translated if t[0][0]),
-            checkpoint=state.NoCheckpointing(),
-        )
+        if checkpoint is not None:
+            _checkpoint = checkpoint.checkpoint
+
+        for result in client.fetch_hashes_iter(_checkpoint):
+
+            translated = (_get_delta_mapping(r) for r in result.results)
+            yield state.FetchDelta(
+                dict(t for t in translated if t[0][0]),
+                TATCheckpoint(result.checkpoint) if result.checkpoint else checkpoint,  # type: ignore[arg-type]
+            )
 
 
-def _is_compatible_signal_type(record: t.Dict[str, str]) -> bool:
+def _is_compatible_signal_type(record: api.TATHashListEntry) -> bool:
     compatible_video_types = ["mov", "m4v", "mp4", "webm"]
+    algorithm = record.algorithm
 
-    if record["algorithm"] == "MD5":
-        return record["file_type"] in compatible_video_types
+    if algorithm == "MD5":
+        return record.file_type in compatible_video_types
 
-    return record["algorithm"] == "PDQ"
+    return algorithm == "PDQ"
 
 
 def _type_mapping() -> t.Dict[str, str]:
@@ -121,13 +130,13 @@ def _type_mapping() -> t.Dict[str, str]:
 
 
 def _get_delta_mapping(
-    record: t.Dict[str, str],
+    record: api.TATHashListEntry,
 ) -> t.Tuple[t.Tuple[str, str], t.Optional[state.FetchedSignalMetadata]]:
 
     if not _is_compatible_signal_type(record):
         return (("", ""), None)
 
-    type_str = _type_mapping().get(record["algorithm"])
-
+    type_str = _type_mapping().get(record.algorithm, "")
     metadata = state.FetchedSignalMetadata()
-    return ((type_str or "", record["hash_digest"]), metadata)
+
+    return ((type_str, record.hash_digest), None if record.deleted else metadata)

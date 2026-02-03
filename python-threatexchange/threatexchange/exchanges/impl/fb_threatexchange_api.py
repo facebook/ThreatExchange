@@ -7,7 +7,6 @@ https://developers.facebook.com/programs/threatexchange
 https://developers.facebook.com/docs/threat-exchange/reference/apis/
 """
 
-
 from collections import defaultdict
 import typing as t
 import time

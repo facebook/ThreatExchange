@@ -4,15 +4,15 @@
 Abstraction layer for fetching information needed to run OMM.
 
 To try and separate concerns for extension, this file provides
-access to all the persistent data needed to run OMM. In the 
-default implementation, we have a unified implementation that 
+access to all the persistent data needed to run OMM. In the
+default implementation, we have a unified implementation that
 implements all interfaces, but different implementations may
 prefer to store different data in different places.
 
 For implementations, see storage.mocked.MockedStore, which provides
 plausable defaults for all of these interfaces, useful for testing,
 or storage.default.DefaultOMMStore, which uses a combination of
-static configuration and postgres. 
+static configuration and postgres.
 """
 
 import abc
@@ -21,7 +21,11 @@ import typing as t
 import time
 
 import flask
-
+from threatexchange.storage.interfaces import (
+    ISignalTypeConfigStore,
+    IContentTypeConfigStore,
+    ContentTypeConfig,
+)
 from threatexchange.utils import dataclass_json
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.signal_type.signal_base import SignalType
@@ -37,91 +41,6 @@ from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPI,
     TSignalExchangeAPICls,
 )
-
-
-@dataclass
-class ContentTypeConfig:
-    """
-    Holder for ContentType configuration.
-    """
-
-    # Content types that are not enabled should not be used in hashing/matching
-    enabled: bool
-    content_type: t.Type[ContentType]
-
-
-class IContentTypeConfigStore(metaclass=abc.ABCMeta):
-    """Interface for accessing ContentType configuration"""
-
-    @abc.abstractmethod
-    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
-        """
-        Return all installed content types.
-        """
-
-
-@dataclass
-class SignalTypeConfig:
-    """
-    Holder for SignalType configuration
-    """
-
-    # Signal types that are not enabled should not be used in hashing/matching
-    enabled_ratio: float
-    signal_type: t.Type[SignalType]
-
-    @property
-    def enabled(self) -> bool:
-        # TODO do a coin flip here, but also refactor this to do seeding
-        return self.enabled_ratio >= 0.0
-
-
-class ISignalTypeConfigStore(metaclass=abc.ABCMeta):
-    """Interface for accessing SignalType configuration"""
-
-    @abc.abstractmethod
-    def get_signal_type_configs(self) -> t.Mapping[str, SignalTypeConfig]:
-        """Return all installed signal types."""
-
-    @abc.abstractmethod
-    def _create_or_update_signal_type_override(
-        self, signal_type: str, enabled_ratio: float
-    ) -> None:
-        """Create or update database entry for a signal type, setting a new value."""
-
-    @t.final
-    def create_or_update_signal_type_override(
-        self, signal_type: str, enabled_ratio: float
-    ) -> None:
-        """Update enabled ratio of an installed signal type."""
-        installed_signal_types = self.get_signal_type_configs()
-        if signal_type not in installed_signal_types:
-            raise ValueError(f"Unknown signal type {signal_type}")
-        if not (0.0 <= enabled_ratio <= 1.0):
-            raise ValueError(
-                f"Invalid enabled ratio {enabled_ratio}. Must be in the range 0.0-1.0 inclusive."
-            )
-        self._create_or_update_signal_type_override(signal_type, enabled_ratio)
-
-    @t.final
-    def get_enabled_signal_types(self) -> t.Mapping[str, t.Type[SignalType]]:
-        """Helper shortcut for getting only enabled SignalTypes"""
-        return {
-            k: v.signal_type
-            for k, v in self.get_signal_type_configs().items()
-            if v.enabled
-        }
-
-    @t.final
-    def get_enabled_signal_types_for_content_type(
-        self, content_type: t.Type[ContentType]
-    ) -> t.Mapping[str, t.Type[SignalType]]:
-        """Helper shortcut for getting enabled types for a piece of content"""
-        return {
-            k: v.signal_type
-            for k, v in self.get_signal_type_configs().items()
-            if v.enabled and content_type in v.signal_type.get_content_types()
-        }
 
 
 @dataclass
@@ -342,7 +261,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         old_checkpoint: t.Optional[FetchCheckpointBase],
         # The merged data from sequential fetches of the API
         dat: t.Dict[str, t.Any],
-        # The last checkpoint recieved by the API
+        # The last checkpoint received by the API
         checkpoint: FetchCheckpointBase,
     ) -> None:
         """
@@ -386,10 +305,7 @@ class BankConfig:
 @dataclass
 class BankContentConfig:
     """
-    Represents all the signals (hashes) for one piece of content.
-
-    When signals come from external sources, or the original content
-    has been lost
+    Configuration for a piece of content in a bank, representing both the content metadata and its associated signals.
     """
 
     ENABLED: t.ClassVar[int] = 1
@@ -491,7 +407,13 @@ class IBankStore(metaclass=abc.ABCMeta):
     # Bank content
     @abc.abstractmethod
     def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
-        """Get the content config for a bank"""
+        """Get the content config for a bank."""
+
+    @abc.abstractmethod
+    def bank_content_get_signals(
+        self, id: t.Iterable[int]
+    ) -> t.Dict[int, t.Dict[str, str]]:
+        """Get signals for the given content IDs. Returns mapping of content_id -> signal_type -> signal_value."""
 
     @abc.abstractmethod
     def bank_content_update(self, val: BankContentConfig) -> None:
@@ -511,7 +433,7 @@ class IBankStore(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def bank_remove_content(self, bank_name: str, content_id: int) -> None:
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         """Remove content from bank by id"""
 
     @abc.abstractmethod
@@ -522,7 +444,9 @@ class IBankStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def bank_yield_content(
-        self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
     ) -> t.Iterator[BankContentIterationItem]:
         """
         Yield the entire content of the bank in batches.

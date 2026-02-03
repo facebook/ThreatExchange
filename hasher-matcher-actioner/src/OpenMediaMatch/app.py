@@ -7,21 +7,23 @@ import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from threatexchange.signal_type.pdq import signal as _
-## Resume regularly scheduled imports
+# Resume regularly scheduled imports
 
 import logging
+import logging.config
 import os
 import datetime
 import sys
-import typing as t
+from importlib.metadata import PackageNotFoundError, version as get_package_version
 
 import click
 import flask
 from flask.logging import default_handler
 from flask_apscheduler import APScheduler
+from flask_openapi3 import OpenAPI
+from flask_openapi3.models import Info, Tag
 
 from threatexchange.exchanges import auth
-from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 
 from OpenMediaMatch.storage import interface
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
@@ -34,13 +36,10 @@ from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import development, hashing, matching, curation, ui
 from OpenMediaMatch.utils import dev_utils
 
-
-def _is_debug_mode():
-    """Does it look like the app is being run in debug mode?"""
-    debug = os.environ.get("FLASK_DEBUG")
-    if not debug:
-        return os.environ.get("FLASK_ENV") == "development"
-    return debug.lower() not in ("0", "false", "no")
+try:
+    _APP_VERSION = get_package_version("OpenMediaMatch")
+except PackageNotFoundError:
+    _APP_VERSION = "0.0.0"
 
 
 def _is_werkzeug_reloaded_process():
@@ -58,7 +57,7 @@ def _setup_task_logging(app_logger: logging.Logger):
     build_index.logger = app_logger.getChild("Indexer")
 
 
-def create_app() -> flask.Flask:
+def create_app() -> OpenAPI:
     """
     Create and configure the Flask app
     """
@@ -67,7 +66,59 @@ def create_app() -> flask.Flask:
     root = logging.getLogger()
     if not root.handlers:
         root.addHandler(default_handler)
-    app = flask.Flask(__name__)
+
+    app = OpenAPI(
+        __name__,
+        info=Info(
+            title="Open Media Match API",
+            version=_APP_VERSION,
+            description="Hasher-Matcher-Actioner (HMA) - A reference implementation for content moderation copy detection",
+        ),
+        doc_ui=True,
+        doc_prefix="/openapi",
+        doc_url="/openapi.json",
+    )
+
+    default_tags = [
+        Tag(
+            name="Core",
+            description="Health checks and system status endpoints",
+        ),
+        Tag(
+            name="Hashing",
+            description="Generate perceptual hashes (PDQ, TMK, vPDQ) for photos and videos",
+        ),
+        Tag(
+            name="Matching",
+            description="Match content against indexed hashes from banks with similarity scoring",
+        ),
+        Tag(
+            name="Banks",
+            description="Manage content banks - collections of known content for matching",
+        ),
+        Tag(
+            name="Bank Content",
+            description="Add, update, and remove content items within banks",
+        ),
+        Tag(
+            name="Exchanges",
+            description="Configure external signal exchanges like ThreatExchange for collaborative sharing",
+        ),
+        Tag(
+            name="Configuration",
+            description="System-wide configuration for signal types, content types, and indexing",
+        ),
+        Tag(
+            name="UI",
+            description="Web-based user interface pages (HTML responses)",
+        ),
+        Tag(
+            name="Development",
+            description="Development and testing utilities - not for production use",
+        ),
+    ]
+    app.tags.extend(default_tags)
+    app.tag_names.extend(tag.name for tag in default_tags)
 
     if "OMM_CONFIG" in os.environ:
         app.config.from_envvar("OMM_CONFIG")
@@ -82,10 +133,28 @@ def create_app() -> flask.Flask:
     # Override fields with environment variables
     app.config.from_prefixed_env("OMM")
 
-    app.config.update(
-        SQLALCHEMY_DATABASE_URI=app.config.get("DATABASE_URI"),
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    )
+    # Configure database URIs for read/write splitting
+    # DATABASE_URI is used as the default/write database
+    # DATABASE_READ_URI (if provided) will be used for read operations
+    # If not provided, read operations use the same database as writes
+    database_uri = app.config.get("DATABASE_URI")
+    database_read_uri = app.config.get("DATABASE_READ_URI", database_uri)
+
+    sqlalchemy_config = {
+        "SQLALCHEMY_DATABASE_URI": database_uri,
+        "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        # Always configure the "read" bind - either to a replica or same as primary
+        "SQLALCHEMY_BINDS": {
+            "read": database_read_uri,
+        },
+    }
+
+    if database_read_uri != database_uri:
+        app.logger.info("Read/Write database separation enabled")
+    else:
+        app.logger.info("Using single database for all operations")
+
+    app.config.update(sqlalchemy_config)
 
     logging_config = app.config.get("FLASK_LOGGING_CONFIG")
     if logging_config:
@@ -118,7 +187,7 @@ def create_app() -> flask.Flask:
         # There is currently no check for multiple schedulers running.
         # DO NOT RUN multiple workers with TASK_FETCHER=True or TASK_INDEXER=True -
         # running multiple instances of these tasks may cause database conflicts
-        # or other undesireable behavior
+        # or other undesirable behavior
         if (
             _is_werkzeug_reloaded_process() or _is_gunicorn()
         ) and not running_migrations:
@@ -132,7 +201,7 @@ def create_app() -> flask.Flask:
                     "Fetcher",
                     fetcher.apscheduler_fetch_all,
                     trigger="interval",
-                    seconds=60 * 4,
+                    seconds=int(app.config.get("TASK_FETCHER_INTERVAL_SECONDS", 60)),
                     start_date=now + datetime.timedelta(seconds=30),
                 )
             if app.config.get("TASK_INDEXER", False):
@@ -141,7 +210,7 @@ def create_app() -> flask.Flask:
                     "Indexer",
                     build_index.apscheduler_build_all_indices,
                     trigger="interval",
-                    seconds=60,
+                    seconds=int(app.config.get("TASK_INDEXER_INTERVAL_SECONDS", 60)),
                     start_date=now + datetime.timedelta(seconds=15),
                 )
             app.logger.info("Started Apscheduler, initial tasks: %s", tasks)
@@ -149,45 +218,73 @@ def create_app() -> flask.Flask:
 
         storage.init_flask(app)
 
-        is_production = app.config.get("PRODUCTION", True)
+        is_ui_enabled = app.config.get("UI_ENABLED", False)
         # Register Flask blueprints for whichever server roles are enabled...
         # URL prefixing facilitates easy Layer 7 routing :)
 
-        if (
-            not is_production
-            and app.config.get("ROLE_HASHER", False)
-            and app.config.get("ROLE_MATCHER", False)
-        ):
-            app.register_blueprint(development.bp, url_prefix="/dev")
-            app.register_blueprint(ui.bp, url_prefix="/ui")
+        if is_ui_enabled:
+            app.register_api(ui.bp)
+
+        if not app.config.get("PRODUCTION", False):
+            app.register_api(development.bp)
 
         if app.config.get("ROLE_HASHER", False):
-            app.register_blueprint(hashing.bp, url_prefix="/h")
+            app.register_api(hashing.bp)
 
         if app.config.get("ROLE_MATCHER", False):
-            app.register_blueprint(matching.bp, url_prefix="/m")
+            app.register_api(matching.bp)
             if app.config.get("TASK_INDEX_CACHE", False) and not running_migrations:
                 matching.initiate_index_cache(app, scheduler)
 
         if app.config.get("ROLE_CURATOR", False):
-            app.register_blueprint(curation.bp, url_prefix="/c")
+            app.register_api(curation.bp)
 
-    @app.route("/")
+        # Allow the config to hook into the Flask app to add things like auth,
+        # new endpoints, etc as may be required by their environments. HMA itself
+        # doesn't supply such functionality as individual deployments may have
+        # different, competing, requirements.
+        # Note: we want this to fail if the defined function isn't a function.
+        app.config.get("APP_HOOK", lambda _: None)(app)
+
+    @app.get(
+        "/",
+        tags=[Tag(name="Core")],
+        responses={"302": {"description": "Redirect to UI or status"}},
+        summary="Home endpoint",
+        description="Redirects to UI if enabled, otherwise to status endpoint",
+    )
     def home():
-        dst = "status" if is_production else "ui"
+        dst = "ui" if is_ui_enabled else "status"
         return flask.redirect(f"/{dst}")
 
-    @app.route("/status")
+    @app.get(
+        "/status",
+        tags=[Tag(name="Core")],
+        responses={
+            "200": {"description": "Service is alive"},
+            "503": {"description": "Service is not ready"},
+        },
+        summary="Health check",
+        description="Liveness/readiness check",
+    )
     def status():
         """
         Liveness/readiness check endpoint for your favourite Layer 7 load balancer
         """
         if app.config.get("ROLE_MATCHER", False):
+            if not matching.index_cache_is_ready():
+                return "INDEX-NOT-LOADED", 503
             if matching.index_cache_is_stale():
-                return f"INDEX-STALE", 503
+                return "INDEX-STALE", 503
         return "I-AM-ALIVE", 200
 
-    @app.route("/site-map")
+    @app.get(
+        "/site-map",
+        tags=[Tag(name="Core")],
+        responses={"200": {"description": "List of available routes"}},
+        summary="Site map",
+        description="Get list of all available API routes",
+    )
     def site_map():
         # Use a set to avoid duplicates (e.g. same path, multiple methods)
         routes = set()

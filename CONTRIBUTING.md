@@ -1,27 +1,90 @@
-# Contributing to ThreatExchange
-If you would like to contribute to python-threatexchange, you can do the following:
+# Repo Organization and project-level CONTRIBUTING.md
+This repository is organized as a collection of sub-projects, some of which reference each other.
+This explainer is about the entire repository, but there are more specific notes for how to
+develop on subprojects in the various directories that contain them.
 
-[Fork][fork] the repo and then [clone][clone] it locally:
+# Issues
+We use GitHub issues to track public bugs. Please ensure your description is
+clear and has sufficient instructions to be able to reproduce the issue.
 
-[fork]: https://help.github.com/articles/fork-a-repo/
-[clone]: https://help.github.com/articles/which-remote-url-should-i-use/
+Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
+disclosure of security bugs. In those cases, please go through the process
+outlined on that page and do not file a public issue.
 
-    git clone git@github.com:your-username/ThreatExchange
+# Contributing to facebook/ThreatExchange
+## Get the code, Set up a fork
+We prefer people use forks to develop on this repo, and do not accept development branches.
+
+Here's an easy way to get started:
+
+[Clone](https://help.github.com/articles/which-remote-url-should-i-use/) facebook/ThreatExchange.
+
+   git clone git@github.com:your-username/ThreatExchange
+
+Next, [fork](https://help.github.com/articles/fork-a-repo/) your own copy of the repo.
+Here's where you'll push development branches. Note the name, we'll need it in the next step.
+
+There are some common [git aliases](https://git-scm.com/book/en/v2/Git-Basics-Git-Aliases) you may use, which you can add if you'd like:
+
+    # you can add --global to these to affect all your repos
+    git config alias.co checkout
+    git config alias.br branch
+    git config alias.ci commit
+    git config alias.st status
+
+This will give you an easy development cycle for updating your copy:
+
+    git checkout main  # co is a common shortcut for `checkout`
+    git pull upstream # Get all the new commits from the upstream
+
+If you are a git expert, you likely know of other ways to set this up, to your preference!
 
 ## Branch locally and develop!
-Make a branch in your cloned fork. We suggest naming the branch by feature name
-or “issue_XX” where XX is the issue number the branch is associated with. Make
-your changes in your branch and test thoroughly. If this is a large feature you
-can push your branch to your fork often. This allows you to request feedback for
-how things are progressing instead of dumping a large code change all at once.
 
+First, make a branch in your cloned fork.
+
+    git checkout -b <MY_COOL_FEATURE_BRANCH_NAME>
+
+We suggest naming the branch by feature name
+or “issue_XX” where XX is the issue number the branch is associated with. Make
+your changes in your branch and test thoroughly.
+
+    git commit -am "[hma] Made cool changes to hasher-matcher-actioner"
+    git push  # Pushes to your fork if you followed the setup!
+
+If this is a large feature you can push your branch to your fork often to save your work.
 When making commits to your branch, make sure you write [well-formed][wf] commit
 messages and update documentation accordingly (see the next section).
 
 [wf]: https://github.com/erlang/otp/wiki/Writing-good-commit-messages
 
+## Keeping python dependencies up to date
+We don't pin dependency version numbers in order to build with the latest security updates. However, that means that some dependency changes may be breaking (most common are `black` - the code formatter, and `mypy` - the typechecker, which cause CI to turn red), and require some action to fix trunk.
+
+If you keep working on HMA over a long period of time, the versions of your first install or first devcontainer build tend to be the ones preferred by `pip` due to it's upgrade strategy, which can cause the CI and your local copy of dependencies to go out of sync.
+
+You have a few options for managing this:
+1. [Simplest] If you are using the devcontainer, rebuild the devcontainer if your development environment is a few weeks old. The CI will use the same base image as the devcontainer.
+2. You can use `pip --upgrade-strategy eager` to get it to more aggressively upgrade dependencies
+3. You can bump the minimum versions in pyroject.toml using `>=` as the version CI is using, and then pip --upgrade with the default strategy wil pick up the new version. 
+
+## Making Big Changes
+If you are considering making a larger change, consider reaching out via an issue first.
+If your change will add a new API, new functionality, or refactor a large section of code,
+it's best to socialize your intent first and get some feedback. Maintainers can let you know
+if there are some concerns about the change (e.g. some projects deliberately minimize the number
+of dependencies - if you are planning on pulling Node.js into a project, it's unlikely to be 
+accepted!
+
+This is also a place where maintainers can give you pointers on what they'll be looking for in
+testing.
+
+Don't let this step dissuade you, we want to work with you to help you figure out the best
+solution. If we ultimately don't believe we can support it in the main repo, you are welcome
+to develop it in a fork, and tried to pick flexible licenses to support this!
+
 ## Pull Requests
-We actively welcome your pull requests.
+We actively welcome your pull requests!
 
 1. Fork the repo and create your branch from `main`.
 2. If you've added code that should be tested, add tests.
@@ -30,37 +93,99 @@ We actively welcome your pull requests.
 5. Make sure your code lints.
 6. If you haven't already, complete the Contributor License Agreement ("CLA").
 
-## Contributor License Agreement ("CLA")
+### Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only need
 to do this once to work on any of Facebook's open source projects.
 
 Complete your CLA here: <https://code.facebook.com/cla>
 
-## Issues
-We use GitHub issues to track public bugs. Please ensure your description is
-clear and has sufficient instructions to be able to reproduce the issue.
-
-Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
-disclosure of security bugs. In those cases, please go through the process
-outlined on that page and do not file a public issue.
-
-## License
+### License
 By contributing to ThreatExchange, you agree that your contributions will be licensed
-under the LICENSE file in the root directory of this source tree.
+under the LICENSE file in the root directory of sub-project's source tree.
 
-## Documenting Changes
+### Documenting Changes
 It is important to keep documentation up-to-date. Make sure to add and update
 docstrings where appropriate.
 
-## Submit a PR
-Once you are happy with your changes and ready for a PR, you can submit a PR to
-the main project. In most cases you’ll be looking to compare against the Main
-branch, but there are instances where you’re making changes that you want to go
-into a specific branch. Make sure when submitting your PR that you choose the
-right destination branch.
+### Testing and Test Plans
+When possible, add unittesting for changes. You can often find a `tests` folder
+in the directory you are working with, or in smaller projects, a top-level `tests`
+folder that contains all the tests.
 
-Once you’ve submitted a PR you're waiting on us. In most cases we like to have
-a core developer get some eyes on the code and the feature to make sure
-there’s no general issues. They might require you to go back and make some more
-changes (simply edit your local branch and push to the branch associated with
-the PR; it will get updated automagically!) .
+For changes that aren't easy to unittest, we still want to know you are sure your 
+change does the right thing. Make sure to include the testing steps you used.
+If you add more testing steps (e.g. as a result of review feedback)
+
+### Submit a PR
+Once you are happy with your changes and ready for a PR, you can submit a PR to
+the main project. In most cases you’ll be looking to compare against the main
+branch - we don't use development branches in this repo.
+
+For titling, prefer including the project name in brackets with a clear summary of the change.
+
+E.g. for a hasher-matcher-actioner PR that adds a new /compare API endpoint, the title might be
+
+   [hma] Add new /compare endpoint which compares signals
+
+Make sure to include a summary of changes (especially the "why" or problem you are solving if it's new functionality and not described in an issue).
+Make sure to link the issue if it's for an issue!
+
+#### Draft Reviews and RFC
+If you are not sure about a potential change, and want to get feedback on a review, you can still submit a PR as a draft PR, or clearly label the PR with "[RFC]" (request for comment).
+Reviewers will know not to merge your changes but may still send you an Accept if they would merge it without changes (or use "Request Changes" to indicate the same thing, just that they want you to convert from draft).
+
+### Continuous Integration
+If you are a new contributor, the continuous integration (CI) won't run until it's triggered by a maintainer of the repo.
+If there is CI failure, we usually won't merge the change!
+
+#### CI is disagreeing with my local run!
+Your python dependencies are out of date, see [Keeping dependencies up to date](#keeping-python-dependencies-up-to-date) above.
+
+#### CI was broken when I got here!
+We try and keep the CI green, but work tends to follow when there is PRs and upstream changes can be breaking. The most common reason for CI failure is a dependency version increase (especially `black` and `mypy`). You have two options:
+1. Ask the maintainers to fix the CI, and then rebase on top of the fix.
+2. Make a stab at fixing the issue as part of your PR or a new PR - the changes are usually very minor, running `black` on the whole repo, or removing `type: ignore` for mypy.
+3. [Only as a last resort] After you have proven that the changes are significant, such as a major version change that significantly changes a dependency interface, we can pin the major version in the pyproject.toml using `>=major-version-that-works` and `<major-version-that-needs-significant-changes`
+
+### Review
+Once you’ve submitted a PR you're waiting on us for review. We aim to check the repo every business day, but sometimes we are slow, especially if there aren't new changes.
+We aim to try and get you a full review every business day (e.g. resulting in either "request changes" or merge), but we can't always do this.
+We don't expect it takes longer than 5 business days to get a first review.
+
+To make changes on your code for review, checkout your branch again
+
+    git checkout <MY_COOL_FEATURE_BRANCH_NAME>
+
+Make your changes as new commits (don't amend your previous commits as they break history and make it harder to review)
+
+   git commit -m "fixed unittest failures"
+
+Then push your changes to your fork again - they'll automatically update your PR!
+
+   git push  # assumes you set up the default push target to your fork
+
+Here are some things to expect from review:
+1. If your summary isn't detailed and we aren't sure what the change is aiming to do, we might request changes without reviewing much of the code.
+2. If you don't have a test plan or your change is missing updates for unittesting, we will likely request changes.
+3. Different reviewers have different styles, but you may see various prefixes for comments, like `nit:`. Here's what they mean:
+    1. `blocking:` This indicates that there is a change that the reviewer would not accept the PR without further discussion. This may not mean that there is anything wrong with your code, just that the reviewer is uncertain (you will sometimes see 'blocking question:' used similarly.
+    2. `ignorable:` This comment is explicitly not blocking, and may just be a thought. You may be inspired to change code, reading it, but it's not expected.
+    3. `nit:` This may be a stylistic preference or minor efficiency in the code that does not affect the correctness. Implicitly `ignorable:`, though if you like yours better, consider commenting why!
+    4. `alt/code golf:` The reviewer is providing an alternative implementation that might be shorter or have a stylistic difference. Implicitly `ignorable:`
+
+#### Resolving Conversations
+Standard practice is to let the commentor who created a comment thread, or another reviewer "resolve conversations" after you’ve responded to or addressed the issue. Reviewers may un-resolve conversations they think still need discussion.
+
+#### Clearing Reviews After Response
+Sometimes Github will still show "Changes Requested" even if you have responded to all changes (or interactions with conversation resolution). Please [dismiss reviews with changes requested](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/dismissing-a-pull-request-review) that are stuck in "Requested Changes" once you think you have addressed everything.
+
+  
+### Merging
+Once your code is accepted, we usually merge it right away! If you don't want us to do this, please note it in the summary. You can always do followups as another PR!
+
+### PR Sizes & Landing-and-iterating
+We generally prefer smaller changes (<100-500 lines of functional py code, not including unittests), and so if you have a larger feature, consider opening an issue to explain your full plans, and then doing a series of PRs all linking to that issue.
+We understand that everyone contributing is essentially volunteering time, and so want to make the best use of your time as well. If you have run out of time to donate, and have already done a few passes of review, please let us know as a comment.
+A maintainer might be willing to finish your PR, or merge it as is, and make an issue to clean it up after.
+If you have contributed multiple PRs, we'll generally give you more slack in this department, since we have seen you come back!
+

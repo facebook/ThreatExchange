@@ -8,13 +8,13 @@ MacBook Pro (16-inch, 2021), Apple M1 Pro, 32 GB Ram
 Results:
 -------
 ```
-% python3 benchmark.py      
+% python3 benchmark.py  
 Python hashing time: 34.1643s
   Total hash: 7069  Per hash: 4.8330ms
 CPP hashing time: 34.3673s
   Total hash: 7069  Per hash: 4.8617ms
 
-% python3 benchmark.py -r 1 
+% python3 benchmark.py -r 1
 Python hashing time: 6.9934s
   Total hash: 241  Per hash: 29.0182ms
 CPP hashing time: 7.3139s
@@ -60,7 +60,7 @@ Original resolution Python hashing time: 35.2615s
   Number of mismatches: 20, 0.00 percent in total.
   Average 9.39 hamming distance away.
 
-% python3 benchmark.py -s 60 
+% python3 benchmark.py -s 60
 Python hashing time: 3.0915s
   Total hash: 7069  Per hash: 0.4373ms
 CPP hashing time: 3.3920s
@@ -69,4 +69,52 @@ Calculate deviations in downsampled hashes, since hash resolution is non-native
 Original resolution Python hashing time: 34.4134s
   Number of mismatches: 153, 0.02 percent in total.
   Average 17.71 hamming distance away.
+```
+
+# Observed Performance
+- Model: MacBook Air
+- Memory: 16 GB
+- Operating System: macOS 15.2
+- Chip: Apple M2
+- Core Configuration: 8 cores total
+
+Results (vPDQ):
+-------
+```
+% python3 benchmark_vpdq_index.py brute_force -f 500 -v 20  -q 1000
+build: 0.0000s
+query: 684.5324s
+  Per query: 684.5324ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 20 -q 1000
+build: 0.0048s
+query: 0.0051s
+  Per query: 0.0051ms
+
+
+% python3 benchmark_vpdq_index.py signal_type -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2398s
+build: 3.2970s
+query: 2.8439s
+  Per query: 0.2844ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2237s
+build: 0.4786s
+query: 2.5248s
+  Per query: 0.2525ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 100000
+Generating data...
+Generating data: 1.2195s
+build: 0.4800s
+Generating queries...
+Generating queries: 0.1017s
+query: 26.0294s
+  Per query: 0.2603ms
 ```

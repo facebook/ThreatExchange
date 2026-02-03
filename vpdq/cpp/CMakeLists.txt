@@ -47,20 +47,22 @@ set(CMAKE_SHARED_LINKER_FLAGS_ASAN
     "Linker lags to be used to create shared libraries for Asan build type." FORCE)
 
 # Tsan
+# Note: We can't use undefined and thread sanitizers at the same time because
+# of a false-positive bug where thread sanitizer reports on itself with std::thread(). See https://github.com/google/sanitizers/issues/1106
 set(CMAKE_C_FLAGS_TSAN
-    "${CMAKE_C_FLAGS_DEBUG} -fsanitize=thread,undefined -fno-omit-frame-pointer" CACHE STRING
+    "${CMAKE_C_FLAGS_DEBUG} -fsanitize=thread -fno-omit-frame-pointer" CACHE STRING
     "Flags used by the C compiler for Asan build type or configuration." FORCE)
 
 set(CMAKE_CXX_FLAGS_TSAN
-    "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=thread,undefined -fno-omit-frame-pointer" CACHE STRING
+    "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=thread -fno-omit-frame-pointer" CACHE STRING
     "Flags used by the C++ compiler for Asan build type or configuration." FORCE)
 
 set(CMAKE_EXE_LINKER_FLAGS_TSAN
-    "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=thread,undefined" CACHE STRING
+    "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=thread" CACHE STRING
     "Linker flags to be used to create executables for Tsan build type." FORCE)
 
 set(CMAKE_SHARED_LINKER_FLAGS_TSAN
-    "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=thread,undefined" CACHE STRING
+    "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -fsanitize=thread" CACHE STRING
     "Linker lags to be used to create shared libraries for Tsan build type." FORCE)
 endif()
 
@@ -91,9 +93,3 @@ add_subdirectory(vpdq)
 # CLI programs
 # TODO: Make this a custom command/option. This isn't necessary to just build the library.
 add_subdirectory(apps)
-
-# Write the libav* library dirs to a new-line delimited file for Cython to be able to locate LIBAV files
-# TODO: Make this a custom command or something. This isn't necessary on every run.
-string(REPLACE ";" "\n" LIBRARY_DIRS "${LIBAV_STATIC_LIBRARY_DIRS}")
-set(LIBRARY_DIRS_FILE "libraries-dirs.txt")
-file(WRITE ${LIBRARY_DIRS_FILE} "${LIBRARY_DIRS}")

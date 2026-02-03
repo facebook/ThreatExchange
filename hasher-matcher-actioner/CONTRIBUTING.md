@@ -13,6 +13,33 @@ Open Media Match is written in Python, uses [Flask](https://flask.palletsproject
 
 Please see CONTRIBUTING in the repo root for more general guidelines on how to contribute by developing locally and submitting pull requests on GitHub.
 
+# Releasing a New Version
+
+To release a new version of the Open Media Match image, follow these steps:
+
+1. **Update the version.txt file**
+
+The version number is stored in the `version.txt` file located at the project subfolder. Modify this file to reflect the new version number (e.g., `v1.1.0`).
+
+```bash
+echo "v1.1.0" > version.txt
+```
+
+2. **Merge to main**
+Once the `version.txt` file is updated, and merged to main a new build will be triggered automatically via the CI/CD pipeline. This will create a new Docker image with the updated version and be pushed to the registry.
+
+3. **Verify the Build and Release**
+Monitor the build process to ensure everything runs smoothly. Once the build completes, the new Docker image will be tagged with the updated version and pushed to the registry.
+
+4. **Test the New Image**
+After the new image is successfully built and tagged, it can be tested locally by using the tagged image or deployed to your environment. This process may vary depending on your deployment setup (e.g., Kubernetes, Docker Swarm, etc.).
+
+**Notes:**
+- Do the version increase on its own PR to separate version releases from code changes.
+- Ensure any expected changes in the codebase are included in the release, and all tests are passing before modifying the `version.txt` file.
+- For breaking changes, consider incrementing the major version number (e.g., `v2.0.0`).
+
+
 # Developer onboarding and environment setup
 
 There are a few different ways you can set up a development instance of Open Media Match and get to work.
@@ -91,7 +118,7 @@ Although you can remove the need for this by setting the "black" extension as yo
 cd /workspace
 mypy src/OpenMediaMatch
 ```
-If you don't run it in this directory, mypyp won't be able to find its settings folder and you'll get different results than the CI.
+If you don't run it in this directory, mypy won't be able to find its settings folder and you'll get different results than the CI.
 
 ## Save Keystrokes on Common commands
 Add these to your ~/.bashrc file and then reload with `. ~/.bashrc`
@@ -102,7 +129,7 @@ alias t='(cd /workspace/src/OpenMediaMatch && py.test)'
 alias myt='my && t'
 ```
 
-## Recover from mysterious errors during sever startup?
+## Recover from mysterious errors during server startup?
 If you had a syntax error in your code when you opened vscode, the automatic flask run that is created for you may fail. You can easily manually run it!
 
 Create a new terminal window, and then run:
@@ -116,9 +143,9 @@ This is the same command that automatic window runs. Keep fixing errors until it
 ### It's worse than that!
 When you create your devcontainer, data inside is persisted. However, if dependencies to the devcontainer are changed, or a bad database migration appears, you may end up in a strange state that cannot be recovered from. To reset fresh, you will want to rebuild your devcontainer, which you can do from within vscode.
 
-From the menu, go to "View" > "Command Pallet", and in the window that appears, complete to "Devcontainers: Rebuild container".
+From the menu, go to "View" > "Command Palette", and in the window that appears, complete to "Devcontainers: Rebuild container".
 
-This will shutdown your container and rebuild it from scratch. 
+This will shutdown your container and rebuild it from scratch.
 
 ## Reset my database?
 If your database has gotten into a funky state, run

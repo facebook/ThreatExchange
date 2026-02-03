@@ -4,18 +4,26 @@ vPDQ has a CPP implementation and a Python binding that is created with Cython.
 
 Note: Python scripts are used for testing the CPP implementation, but they do not require the Python binding to be installed. They are located in the [cpp](./cpp) folder.
 
-See the CPP section in the [README](./README.md#cpp-implementation) for how to setup a development environmnet.
+See the CPP section in the [README](./README.md#cpp-implementation) for how to setup a development environment.
 
 ## Contributing
 Please see [CONTRIBUTING](../CONTRIBUTING.md) for how to make contributions develop locally and open PRs
 
 ---
 
-# CPP Development
+## Installing Dev Tools
+
+clang-format and other development tools can be installed using the `dev` optional dependency from the vpdq Python binding package:
+
+```sh
+python -m pip install -e .[dev]
+```
+
+## CPP Development
 
 ### Code Style
 
-clang-format is used for formatting CPP source files.
+clang-format is used for formatting CPP files.
 
 Format with clang-format:
 ```sh
@@ -35,37 +43,33 @@ python vpdq/cpp/regtest.py
 
 ---
 
-# Python Bindings Development
+## Python Bindings Development
 
 ### Code Style
 
 [black](https://pypi.org/project/black/) is used for formatting Python.
 
-Install black:
-```sh
-python -m pip install black
-```
-
 Format all files in `vpdq/`:
 
 ```sh
-python -m black ./
+# vpdq/
+python -m black .
 ```
 
 ### Dependencies
 
 All dependencies from the CPP implementation are required to build the binding. See [README](./README.md#cpp-implementation) for more information.
 
-Ubuntu may require `python3-dev` to compile the bindings and `pkg-config` packages to compile vpdq.
-
 Creating a [venv](https://docs.python.org/3/library/venv.html) is optional, but recommended during development. See [setuptools documentation](https://setuptools.pypa.io/en/latest/userguide/development_mode.html) for more information.
 
 
-### Install
+### Install Python Bindings
 
-In `vpdq/`:
+To install the `vpdq` Python bindings:
+
 ```sh
-python install --editable .
+# vpdq/
+python -m pip install --editable .
 ```
 
 You should now be able to run `python -c "import vpdq"` without error.
@@ -74,13 +78,12 @@ See [setuptools documentation](https://setuptools.pypa.io/en/latest/userguide/de
 
 ### Tests
 
-The tests use sample videos from `ThreatExchange/tmk/sample-videos`
-
 Run the tests:
 ```sh
-python -m pip install pytest
 python -m pytest
 ```
+
+> **Note:** Tests use files from [`ThreatExchange/tmk/sample-videos`](../tmk/sample-videos/)
 
 ### Distributing
 
@@ -93,17 +96,15 @@ Install dependencies:
 python -m pip install -r packaging-requirements.txt
 ```
 
-Build package:
+Build source distribution package:
 ```sh
 python -m build --sdist 
 ```
 
-Build wheel:
-```sh
-python -m build --wheel
-```
+The package should now be in `dist/`.
 
-The package/wheel should now be in `dist/`.
+> **Note:** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
+> linked libav* libraries may be useful to end users to skip the build and dependency process.
 
 ### Publishing
 

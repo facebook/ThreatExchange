@@ -3,10 +3,9 @@
 """
 A solution that allows loading signals directly from a file.
 
-This is useful if you don't have access to an API, but still have a list of 
+This is useful if you don't have access to an API, but still have a list of
 hashes from somewhere.
 """
-
 
 import os
 import typing as t

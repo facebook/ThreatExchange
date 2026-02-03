@@ -2,19 +2,19 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#ifndef PDQTYPES_H
-#define PDQTYPES_H
-#include <stdio.h>
-
+#ifndef PDQBASETYPES_H
+#define PDQBASETYPES_H
+#include <cstdint>
 namespace facebook {
 namespace pdq {
 namespace hashing {
 
-using Hash8 = unsigned char;
-using Hash16 = unsigned short;
+using Hash8 = std::uint8_t;
+using Hash16 = std::uint16_t;
+using Hash64 = std::uint64_t;
 
 } // namespace hashing
 } // namespace pdq
 } // namespace facebook
 
-#endif // PDQTYPES_H
+#endif // PDQBASETYPES_H

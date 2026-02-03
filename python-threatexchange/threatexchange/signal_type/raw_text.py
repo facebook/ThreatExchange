@@ -8,7 +8,7 @@ Wrapper around the raw text signal type.
 from dataclasses import dataclass
 import typing as t
 
-import Levenshtein
+from weighted_levenshtein import lev
 
 from threatexchange import common
 from threatexchange.content_type.content_base import ContentType
@@ -28,7 +28,7 @@ class RawTextDistance(index.SignalSimilarityInfo):
     We re-project it onto the length of the query string.
     """
 
-    distance: int
+    distance: float
     query_str_len: int
 
     @property
@@ -42,7 +42,7 @@ class RawTextDistance(index.SignalSimilarityInfo):
         return 1 - self.diff_fraction
 
     @classmethod
-    def from_levenshtein(cls, needle: str, distance: int) -> "RawTextDistance":
+    def from_levenshtein(cls, needle: str, distance: float) -> "RawTextDistance":
         return cls(distance, len(needle))
 
     def pretty_str(self) -> str:
@@ -84,7 +84,8 @@ class RawTextSignal(
                 ldiff, max_match_distance
             )
 
-        distance: int = Levenshtein.distance(a, b)
+        distance: float = lev(a, b)
+
         return signal_base.SignalComparisonResult(
             distance <= max_match_distance,
             RawTextDistance.from_levenshtein(a, distance),

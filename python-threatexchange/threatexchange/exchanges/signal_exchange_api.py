@@ -117,7 +117,7 @@ class SignalExchangeAPI(
         * Prompt the user via stdin
         * Return an instance that will throw when any methods are called
 
-        Usages of this library will only attempt to instanciate an API
+        Usages of this library will only attempt to instantiate an API
         when they have an API call to make - all methods for manipulating
         local state are classmethods.
         """
@@ -309,8 +309,8 @@ class SignalExchangeAPIWithSimpleUpdates(
         state.TFetchCheckpoint,
         state.TFetchedSignalMetadata,
         t.Tuple[str, str],
-        t.Any,
-    ]
+        state.TFetchedSignalMetadata,
+    ],
 ):
     """
     An API that conveniently maps directly into the form needed by index.

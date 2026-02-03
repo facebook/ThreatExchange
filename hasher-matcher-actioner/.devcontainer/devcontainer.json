@@ -37,16 +37,16 @@
           "**/*.egg-info": true,
           "**/__pycache__": true
         },
-        "mypy-type-checker.path": ["/usr/local/py-utils/bin/mypy"],
-        "black-formatter.path": ["/usr/local/py-utils/bin/black"]
+        "mypy-type-checker.importStrategy": "fromEnvironment",
+        "black-formatter.importStrategy": "fromEnvironment"
       }
     }
   },
   "remoteUser": "vscode",
-  "postCreateCommand": "pip install --editable .[all]",
   "mounts": [
     "source=python-threatexchange-cmdhistory,target=/commandhistory,type=volume",
     "source=${localEnv:HOME}${localEnv:USERPROFILE},target=/host-home-folder,type=bind,consistency=cached"
   ],
+  "postCreateCommand": "/workspace/.devcontainer/postcreate.sh",
   "postAttachCommand": "/workspace/.devcontainer/startup.sh"
 }

@@ -7,7 +7,7 @@ java TETagQuery tag-to-details --page-size 10 --hash-dir ./tetmk
 media_type_long_hash_video
 
 g++ \
-  -Xpreprocessor -fopenmp -lomp \
+  -Xpreprocessor -fopenmp -lgomp \
     -O2 -std=c++14 \
     -I. -I./tmk -I./pdq -I../../faiss \
     tmk/bin/tmk-query-with-faiss.cpp \
@@ -340,7 +340,7 @@ int main(int argc, char** argv) {
     printf("Searching for the %d nearest neighbors\n", k);
   }
 
-  std::vector<faiss::Index::idx_t> nearest_neighbor_indices(k * num_queries);
+  std::vector<faiss::idx_t> nearest_neighbor_indices(k * num_queries);
   std::vector<float> nearest_neighbor_distances(k * num_queries);
 
   faiss_index.search(

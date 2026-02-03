@@ -7,7 +7,6 @@ import numpy as np
 from PIL import Image
 import typing as t
 
-
 PDQOutput = t.Tuple[
     str, int
 ]  # hexadecimal representation of the Hash vector and a numerical quality value
@@ -50,7 +49,7 @@ def _convert_image_to_correct_array_dimension(image: Image.Image) -> np.ndarray:
     """
     Handle possible image format conversion or
     """
-    if image.mode == "LA":
+    if image.mode == "LA" or image.mode == "I;16":
         # LA images (luminance with alpha) return 3 dimensional ndarray
         # which is incompatible with pdqhash
         image = image.convert("RGB")

@@ -8,34 +8,20 @@ To get similar functionality in a deployable service, check out hasher-matcher-a
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/facebook/ThreatExchange/python-threatexchange-ci.yaml?branch=main) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/threatexchange) ![PyPI - Downloads](https://img.shields.io/pypi/dm/threatexchange) ![PyPI](https://img.shields.io/pypi/v/threatexchange) [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Run the CLI in Docker container
-
-A Dockerfile is provided which allows you to run the CLI with minimal dependencies.
-
-First build the container:
-
-```
-$ docker build --tag threatexchange .
-```
-
-Then run:
-
-```
-$ docker run threatexchange
-```
-
-To persist the configuration and data between invocations, mount the `/var/lib/threatexchange` volume:
-
-```
-$ docker run --volume $HOME/.threatexchange:/var/lib/threatexchange
-```
-
 ## Installation
 
 If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/stable/installation/).
 
 ```bash
 $ python3 -m pip install threatexchange --upgrade
+```
+
+### Docker File
+
+A Dockerfile is provided which allows you to run the CLI with minimal dependencies.
+
+```
+$ docker build --tag threatexchange .
 ```
 
 # Introduction
@@ -45,6 +31,8 @@ Trust and safety is a generally hard problem. An issue that makes the problem ha
 One technique that can allow platforms to combine efforts to combat harm is by sharing signatures of content that they have already detected on their own, or the inputs to various trust and safety tools that can be used to find harmful content. The most well-known are photo/video hash sharing programs like those operated by the National Center for Exploited and Missing Children (NCMEC) and the Global Internet Forum to Counter Terrorism, Southwest Grid for Learning’s StopNCII.org and Meta's ThreatExchange platform.
 
 The python-threatexchange library aims to simplify the exchange of signals via platforms like the above, as well as provide a baseline of functionality available to simplify the testing and creation of new exchanges and techniques, as well as provide cross-compatibility.
+
+A list of implemented interfaces for matching and exchange can be found in the [extensions README](https://github.com/facebook/ThreatExchange/tree/main/python-threatexchange/threatexchange/extensions/README.md).
 
 ## Philosophy of the Library
 
@@ -60,7 +48,7 @@ The basic flow of data through the system is:
 
 1. Configure which sources of data (signals) you want to pull from (aka collaborations)
 2. Download from all sources
-3. Store the signals and build an efficient matching datastructure (index)
+3. Store the signals and build an efficient matching data structure (index)
 4. Match content against stored signals
 
 ### Collaborations
@@ -113,7 +101,7 @@ For some applications, the amount of data will be too large to fit in memory - i
 
 ### Extensions
 
-This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques, and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
+This library can make use of extensions provided by any party, public or private, as long as they conform to the conventions established in the library. Extensions are a way to prototype out new techniques and quickly make them available in existing exchanges. Some exchanges, like ThreatExchange, allow sharing arbitrary data with arbitrary labels, and so a new technique can be rapidly demonstrated cross-platform even if not officially supported.
 
 # `threatexchange` CLI
 

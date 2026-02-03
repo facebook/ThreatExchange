@@ -12,7 +12,7 @@
 
 #include <pdq/cpp/common/pdqhashtypes.h>
 
-using uint8_t = unsigned char;
+#include <cstdint>
 
 namespace facebook {
 namespace pdq {

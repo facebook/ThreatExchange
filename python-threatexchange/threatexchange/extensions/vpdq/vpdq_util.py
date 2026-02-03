@@ -135,7 +135,7 @@ def OLD_json_to_vpdq(json_str: str) -> t.List[vpdq.VpdqFeature]:
 
 
 def OLD_read_file_to_hash(
-    input_hash_filename: t.Union[str, pathlib.Path]
+    input_hash_filename: t.Union[str, pathlib.Path],
 ) -> t.List[VpdqCompactFeature]:
     """Read hash file and return list of VPDQ features
 

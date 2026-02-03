@@ -5,13 +5,31 @@
             <div class="me-2">Running server in development mode!</div>
             <div class="hstack gap-2">
                 <form action="/dev/setup_sample_example" method="post">
+                    {% if 'SEED_SAMPLE' in collabs %}
+                    <button class="btn" disabled>
+                        ✅ Sample API created
+                    </button>
+                    {% else %}
                     <button type="submit" class="btn btn-primary">Setup Sample API</button>
+                    {% endif %}
                 </form>
                 <form action="/dev/seed_banks" method="post">
+                    {% if is_banks_seeded %}
+                    <button class="btn" disabled>
+                        ✅ Banks seeded
+                    </button>
+                    {% else %}
                     <button type="submit" class="btn btn-primary">Seed Banks</button>
+                    {% endif %}
                 </form>
                 <form action="/dev/setup_tx_example" method="post">
+                    {% if 'TX_EXAMPLE_COLLAB' in collabs %}
+                    <button class="btn" disabled>
+                        ✅ Tx API created
+                    </button>
+                    {% else %}
                     <button type="submit" class="btn btn-primary">Setup Tx API</button>
+                    {% endif %}
                 </form>
                 <form action="/dev/factory_reset" method="post">
                     <button type="submit" class="btn btn-outline-danger">Factory Reset</button>

@@ -21,19 +21,21 @@ dependencies = [
     "flask_migrate",
     "psycopg2",
     "requests",
-    "threatexchange",
+    "threatexchange>=1.2.10",
     "flask_apscheduler",
     "python-dateutil",
     "python-json-logger",
+    "flask-openapi3[swagger]"
 ]
 
 [project.optional-dependencies]
 all = [
-    "mypy",
-    "black",
+    "mypy>=1.17.1",
+    "black>=25.1.0",
     "pytest",
     "types-Flask-Migrate",
     "types-requests",
+    "types-psycopg2",
     "types-python-dateutil",
     "gunicorn",
     "flask_apscheduler"

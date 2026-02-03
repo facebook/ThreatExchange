@@ -180,7 +180,7 @@ def md5(n: int) -> str:
     return f"{n:032x}"
 
 
-def test_test_impls() -> None:
+def test_test_impls():
     """
     Since we're faking these interfaces, lets make sure they behave as expected
     """
@@ -366,7 +366,7 @@ def test_update_stream_delta() -> None:
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore(FakePerOwnerOpinionAPI)
+    store = FakeFetchStore(t.cast(TSignalExchangeAPICls, FakePerOwnerOpinionAPI))
     collab = FakePerOwnerOpinionAPI.get_fake_collab_config()
 
     # Note - dict(updates) work because our merge behavior is replace
@@ -381,7 +381,7 @@ def test_update_stream_delta() -> None:
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore(FakePerOwnerOpinionAPI)
+    store = FakeFetchStore(t.cast(TSignalExchangeAPICls, FakePerOwnerOpinionAPI))
     # If we appy updates 1-by-1 we expect all the end states
     api = FakePerOwnerOpinionAPI([dict([t]) for t in updates])
     for i, delta in enumerate(api.fetch_iter([], None)):
@@ -505,7 +505,7 @@ def test_simple_update_delta() -> None:
         {md5(2): h2_full},
     ]
 
-    store = FakeFetchStore(FakeNoConversionAPI)
+    store = FakeFetchStore(FakeNoConversionAPI)  # type: ignore[arg-type]
     collab = FakeNoConversionAPI.get_fake_collab_config()
 
     # Note - dict(updates) work because our merge behavior is replace
@@ -518,7 +518,7 @@ def test_simple_update_delta() -> None:
         collab.name: expected_states[-1]
     }
 
-    store = FakeFetchStore(FakeNoConversionAPI)
+    store = FakeFetchStore(FakeNoConversionAPI)  # type: ignore[arg-type]
     # If we appy updates 1-by-1 we expect all the end states
     api = FakeNoConversionAPI([dict([t]) for t in updates])
     for i, delta in enumerate(api.fetch_iter([], None)):

@@ -13,7 +13,7 @@ There's a very simple `Makefile` which you can adapt; there is also a Maven conf
 We've built and run this code on Linux (CentOS) and MacOSX.
 
 
-This is Java code which we've tried to make non-clever. If people want another implementation, such as Python, let's discuss and work together. Ports should be done once, without several of us doing duplicated work porting to another language. 
+This is Java code which we've tried to make non-clever. If people want another implementation, such as Python, let's discuss and work together. Ports should be done once, without several of us doing duplicated work porting to another language.
 
 As of 2017-11-08 there is also a **pure-PHP** implementation for the hasher, but not yet for the hash-lookup (MIH) logic; the **C++** and **Java** implementations are complete.
 
@@ -107,6 +107,6 @@ a5f05ba8a4896a17c106a3da5aaaab07b61b5b42f8fc07fc83c3d0740bfcb0fa,100,reg_test/in
 
 ## Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
 
 2018-01-21

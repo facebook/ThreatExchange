@@ -2,7 +2,8 @@
 
 name: "PR Labels"
 on:
-  - pull_request_target
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 
 jobs:
   apply-labels:
@@ -11,6 +12,10 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+      - uses: actions/labeler@v6
         with:
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          configuration-path: .github/labeler.yml

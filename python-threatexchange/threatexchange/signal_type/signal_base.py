@@ -6,7 +6,6 @@ Core abstractions for signal types.
 
 import abc
 import pathlib
-import random
 import typing as t
 
 from threatexchange import common

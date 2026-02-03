@@ -7,7 +7,6 @@ Many implementations will choose to extend these to add additional metadata
 needed to power API features.
 """
 
-
 from dataclasses import dataclass
 from enum import IntEnum
 from abc import ABC, abstractmethod
@@ -21,7 +20,7 @@ Self = t.TypeVar("Self")
 # Note - key is artificially restricted, but it's simple to add more or even
 #        remove the restriction entirely if eventually needed
 TUpdateRecordKey = t.TypeVar("TUpdateRecordKey", str, int, t.Tuple[str, str])
-TUpdateRecordValue = t.TypeVar("TUpdateRecordValue")
+TUpdateRecordValue = t.TypeVar("TUpdateRecordValue", covariant=True)
 
 
 @dataclass
@@ -52,9 +51,7 @@ class NoCheckpointing(FetchCheckpointBase):
         return True
 
 
-TFetchCheckpoint = t.TypeVar(
-    "TFetchCheckpoint", covariant=True, bound=FetchCheckpointBase
-)
+TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
 
 
 @dataclass
@@ -75,7 +72,7 @@ class FetchDelta(t.Generic[TUpdateRecordKey, TUpdateRecordValue, TFetchCheckpoin
 
 
 FetchDeltaTyped = FetchDelta[
-    t.Any, t.Any, FetchCheckpointBase
+    t.Any, t.Any, TFetchCheckpoint
 ]  # to anchor checkpoint for typing
 
 

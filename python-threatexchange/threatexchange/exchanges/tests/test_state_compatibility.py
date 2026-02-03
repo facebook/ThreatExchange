@@ -11,7 +11,7 @@ paste the old definition into one of the testcases below.
 
 In the test cases, the class descriptions will be used for context, so
 include:
-  1. The last version it was available 
+  1. The last version it was available
   2. The change
 
 i.e.
@@ -24,13 +24,15 @@ i.e.
         '''
         owner: int
         category: SignalOpinionCategory
-        tags: t.Set[str] 
+        tags: t.Set[str]
 """
 
 import copy
 from dataclasses import dataclass, field
 import pickle
 import typing as t
+from unittest.mock import patch
+
 
 import pytest
 
@@ -41,6 +43,8 @@ from threatexchange.exchanges.fetch_state import (
 )
 from threatexchange.exchanges.impl.fb_threatexchange_api import FBThreatExchangeOpinion
 from threatexchange.exchanges.impl.ncmec_api import NCMECCheckpoint, NCMECOpinion
+
+MOCK_FROZEN_TIME = 10**8
 
 
 def get_SignalOpinion() -> t.Tuple[SignalOpinion, t.Sequence[object]]:
@@ -147,7 +151,6 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     ## Current
     max_ts = 1197433091
 
-    # 1.0.x
     current = NCMECCheckpoint(get_entries_max_ts=max_ts)
 
     # 0.99.x
@@ -166,6 +169,12 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     return (current, [ts_moved])
 
 
+@pytest.fixture
+def mock_time(monkeypatch: pytest.MonkeyPatch):
+    with patch("time.time", return_value=MOCK_FROZEN_TIME):
+        yield MOCK_FROZEN_TIME
+
+
 @pytest.mark.parametrize(
     ("current_version", "historical_versions"),
     [
@@ -176,7 +185,7 @@ def get_NCMECCheckpoint() -> t.Tuple[NCMECCheckpoint, t.Sequence[object]]:
     ],
 )
 def test_previous_pickle_state(
-    current_version: object, historical_versions: t.Sequence[object]
+    current_version: object, historical_versions: t.Sequence[object], mock_time: int
 ):
     # Sanity
     serialized = pickle.dumps(current_version)

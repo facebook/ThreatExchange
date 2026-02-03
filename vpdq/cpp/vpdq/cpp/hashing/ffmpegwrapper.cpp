@@ -2,22 +2,22 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <algorithm>
+#include <vpdq/cpp/hashing/ffmpegwrapper.h>
+
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
-
-#include <vpdq/cpp/hashing/ffmpegwrapper.h>
+#include <utility>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavutil/frame.h>
+#include <libavutil/avutil.h>
 #include <libavutil/imgutils.h>
-#include <libavutil/log.h>
-#include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 }
 
@@ -25,6 +25,28 @@ namespace facebook {
 namespace vpdq {
 namespace hashing {
 namespace ffmpeg {
+
+void AVFrameDeleter::operator()(AVFrame* ptr) const {
+  if (ptr) {
+    av_frame_free(&ptr);
+  }
+}
+
+void AVPacketDeleter::operator()(AVPacket* ptr) const {
+  av_packet_free(&ptr);
+}
+
+void SwsContextDeleter::operator()(SwsContext* ptr) const {
+  sws_freeContext(ptr);
+}
+
+void AVFormatContextDeleter::operator()(AVFormatContext* ptr) const {
+  avformat_close_input(&ptr);
+}
+
+void AVCodecContextDeleter::operator()(AVCodecContext* ptr) const {
+  avcodec_free_context(&ptr);
+}
 
 FFmpegVideo::FFmpegVideo(const std::string& filename) : videoStreamIndex{-1U} {
   // Open the input file
@@ -117,8 +139,8 @@ bool FFmpegVideo::createSwsContext() {
       codecContext->pix_fmt,
       width,
       height,
-      PIXEL_FORMAT,
-      DOWNSAMPLE_METHOD,
+      get_pixel_format(),
+      get_downsample_method(),
       nullptr,
       nullptr,
       nullptr));
@@ -126,15 +148,62 @@ bool FFmpegVideo::createSwsContext() {
   return (swsContext.get() != nullptr);
 }
 
-FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber)
-    : m_frame(std::move(frame)), m_frameNumber(frameNumber){};
+FFmpegFrame::FFmpegFrame(AVFramePtr frame, uint64_t frameNumber, int linesize)
+    : m_frame(std::move(frame)),
+      m_frameNumber(frameNumber),
+      m_linesize(linesize) {}
 
 uint64_t FFmpegFrame::get_frame_number() const {
   return m_frameNumber;
-};
+}
 
 unsigned char* FFmpegFrame::get_buffer_ptr() {
   return m_frame->data[0];
+}
+
+int FFmpegFrame::get_linesize() const {
+  return m_linesize;
+}
+
+void saveFrameToFile(AVFramePtr frame, const std::string& filename) {
+  if (!frame) {
+    throw std::invalid_argument("Cannot save frame to file. Frame is null.");
+  }
+
+  std::ofstream outfile(filename, std::ios::out | std::ios::binary);
+  if (!outfile) {
+    throw std::runtime_error("Cannot save frame to file " + filename);
+  }
+
+  for (int y = 0; y < frame->height; y++) {
+    outfile.write(
+        reinterpret_cast<const char*>(frame->data[0] + y * frame->linesize[0]),
+        frame->width * 3);
+  }
+  outfile.close();
+}
+
+AVFramePtr createRGB24Frame(size_t const width, size_t const height) {
+  AVFramePtr frame(av_frame_alloc());
+  if (frame == nullptr) {
+    throw std::bad_alloc();
+  }
+
+  frame->format = get_pixel_format();
+  frame->width = width;
+  frame->height = height;
+
+  int ret = av_frame_get_buffer(frame.get(), 0);
+  if (ret < 0) {
+    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+    int strerr = av_strerror(ret, errbuf, sizeof(errbuf));
+    if (strerr != 0) {
+      throw std::runtime_error("av_frame_get_buffer failed.");
+    }
+    throw std::runtime_error(
+        std::string("av_frame_get_buffer failed: ") + errbuf);
+  }
+  return frame;
 }
 
 } // namespace ffmpeg

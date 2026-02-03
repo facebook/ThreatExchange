@@ -12,7 +12,10 @@ from threatexchange.signal_type.pdq.pdq_hasher import pdq_from_bytes
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.signal_type import signal_base
-from threatexchange.signal_type.pdq.pdq_utils import simple_distance
+from threatexchange.signal_type.pdq.pdq_utils import (
+    simple_distance,
+    PDQ_CONFIDENT_MATCH_THRESHOLD,
+)
 from threatexchange.exchanges.impl.fb_threatexchange_signal import (
     HasFbThreatExchangeIndicatorType,
 )
@@ -42,8 +45,6 @@ class PdqSignal(
     INDICATOR_TYPE = "HASH_PDQ"
 
     # This may need to be updated (TODO make more configurable)
-    # Hashes of distance less than or equal to this threshold are considered a 'match'
-    PDQ_CONFIDENT_MATCH_THRESHOLD = 31
     # Images with less than quality 50 are too unreliable to match on
     QUALITY_THRESHOLD = 50
 

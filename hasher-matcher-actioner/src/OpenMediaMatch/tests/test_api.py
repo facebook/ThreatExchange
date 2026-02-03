@@ -1,9 +1,15 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+from io import BytesIO
+import tempfile
 import typing as t
+import time
 
+from pytest import MonkeyPatch
 from flask.testing import FlaskClient
 from flask import Flask
+from PIL import Image
+import requests
 
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeSignalExchangeAPI,
@@ -12,180 +18,70 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 from threatexchange.utils import dataclass_json
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
 
-from OpenMediaMatch.tests.utils import (
-    app,
-    client,
-    create_bank,
-    add_hash_to_bank,
-    IMAGE_URL_TO_PDQ,
-)
+from OpenMediaMatch.tests.utils import app, client, create_bank
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.storage.postgres import database
+from OpenMediaMatch.blueprints import matching
+from OpenMediaMatch.storage import interface
 
 
-def test_status_response(client: FlaskClient):
+def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
+    response = client.get("/status")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    cache_val = matching._SignalIndexInMemoryCache(
+        PdqSignal,
+        PDQIndex2(),
+        interface.SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        last_check_ts=0.0,
+        sec_old_before_stale=0,
+    )
+
+    def fake_cache() -> matching.IndexCache:
+        return {PdqSignal.get_name(): cache_val}
+
+    # We can't easily run the caching tasks in tests,
+    # but we can fake it
+    monkeypatch.setattr(matching, "_get_index_cache", fake_cache)
+
+    assert not cache_val.is_ready
+    response = client.get("/status")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-NOT-LOADED"
+
+    # We also are okay if the cache is old but we configured to not care
+    cache_val.last_check_ts = 1
+
+    response = client.get("/status")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    # But if we do care, status should be no good
+    cache_val.sec_old_before_stale = 65
+
+    response = client.get("/status")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-STALE"
+
+    cache_val.last_check_ts = time.time()
     response = client.get("/status")
     assert response.status_code == 200
     assert response.data == b"I-AM-ALIVE"
 
 
-def test_banks_empty_index(client: FlaskClient):
-    response = client.get("/c/banks")
+def test_openapi_documentation_available(client: FlaskClient):
+    response = client.get("/openapi/openapi.json")
     assert response.status_code == 200
-    assert response.json == []
+    assert response.is_json
+    payload = response.get_json()
+    assert payload is not None
+    assert payload.get("info", {}).get("title") == "Open Media Match API"
 
 
-def test_banks_create(client: FlaskClient):
-    # Must not start with number
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "01_TEST_BANK"},
-    )
-    assert post_response.status_code == 400
-
-    # Cannot contain lowercase letters
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "my_test_bank"},
-    )
-    assert post_response.status_code == 400
-
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "MY_TEST_BANK_01"},
-    )
-    assert post_response.status_code == 201
-    assert post_response.json == {
-        "matching_enabled_ratio": 1.0,
-        "name": "MY_TEST_BANK_01",
-    }
-
-    # Should now be visible on index
-    response = client.get("/c/banks")
-    assert response.status_code == 200
-    assert response.json == [post_response.json]
-
-
-def test_banks_update(client: FlaskClient):
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "MY_TEST_BANK"},
-    )
-    assert post_response.status_code == 201
-
-    # check name validation
-    post_response = client.put(
-        "/c/bank/MY_TEST_BANK",
-        json={"name": "1_invalid_name"},
-    )
-    assert post_response.status_code == 400
-
-    # check update with rename
-    post_response = client.put(
-        "/c/bank/MY_TEST_BANK",
-        json={"name": "MY_TEST_BANK_RENAMED"},
-    )
-    assert post_response.status_code == 200
-    assert post_response.get_json()["name"] == "MY_TEST_BANK_RENAMED"
-
-    # check update without rename
-    post_response = client.put(
-        "/c/bank/MY_TEST_BANK_RENAMED",
-        json={"enabled": False},
-    )
-    assert post_response.status_code == 200
-    assert post_response.get_json()["matching_enabled_ratio"] == 0
-
-    # check update without ratio
-    post_response = client.put(
-        "/c/bank/MY_TEST_BANK_RENAMED",
-        json={"enabled_ratio": 0.5},
-    )
-    assert post_response.status_code == 200
-    assert post_response.get_json()["matching_enabled_ratio"] == 0.5
-
-    # Final test to make sure we only have one bank with proper name and disabled
-
-    get_response = client.get("/c/banks")
-    assert get_response.status_code == 200
-    json = get_response.get_json()
-    assert len(json) == 1
-    assert json[0] == {"name": "MY_TEST_BANK_RENAMED", "matching_enabled_ratio": 0.5}
-
-
-def test_banks_delete(client: FlaskClient):
-    post_response = client.post(
-        "/c/banks",
-        json={"name": "MY_TEST_BANK"},
-    )
-    assert post_response.status_code == 201
-
-    # check name validation
-    post_response = client.delete(
-        "/c/bank/MY_TEST_BANK",
-    )
-    assert post_response.status_code == 200
-
-    # deleting non existing bank should succeed
-    post_response = client.delete(
-        "/c/bank/MY_TEST_BANK",
-    )
-    assert post_response.status_code == 200
-
-
-def test_banks_add_hash(client: FlaskClient):
-    bank_name = "NEW_BANK"
-    create_bank(client, bank_name)
-
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
-
-    post_response = client.post(
-        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
-    )
-
-    assert post_response.status_code == 200, str(post_response.get_json())
-    assert post_response.json == {
-        "id": 1,
-        "signals": {
-            "pdq": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
-        },
-    }
-
-
-def test_banks_add_metadata(client: FlaskClient):
-    bank_name = "NEW_BANK"
-    create_bank(client, bank_name)
-
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
-    post_request = f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
-
-    post_response = client.post(
-        post_request, json={"metadata": {"invalid_metadata": 5}}
-    )
-    assert post_response.status_code == 400, str(post_response.get_json())
-
-    post_response = client.post(
-        post_request,
-        json={"metadata": {"content_id": "1197433091", "json": {"asdf": {}}}},
-    )
-
-    assert post_response.status_code == 200, str(post_response.get_json())
-
-
-def test_banks_add_hash_index(app: Flask, client: FlaskClient):
-    bank_name = "NEW_BANK"
-    bank_name_2 = "NEW_BANK_2"
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
-    image_url_2 = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true"
-
-    # Make two banks and add images to each bank
-    create_bank(client, bank_name)
-    add_hash_to_bank(client, bank_name, image_url, 1)
-    create_bank(client, bank_name_2)
-    add_hash_to_bank(client, bank_name, image_url_2, 2)
-
+def test_lookup_success(app: Flask, client: FlaskClient):
     storage = get_storage()
     # ensure index is empty to start with
     assert storage.get_signal_type_index(PdqSignal) is None
@@ -193,19 +89,44 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     # Build index
     build_all_indices(storage, storage, storage)
 
-    # Test against first image
-    post_response = client.get(
-        f"/m/raw_lookup?signal_type=pdq&signal={IMAGE_URL_TO_PDQ[image_url]}"
-    )
-    assert post_response.status_code == 200
-    assert post_response.json == {"matches": [1]}
+    # test GET
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    get_resp = client.get(f"/m/lookup?url={image_url}")
+    assert get_resp.status_code == 200
 
-    # Test against second image
-    post_response = client.get(
-        f"/m/raw_lookup?signal_type=pdq&signal={IMAGE_URL_TO_PDQ[image_url_2]}"
-    )
-    assert post_response.status_code == 200
-    assert post_response.json == {"matches": [2]}
+    # test POST with temp file
+    response = requests.get(image_url)
+    image = Image.open(BytesIO(response.content))
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+        image.save(f, format="JPEG")
+        file_tuple = (f.name, f.name, "image/jpeg")
+        resp = client.post("/m/lookup", data={"photo": file_tuple})
+        assert resp.status_code == 200
+
+        # It's not really a video, but MD5 is simple that we can fake it
+        resp = client.post("/m/lookup", data={"video": file_tuple})
+        assert resp.status_code == 200
+
+
+def test_lookup_without_role(app: Flask, client: FlaskClient):
+    # role resets to True in the next test
+    client.application.config["ROLE_HASHER"] = False
+
+    # test GET
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    get_resp = client.get(f"/m/lookup?url={image_url}")
+    assert get_resp.status_code == 403
+
+    # test POST with temp file
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+        # Write a minimal valid JPEG file header
+        f.write(
+            b"\xff\xd8\xff\xe0\x00\x10\x4a\x46\x49\x46\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00\xff\xd9"
+        )
+        f.flush()
+        files = {"file": (f.name, f.name, "image/jpeg")}
+        resp = client.post("/m/lookup", data=files)
+        assert resp.status_code == 403
 
 
 def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
@@ -213,7 +134,7 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
     sample_name = StaticSampleSignalExchangeAPI.get_name()
     tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
     # Monkeypatch installed types
-    storage.exchange_types = {  # type:ignore
+    storage.exchange_types = {  # type: ignore
         api_cls.get_name(): api_cls
         for api_cls in (
             FBThreatExchangeSignalExchangeAPI,
@@ -268,3 +189,53 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
         "supports_authentification": True,
         "has_set_authentification": False,
     }
+
+
+def test_compare_hashes(app: Flask, client: FlaskClient):
+    specimen1 = "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
+    specimen2 = "facd8bcb2a49bcebdec1985228d5ae84bcd006c187c598c720c2b087b3fdb318"
+    # Happy path
+    resp = client.post("/m/compare", json={"pdq": [specimen1, specimen2]})
+    assert resp.json == {"pdq": [True, {"distance": 9}]}
+
+    # Malformed input
+    bad_inputs = [
+        # Not a dict
+        ["banana"],
+        # Dict, but values are not lists
+        {"pdq": "banana"},
+        # List of comparison hashes is empty
+        {"pdq": []},
+        # Hashes are invalid
+        {"pdq": ["banana", "banana"]},
+        # Too many hashes (must be exactly 2)
+        {"pdq": [specimen1, specimen2, specimen1]},
+    ]
+    for bad_input in bad_inputs:
+        resp = client.post(
+            "/m/compare",
+            json=bad_input,
+        )
+        assert resp.status_code == 400
+
+
+def test_exchange_delete(app: Flask, client: FlaskClient):
+    delete_response = client.delete(
+        "/c/exchange/TEST_EXCHANGE",
+    )
+    # deleting an exchange that doesn't exist returns 200
+    assert delete_response.status_code == 200
+
+    # create an exchange
+    post_response = client.post(
+        "/c/exchanges",
+        json={"api": "sample", "bank": "FOO_EXCHANGE", "api_json": {}},
+    )
+    assert post_response.status_code == 201
+
+    # test a real delete
+    delete_response = client.delete(
+        "/c/exchange/FOO_EXCHANGE",
+    )
+    assert delete_response.status_code == 200
+    assert delete_response.get_json()["message"] == "Exchange deleted"

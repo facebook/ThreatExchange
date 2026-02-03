@@ -3,7 +3,7 @@
 """
 Helpers for implementing SignalExchangeAPIs or state.
 
-They demonstrate how the methods in SignalExchangeAPI can be used to 
+They demonstrate how the methods in SignalExchangeAPI can be used to
 reproduce databases of signals, as well as simple recipes for stage.
 """
 

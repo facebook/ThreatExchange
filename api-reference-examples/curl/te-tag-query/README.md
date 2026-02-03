@@ -25,7 +25,7 @@ lot.
 
 # Contact
 
-threatexchange@fb.com
+threatexchange@meta.com
 
 # Setup
 

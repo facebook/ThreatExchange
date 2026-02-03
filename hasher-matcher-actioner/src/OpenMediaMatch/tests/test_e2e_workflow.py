@@ -13,7 +13,7 @@ from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from threatexchange.signal_type.pdq.signal import PdqSignal
 
 
-def test_raw_hash_add_to_match(app: Flask, client: FlaskClient):
+def test_add_hashes_and_find_match(app: Flask, client: FlaskClient):
     bank_name = "TEST_BANK"
     create_bank(client, bank_name)
 
@@ -37,6 +37,11 @@ def test_raw_hash_add_to_match(app: Flask, client: FlaskClient):
     assert build_info["size"] == len(hashes)
 
     # Now match
-    resp = client.get(f"/m/raw_lookup?signal_type=pdq&signal={hashes[-1]}")
+    resp = client.get(f"/m/lookup?signal_type=pdq&signal={hashes[-1]}")
     assert resp.status_code == 200
-    assert resp.json == {"matches": [16]}
+    assert resp.json == {"TEST_BANK": [{"bank_content_id": 16, "distance": "0"}]}
+
+    # Test lookup with no match
+    resp = client.get("/m/lookup?signal_type=pdq&signal={}".format("5" * 64))
+    assert resp.status_code == 200
+    assert resp.json == {}

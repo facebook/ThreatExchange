@@ -8,18 +8,57 @@ See [CPP implementation](#cpp-implementation) for how to install and use vpdq.
 
 ## Compared to TMK+PDQF
 
-Compared to TMK+PDQF (TMK), which also relies on the PDQ image hashing algorithm:
-TMK optimizes for identical videos (same length), vPDQ can match subsequences or clips within videos.
-TMK has a fixed-length hash, which simplifies matching lookup, and can be near constant time with the help of FAISS. vPDQ produces a variable length hash, and requires a linear comparison of candidates. This requires either an O(n*F<sub>c</sub>*F<sub>q</sub>) lookup where n is the number of videos being compared, and F<sub>c</sub> is the average number of frames per compared video and F<sub>q</sub> is the number of frames in the source video, or an initial filtering pass to reduce the candidates, which can potentially discard matching videos.
-Both TMK and vPDQ are backed by PDQ, and so inherit both PDQ’s strengths and weaknesses.
+Compared to TMK+PDQF (TMK):
+
+| Feature                                                   | vPDQ     | TMK+PDQF |
+|-----------------------------------------------------------|:--------:|:--------:|
+| Uses PDQ for hashing frames                               | ✅       | ✅      |
+| Optimized for identical videos (same length)              | ❌       | ✅      |
+| Supports subsequence/clip matching                        | ✅       | ❌      |
+| Fixed-length hash (near constant time search for matches) | ❌       | ✅      |
+
+Both TMK and vPDQ are backed by PDQ for hashing video frames. Therefore, they both inherit PDQ's strengths and weaknesses.
+
+TMK optimizes for identical videos (same length). vPDQ can match subsequences or clips within videos.
+
+TMK has a fixed-length hash, which simplifies matching lookup, and can be near constant time with the help of FAISS. vPDQ produces a variable length hash, and requires a linear comparison of candidates.
+* vPDQ linear search complexity is O(n*F<sub>c</sub>*F<sub>q</sub>), where n is the number of videos being compared, and F<sub>c</sub> is the average number of frames per compared video and F<sub>q</sub> is the number of frames in the source video.
+  * To speed this up, an initial filtering pass can be used to reduce the candidates. The downside is it could discard matching videos, causing false-negatives.
 
 ## Description of Algorithm
 
-### Producing a Hash
+### Producing a Video Hash
 
-The algorithm for producing the “hash” is simple: given a video, convert it into a sequence of frame images at some interval (for example, 1 frame/second). For each frame image, use the PDQ hashing algorithm on each.
+The algorithm for producing the video hash is:
 
-We can annotate these hashes with their frame number, quality(0-100 which measures gradients/features,from least featureful to most featureful) and timestamp(sec). So for a 5 minute video at 1 frame/sec, we might have:
+1. Given a video, convert it into a sequence of frame images.
+2. For each frame image, use the PDQ hashing algorithm to produce frame perceptual hashes.
+3. Finally, assemble the collection of hashed frames to produce the video perceptual hash.
+
+> **Note:** A subset of all frames can be hashed, such as only the frames at every 1sec interval, to reduce the number of frame
+> perceptual hashes. In general, adjacent frames are very similar, so they are not very useful for finding matches.
+
+The following diagram shows the high level data flow for hashing a video with vPDQ:
+
+```mermaid
+---
+title: vPDQ Data Flow
+config:
+  theme: light
+---
+flowchart LR
+video@{ shape: lean-r, label: "Video" } -->|decoded as| frames@{ shape: processes, label: "RGB Frame"}
+frames --> pdq((PDQ))
+pdq --> phashes@{ shape: processes, label: "Frame\nPerceptual Hash"}
+phashes -->|assembled into| video_phash@{ shape: lean-r, label: "Video Perceptual Hash" }
+```
+
+#### Frame Metadata
+
+We can annotate the frame hashes with their frame number, quality(0-100 which measures gradients/features, from least "featureful" to most "featureful") and the timestamp(sec):
+
+**Example**: 5 minute video, 1 frame/sec
+
 | Frame | Quality | PDQ Hash | Timestamp(sec) |
 | ------------- | ------------- | ------------- | ------------- |
 | 1  | 100 | face000...  | 0.000  |
@@ -32,11 +71,11 @@ We can annotate these hashes with their frame number, quality(0-100 which measur
 
 For the matching algorithm, the frame numbers are not used, but they can still be useful for identifying matching segments when comparing videos.
 
-### Pruning Frames
+#### (Optional) Pruning Frames for Faster Comparison and Smaller Video Hashes
 
 Often, many frames are repeated in a video, or frames are very close to each other in PDQ distance. It is possible to reduce the number of frames in a hash by omitting subsequent frames that are within a distance D<sub>prune</sub> of the last retained frame.
 
-In the previous example, with D<sub>prune</sub> of 2 we might instead end up with:
+Using the previous example, with D<sub>prune</sub> of 2 we might end up with:
 | Frame | PDQ Hash | Distance from last retained frame| Result |
 | ------------- | ------------- | ------------- |------------- |
 | 1  | face000...  | N/A | Retain |
@@ -46,7 +85,7 @@ In the previous example, with D<sub>prune</sub> of 2 we might instead end up wit
 | 5  | face111...  | 0 | Prune |
 | ... | ...  | ... | ... |
 
-Afterwards, what is left is:
+After pruning the previous example with D<sub>prune</sub> of 2, the vPDQ hash may look like:
 | Frame | PDQ Hash |
 | ------------- | ------------- |
 | 1  | face000...  |
@@ -99,7 +138,9 @@ is_match = c_pct_matched >= P_c and q_pct_matched >= P_q
 
 > **Note**: The frame number and the timestamp is not used at all in this comparison. The frames are treated as an unordered “bag of hashes”. The frame number and timestamp are included in each feature in the reference implementation in case of future expansion.
 
-### Pruning Candidates
+Beyond pruning frames from candidates, it may be desirable to further prune to just sampled or key frames in candidate videos to control index size, but this may result in videos being incorrectly pruned.
+
+#### (Optional) Pruning Candidate Videos for Faster Match Search
 
 When the number of potential candidates is high, the n*F<sub>c</sub>*F<sub>q</sub> algorithm might be too expensive to run. One potential solution for filtering is indexing frames from candidate videos into an index like FAISS, keyed to the video to compare. Our lookup algorithm then becomes:
 
@@ -119,8 +160,6 @@ for c_id in candidate_video_ids:
     matching_candidates.add(C)
 
 ```
-
-Beyond pruning frames from candidates, it may be desirable to further prune to just sampled or key frames in candidate videos to control index size, but this may result in videos being incorrectly pruned.
 
 ## CPP Implementation
 
@@ -183,8 +222,12 @@ ffmpeg version 4.4.2 Copyright (c) 2000-2023 the FFmpeg developers
 
 Some package managers will install the libav* libraries bundled with FFmpeg. But if yours does not then you will need to install them manually.
 
-Required:
+Required packages (Ubuntu):
 
+- python3-dev
+- pkg-config
+- cmake
+- ffmpeg
 - libavdevice
 - libavfilter
 - libavformat
@@ -297,15 +340,63 @@ Matching File chair-22-with-small-logo-bar.txt
 
 ### Python Binding
 
-A Cython binding is available to that using the C++ library for Linux and macos.
+A Python binding for vpdq is available on Linux and macos that utilizes the C++ implementation.
 
-All of the dependencies from the C++ implementation are required to build the binding.
+All of the [dependencies](#dependencies) for the C++ implementation are required to build the Python binding.
+
+Install vpdq Python binding:
 
 ```sh
 pip install vpdq
 ```
 
 See [README.md in `python/`](./python/README.md) for more information.
+
+Benchmark scripts are available for vPDQ under the [benchmarks](benchmark) folder.
+
+Results (vPDQ):
+-------
+```
+% python3 benchmark_vpdq_index.py brute_force -f 500 -v 20  -q 1000
+build: 0.0000s
+query: 684.5324s
+  Per query: 684.5324ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 20 -q 1000
+build: 0.0048s
+query: 0.0051s
+  Per query: 0.0051ms
+
+
+% python3 benchmark_vpdq_index.py signal_type -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2398s
+build: 3.2970s
+query: 2.8439s
+  Per query: 0.2844ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 10000
+Generating data...
+Generating data: 1.2237s
+build: 0.4786s
+query: 2.5248s
+  Per query: 0.2525ms
+
+
+% python3 benchmark_vpdq_index.py flat -f 500 -v 2000 -q 100000
+Generating data...
+Generating data: 1.2195s
+build: 0.4800s
+Generating queries...
+Generating queries: 0.1017s
+query: 26.0294s
+  Per query: 0.2603ms
+```
+
+> **Note:** Wheels are not currently distributed. But, in the future building wheels with manylinux and packaging the dynamically
+> linked libav* libraries may be useful to end users to skip the build and dependency process.
 
 ## FAISS
 

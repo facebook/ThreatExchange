@@ -52,7 +52,7 @@ def get_argparse() -> argparse.ArgumentParser:
     ap.add_argument(
         "-i",
         "--inputVideoFolder",
-        metavar="INPUTPUT_VIDEO_FOLDER_PATH",
+        metavar="INPUT_VIDEO_FOLDER_PATH",
         help="Input Video Folder",
         default=default_input_videos_dir,
         type=validate_path,

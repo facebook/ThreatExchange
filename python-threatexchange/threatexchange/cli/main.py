@@ -12,7 +12,7 @@ The flow the CLI is generally:
   3. Match data
      $ threatexchange match photo my_photo.jpg
   4. Contribute labels to external APIs
-     $ threatexchange label photo my_photo.jpg dog 
+     $ threatexchange label photo my_photo.jpg dog
      $ threatexchange label photo my_photo.jpg --false-positive
 
 Additionally, there are a number of utility commands:
@@ -65,7 +65,7 @@ from threatexchange.exchanges.impl.techagainstterrorism_api import (
     TATSignalExchangeAPI,
 )
 
-from threatexchange.content_type import photo, video, text, url
+from threatexchange.content_type import photo, video, text, url, file
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
 from threatexchange.exchanges.auth import (
     SignalExchangeAPIInvalidAuthException,
@@ -244,7 +244,13 @@ def _get_settings(
     extensions = _get_extended_functionality(config)
 
     signals = interface_validation.SignalTypeMapping(
-        [photo.PhotoContent, video.VideoContent, url.URLContent, text.TextContent]
+        [
+            photo.PhotoContent,
+            video.VideoContent,
+            url.URLContent,
+            text.TextContent,
+            file.FileContent,
+        ]
         + extensions.content_types,
         list(_DEFAULT_SIGNAL_TYPES) + extensions.signal_types,
     )
@@ -329,6 +335,7 @@ def inner_main(
 def main():
     """The main called by pip"""
     _setup_logging(os.getenv("TX_VERBOSE", "0"), initial=True)
+
     try:
         inner_main()
     except base.CommandError as ce:
