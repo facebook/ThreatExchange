@@ -75,18 +75,17 @@ class ModAPICommand(command_base.Command):
             raise CommandError.external_dependency(f"API error: {e}") from e
 
         if self.show_all:
-            parts = [
-                f"{label}({info.score:.0%},{'+' if info.is_match else '-'})"
-                for label, info in sorted(result.labels.items())
-            ]
-            print(",".join(parts) or "None")
+            items = sorted(result.labels.items())
         else:
-            flagged = [
-                f"{label}({info.score:.0%})"
-                for label, info in sorted(result.labels.items())
-                if info.is_match
-            ]
-            print(",".join(flagged) or "None")
+            items = sorted((l, i) for l, i in result.labels.items() if i.is_match)
+
+        if not items:
+            print("None")
+        else:
+            max_len = max(len(l) for l, _ in items)
+            for label, info in items:
+                flag = "FLAGGED" if info.is_match else ""
+                print(f"  {label:<{max_len}}  {info.score:>6.2%}  {flag}")
 
 
 ClassifyCommand._SUBCOMMANDS = [ModAPICommand]
