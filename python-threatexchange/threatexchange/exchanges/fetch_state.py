@@ -51,9 +51,7 @@ class NoCheckpointing(FetchCheckpointBase):
         return True
 
 
-TFetchCheckpoint = t.TypeVar(
-    "TFetchCheckpoint", covariant=True, bound=FetchCheckpointBase
-)
+TFetchCheckpoint = t.TypeVar("TFetchCheckpoint", bound=FetchCheckpointBase)
 
 
 @dataclass
@@ -74,7 +72,7 @@ class FetchDelta(t.Generic[TUpdateRecordKey, TUpdateRecordValue, TFetchCheckpoin
 
 
 FetchDeltaTyped = FetchDelta[
-    t.Any, t.Any, FetchCheckpointBase
+    t.Any, t.Any, TFetchCheckpoint
 ]  # to anchor checkpoint for typing
 
 
