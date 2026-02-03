@@ -3,21 +3,23 @@
 
 set(VPDQSOURCES
     cpp/hashing/bufferhasher.cpp
-    cpp/hashing/filehasher.cpp
-    cpp/hashing/ffmpegutils.cpp
+    cpp/hashing/bufferhasherfactory.cpp
     cpp/hashing/ffmpegwrapper.cpp
+    cpp/hashing/filehasher.cpp
     cpp/hashing/matchTwoHash.cpp
+    cpp/hashing/pdqbufferhasher.cpp
     cpp/io/vpdqio.cpp
 )
 
 set(VPDQHEADERS
     cpp/hashing/bufferhasher.h
-    cpp/hashing/filehasher.h
-    cpp/hashing/ffmpegutils.h
+    cpp/hashing/bufferhasherfactory.h
     cpp/hashing/ffmpegwrapper.h
+    cpp/hashing/filehasher.h
     cpp/hashing/hasher.h
-    cpp/hashing/vpdqHashType.h
     cpp/hashing/matchTwoHash.h
+    cpp/hashing/pdqbufferhasher.h
+    cpp/hashing/vpdqHashType.h
     cpp/io/vpdqio.h
 )
 

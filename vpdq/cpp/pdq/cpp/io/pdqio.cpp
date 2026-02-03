@@ -6,13 +6,12 @@
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
 
-#include <math.h>
-#include <stdlib.h>
 #include <chrono>
-#include "CImg.h"
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
-using namespace std;
-using namespace cimg_library;
+#include "CImg.h"
 
 namespace facebook {
 namespace pdq {
@@ -30,7 +29,8 @@ void showDecoderInfo() {
 // ----------------------------------------------------------------
 // Returns matrix as num_rows x num_cols in row-major order.
 // The caller must free the return value.
-float* loadFloatLumaFromCImg(CImg<uint8_t>& img, int& numRows, int& numCols) {
+float* loadFloatLumaFromCImg(
+    cimg_library::CImg<uint8_t>& img, int& numRows, int& numCols) {
   if (img.spectrum() == 3) {
     // X,Y,Z,color -> column,row,zero,{R,G,B}
     uint8_t* pr = &img(0, 0, 0, 0);
@@ -82,20 +82,20 @@ bool pdqHash256FromFile(
     int& imageHeightTimesWidth,
     float& readSeconds,
     float& hashSeconds) {
-  chrono::time_point<chrono::system_clock> t1 = chrono::system_clock::now();
+  auto t1 = std::chrono::system_clock::now();
 
   if (!filename) {
     return false;
   }
-  CImg<uint8_t> input;
+  cimg_library::CImg<uint8_t> input;
   try {
     input.load(filename);
-  } catch (const CImgIOException& ex) {
+  } catch (const cimg_library::CImgIOException& ex) {
     return false;
   }
 
-  chrono::time_point<chrono::system_clock> t2 = chrono::system_clock::now();
-  chrono::duration<float> elapsed_seconds_outer = t2 - t1;
+  auto t2 = std::chrono::system_clock::now();
+  std::chrono::duration<float> elapsed_seconds_outer = t2 - t1;
   readSeconds = elapsed_seconds_outer.count();
 
   //  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -106,7 +106,7 @@ bool pdqHash256FromFile(
 
   imageHeightTimesWidth = input.height() * input.width();
 
-  t1 = chrono::system_clock::now();
+  t1 = std::chrono::system_clock::now();
   int numRows, numCols;
   float* fullBuffer1 = loadFloatLumaFromCImg(input, numRows, numCols);
   float* fullBuffer2 = new float[numRows * numCols];
@@ -126,7 +126,7 @@ bool pdqHash256FromFile(
       quality);
   delete[] fullBuffer1;
   delete[] fullBuffer2;
-  t2 = chrono::system_clock::now();
+  t2 = std::chrono::system_clock::now();
   elapsed_seconds_outer = t2 - t1;
   hashSeconds = elapsed_seconds_outer.count();
 
@@ -148,20 +148,20 @@ bool pdqDihedralHash256esFromFile(
     int& imageHeightTimesWidth,
     float& readSeconds,
     float& hashSeconds) {
-  chrono::time_point<chrono::system_clock> t1 = chrono::system_clock::now();
+  auto t1 = std::chrono::system_clock::now();
 
   if (!filename) {
     return false;
   }
-  CImg<uint8_t> input;
+  cimg_library::CImg<uint8_t> input;
   try {
     input.load(filename);
-  } catch (const CImgIOException& ex) {
+  } catch (const cimg_library::CImgIOException& ex) {
     return false;
   }
 
-  chrono::time_point<chrono::system_clock> t2 = chrono::system_clock::now();
-  chrono::duration<float> elapsed_seconds_outer = t2 - t1;
+  auto t2 = std::chrono::system_clock::now();
+  std::chrono::duration<float> elapsed_seconds_outer = t2 - t1;
   readSeconds = elapsed_seconds_outer.count();
 
   if (input.height() > DOWNSAMPLE_DIMS || input.width() > DOWNSAMPLE_DIMS) {
@@ -170,7 +170,7 @@ bool pdqDihedralHash256esFromFile(
 
   imageHeightTimesWidth = input.height() * input.width();
 
-  t1 = chrono::system_clock::now();
+  t1 = std::chrono::system_clock::now();
   int numRows, numCols;
   float* fullBuffer1 = loadFloatLumaFromCImg(input, numRows, numCols);
   float* fullBuffer2 = new float[numRows * numCols];
@@ -200,7 +200,7 @@ bool pdqDihedralHash256esFromFile(
 
   delete[] fullBuffer1;
   delete[] fullBuffer2;
-  t2 = chrono::system_clock::now();
+  t2 = std::chrono::system_clock::now();
   elapsed_seconds_outer = t2 - t1;
   hashSeconds = elapsed_seconds_outer.count();
 
@@ -211,13 +211,13 @@ bool pdqDihedralHash256esFromFile(
 // matrix as num_rows x num_cols in row-major order
 void floatMatrixToCImg(
     float* matrix, int numRows, int numCols, const char filename[]) {
-  CImg<float> cimg(numCols, numRows);
+  cimg_library::CImg<float> img(numCols, numRows);
   for (int i = 0; i < numRows; i++) {
     for (int j = 0; j < numCols; j++) {
-      cimg(j, i) = matrix[i * numCols + j];
+      img(j, i) = matrix[i * numCols + j];
     }
   }
-  cimg.save(filename);
+  img.save(filename);
   printf("Saved tap %s\n", filename);
 }
 

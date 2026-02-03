@@ -7,12 +7,11 @@
 
 #include <pdq/cpp/common/pdqhashtypes.h>
 
-using namespace std;
-
 namespace facebook {
 namespace vpdq {
 namespace hashing {
 
+/** @brief A vPDQ feature for a single frame of a video. */
 struct vpdqFeature {
   facebook::pdq::hashing::Hash256 pdqHash;
   int frameNumber;

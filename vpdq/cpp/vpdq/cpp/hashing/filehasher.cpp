@@ -2,25 +2,26 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <algorithm>
+#include <vpdq/cpp/hashing/filehasher.h>
+
+#include <vpdq/cpp/hashing/ffmpegwrapper.h>
+#include <vpdq/cpp/hashing/hasher.h>
+#include <vpdq/cpp/hashing/vpdqHashType.h>
+
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <string>
-
-#include <vpdq/cpp/hashing/ffmpegutils.h>
-#include <vpdq/cpp/hashing/ffmpegwrapper.h>
-#include <vpdq/cpp/hashing/filehasher.h>
-#include <vpdq/cpp/hashing/hasher.h>
+#include <utility>
+#include <vector>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/frame.h>
-#include <libavutil/imgutils.h>
 #include <libavutil/log.h>
-#include <libavutil/mem.h>
 #include <libswscale/swscale.h>
 }
 
@@ -132,15 +133,15 @@ class FFmpegHasher {
       if (receive_frame_err == AVERROR(EAGAIN) ||
           receive_frame_err == AVERROR_EOF) {
         break;
-      } else if (receive_frame_err < 0) {
+      }
+
+      if (receive_frame_err < 0) {
         throw std::runtime_error("Cannot receive frame from decoder");
-      } else {
-        // no error. we're good.
       }
 
 // AVCodecContext::frame_number was deprecated in FFmpeg 6.0
 // in favor of AVCodecContext::frame_num
-#if LIBAVCODEC_VERSION_MAJOR >= 60
+#if defined(LIBAVCODEC_VERSION_MAJOR) && LIBAVCODEC_VERSION_MAJOR >= 60
       const auto codecFrameNumber = m_video->codecContext->frame_num;
 #else
       const auto codecFrameNumber = m_video->codecContext->frame_number;
@@ -198,7 +199,6 @@ class FFmpegHasher {
 
 } // namespace
 
-// Get pdq hashes for selected frames every secondsPerHash
 bool hashVideoFile(
     const std::string& inputVideoFileName,
     std::vector<hashing::vpdqFeature>& pdqHashes,

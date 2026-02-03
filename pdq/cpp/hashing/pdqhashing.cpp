@@ -6,27 +6,23 @@
 #include <pdq/cpp/hashing/pdqhashing.h>
 #include <pdq/cpp/hashing/torben.h>
 
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+
 // ================================================================
 // PDQ algorithm description:
 // https://github.com/facebookexternal/ThreatExchange-PDQ/blob/main/pdqhash-2017-10-09.pdf
 // ================================================================
-
-#if defined(_WIN32)
-#define _USE_MATH_DEFINES
-#endif
-
-#include <array>
-#include <cassert>
-#include <chrono>
-#include <cmath>
-
-using namespace std;
 
 namespace facebook {
 namespace pdq {
 namespace hashing {
 
 namespace {
+
+constexpr double pi = 3.14159265358979323846;
 
 // ----------------------------------------------------------------
 // Christoph Zauner 'Implementation and Benchmarking of Perceptual
@@ -48,7 +44,7 @@ auto const dct_matrix_64 = [] {
   for (size_t i = 0; i < num_rows; i++) {
     for (size_t j = 0; j < num_cols; j++) {
       dct_matrix[i * num_cols + j] = matrix_scale_factor *
-          std::cos((M_PI / 2.0 / double{num_cols}) * (i + 1) * (2 * j + 1));
+          std::cos((pi / 2.0 / double{num_cols}) * (i + 1) * (2 * j + 1));
     }
   }
 

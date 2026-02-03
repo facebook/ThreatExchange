@@ -5,6 +5,8 @@
 #ifndef SCALING_H
 #define SCALING_H
 
+#include <cstdint>
+
 // ================================================================
 // Wojciech Jarosz 'Fast Image Convolutions' ACM SIGGRAPH 2001:
 // X,Y     passes of 1-D box filters produces a 2D box filter;
@@ -21,8 +23,6 @@
 namespace facebook {
 namespace pdq {
 namespace downscaling {
-
-using uint8_t = unsigned char;
 
 // ----------------------------------------------------------------
 // Matrix of RGB-triple unsigned chars -> matrix of floating-point luminance

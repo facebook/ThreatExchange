@@ -2,17 +2,15 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 // ================================================================
 
-#include <cstdlib>
-#include <cstring>
-#include <iomanip>
-#include <iostream>
-
 #include <pdq/cpp/io/hashio.h>
 #include <vpdq/cpp/hashing/vpdqHashType.h>
 #include <vpdq/cpp/io/vpdqio.h>
 
-using namespace std;
-using namespace facebook;
+#include <cstdlib>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <string>
 
 static void usage(char* argv0, int rc) {
   FILE* fp = (rc == 0) ? stdout : stderr;
@@ -22,7 +20,7 @@ static void usage(char* argv0, int rc) {
       argv0);
   fprintf(fp, "Options:\n");
   fprintf(fp, "-v|--verbose: Show all hash matching information\n");
-  exit(rc);
+  std::exit(rc);
 }
 
 int main(int argc, char** argv) {
@@ -35,7 +33,8 @@ int main(int argc, char** argv) {
     if (argv[argi][0] != '-') {
       break;
     }
-    if (!strcmp(argv[argi], "-v") || !strcmp(argv[argi], "--verbose")) {
+    if ((std::string(argv[argi]) == "-v") ||
+        (std::string(argv[argi]) == "--verbose")) {
       verbose = true;
       continue;
     }
@@ -45,8 +44,8 @@ int main(int argc, char** argv) {
     usage(argv[0], 1);
   }
 
-  vector<facebook::vpdq::hashing::vpdqFeature> video1Hashes;
-  vector<facebook::vpdq::hashing::vpdqFeature> video2Hashes;
+  std::vector<facebook::vpdq::hashing::vpdqFeature> video1Hashes;
+  std::vector<facebook::vpdq::hashing::vpdqFeature> video2Hashes;
   bool ret =
       facebook::vpdq::io::loadHashesFromFileOrDie(argv[argi], video1Hashes);
   if (!ret) {
@@ -58,8 +57,8 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  distanceTolerance = atoi(argv[argi + 2]);
-  qualityTolerance = atoi(argv[argi + 3]);
+  distanceTolerance = std::stoi(argv[argi + 2]);
+  qualityTolerance = std::stoi(argv[argi + 3]);
 
   if (video1Hashes.size() != video2Hashes.size()) {
     std::cerr << "VideoHashes1 size " << video1Hashes.size()
