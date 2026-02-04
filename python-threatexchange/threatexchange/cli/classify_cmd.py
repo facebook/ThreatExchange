@@ -45,6 +45,11 @@ class ClassifyTextCommand(command_base.Command):
             help="text string, file path, or - for stdin",
         )
         ap.add_argument(
+            "--mod-api",
+            action="store_true",
+            help="use OpenAI Moderation API (default)",
+        )
+        ap.add_argument(
             "-a", "--show-all", action="store_true", help="show all categories"
         )
         ap.add_argument(
@@ -57,10 +62,12 @@ class ClassifyTextCommand(command_base.Command):
     def __init__(
         self,
         input: str,
+        mod_api: bool = False,
         show_all: bool = False,
         model: str = "omni-moderation-latest",
     ):
         self.input = input
+        self.mod_api = mod_api
         self.show_all = show_all
         self.model = model
 
@@ -74,6 +81,8 @@ class ClassifyTextCommand(command_base.Command):
         else:
             text = self.input
 
+        # Default to mod-api if no API flag specified
+        # (currently only mod-api is supported)
         try:
             classifier = OpenAIModerationClassifier(model=self.model)
         except MissingAPIKeyError as e:
@@ -101,6 +110,11 @@ class ClassifyImageCommand(command_base.Command):
             help="image file path or URL",
         )
         ap.add_argument(
+            "--mod-api",
+            action="store_true",
+            help="use OpenAI Moderation API (default)",
+        )
+        ap.add_argument(
             "-a", "--show-all", action="store_true", help="show all categories"
         )
         ap.add_argument(
@@ -113,10 +127,12 @@ class ClassifyImageCommand(command_base.Command):
     def __init__(
         self,
         input: str,
+        mod_api: bool = False,
         show_all: bool = False,
         model: str = "omni-moderation-latest",
     ):
         self.input = input
+        self.mod_api = mod_api
         self.show_all = show_all
         self.model = model
 
@@ -142,6 +158,11 @@ class ClassifyHybridCommand(command_base.Command):
             help="text caption or description for the image",
         )
         ap.add_argument(
+            "--mod-api",
+            action="store_true",
+            help="use OpenAI Moderation API (default)",
+        )
+        ap.add_argument(
             "-a", "--show-all", action="store_true", help="show all categories"
         )
         ap.add_argument(
@@ -155,11 +176,13 @@ class ClassifyHybridCommand(command_base.Command):
         self,
         image: str,
         text: str,
+        mod_api: bool = False,
         show_all: bool = False,
         model: str = "omni-moderation-latest",
     ):
         self.image = image
         self.text = text
+        self.mod_api = mod_api
         self.show_all = show_all
         self.model = model
 
