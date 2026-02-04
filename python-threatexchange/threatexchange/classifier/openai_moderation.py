@@ -22,8 +22,6 @@ from threatexchange.content_type.text import TextContent
 class MissingAPIKeyError(Exception):
     """Raised when OPENAI_API_KEY is not set."""
 
-    pass
-
 
 @dataclass
 class ModerationClassificationInfo(ClassificationInfo):
