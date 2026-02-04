@@ -124,7 +124,6 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         hash_cmd.HashCommand,
         chat_cmd.ChatCommand,
         classify_cmd.ClassifyCommand,
-        chat_cmd.ChatCommand,
     ]
 
 
