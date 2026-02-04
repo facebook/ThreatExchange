@@ -17,7 +17,7 @@ from threatexchange.classifier.openai_moderation import (
     OpenAIModerationClassifier,
     MissingAPIKeyError,
 )
-from threatexchange.classifier.gpt_classifier import GPTClassifier
+from threatexchange.classifier.safeguard.gpt_classifier import GPTClassifier
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
@@ -56,8 +56,8 @@ class ModAPICommand(command_base.Command):
             "-p",
             "--policy",
             type=Path,
-            default=(Path("threatexchange/classifier/policy/basic_policy.md")),
-            help="Path to policy file (default: threatexchange/classifier/policy/basic_policy.md)",
+            default=(Path("threatexchange/classifier/safeguard/policy/basic_policy.md")),
+            help="Path to policy file (default: threatexchange/classifier/safeguard/policy/basic_policy.md)",
         )
 
     def __init__(
@@ -67,7 +67,7 @@ class ModAPICommand(command_base.Command):
         show_all: bool = False,
         model: str = "omni-moderation-latest",
         safeguard: bool = False,
-        policy: str = "threatexchange/classifier/policy/basic_policy.md",
+        policy: str = "threatexchange/classifier/safeguard/policy/basic_policy.md",
     ):
         self.input = input
         self.text = text
