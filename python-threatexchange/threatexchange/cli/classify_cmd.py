@@ -4,6 +4,7 @@
 """Classify command for content moderation."""
 
 import argparse
+import os
 import sys
 import typing as t
 
@@ -14,6 +15,8 @@ from threatexchange.classifier.openai_moderation import (
     OpenAIModerationClassifier,
     MissingAPIKeyError,
 )
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 
 class ClassifyCommand(command_base.CommandWithSubcommands):
@@ -31,7 +34,7 @@ class ClassifyCommand(command_base.CommandWithSubcommands):
 
 
 class ModAPICommand(command_base.Command):
-    """Classify text using OpenAI Moderation API. Requires OPENAI_API_KEY."""
+    """Classify text/images using OpenAI Moderation API. Requires OPENAI_API_KEY."""
 
     @classmethod
     def get_name(cls) -> str:
@@ -39,30 +42,40 @@ class ModAPICommand(command_base.Command):
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
-        ap.add_argument("input", help="text to classify, file path, or - for stdin")
-        ap.add_argument("-a", "--show-all", action="store_true", help="show all categories")
+        ap.add_argument("input", help="text, image path, image URL, or - for stdin")
+        ap.add_argument("-t", "--text", help="text caption for image (multi-modal)")
+        ap.add_argument(
+            "-a", "--show-all", action="store_true", help="show all categories"
+        )
         ap.add_argument("-m", "--model", default="omni-moderation-latest")
 
     def __init__(
         self,
         input: str,
+        text: t.Optional[str] = None,
         show_all: bool = False,
         model: str = "omni-moderation-latest",
     ):
         self.input = input
+        self.text = text
         self.show_all = show_all
         self.model = model
 
     def execute(self, settings: CLISettings) -> None:
-        # Get text from stdin, file, or literal
+        # Auto-detect input type
         if self.input == "-":
-            text = sys.stdin.read()
+            input_type, value = "text", sys.stdin.read()
+        elif self.input.startswith(("http://", "https://")):
+            input_type, value = "image", self.input
         else:
-            try:
+            ext = os.path.splitext(self.input)[1].lower()
+            if ext in IMAGE_EXTENSIONS and os.path.isfile(self.input):
+                input_type, value = "image", self.input
+            elif os.path.isfile(self.input):
                 with open(self.input) as f:
-                    text = f.read()
-            except FileNotFoundError:
-                text = self.input
+                    input_type, value = "text", f.read()
+            else:
+                input_type, value = "text", self.input
 
         try:
             classifier = OpenAIModerationClassifier(model=self.model)
@@ -70,7 +83,12 @@ class ModAPICommand(command_base.Command):
             raise CommandError.user(str(e)) from e
 
         try:
-            result = classifier.classify_text(text)
+            if input_type == "image" and self.text:
+                result = classifier.classify_multi(value, self.text)
+            elif input_type == "image":
+                result = classifier.classify_image(value)
+            else:
+                result = classifier.classify_text(value)
         except Exception as e:
             raise CommandError.external_dependency(f"API error: {e}") from e
 

@@ -2,6 +2,7 @@
 
 """OpenAI Moderation API classifier."""
 
+import base64
 import os
 import typing as t
 from dataclasses import dataclass
@@ -14,6 +15,7 @@ from threatexchange.classifier.classifier import (
     Classifier,
 )
 from threatexchange.content_type import content_base
+from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.text import TextContent
 
 
@@ -63,25 +65,81 @@ class OpenAIModerationClassifier(Classifier):
 
     @classmethod
     def get_content_types(cls) -> t.List[t.Type[content_base.ContentType]]:
-        return [TextContent]
+        return [TextContent, PhotoContent]
 
     def classify(
         self, content_type: t.Type[content_base.ContentType], content_val: str
     ) -> ClassificationResult[ModerationClassificationInfo]:
-        if content_type != TextContent:
-            raise ValueError(f"Only supports TextContent, got {content_type.get_name()}")
-        return self.classify_text(content_val)
+        if content_type == TextContent:
+            return self.classify_text(content_val)
+        elif content_type == PhotoContent:
+            return self.classify_image(content_val)
+        else:
+            raise ValueError(f"Unsupported content type: {content_type.get_name()}")
 
-    def classify_text(self, text: str) -> ClassificationResult[ModerationClassificationInfo]:
+    def classify_text(
+        self, text: str
+    ) -> ClassificationResult[ModerationClassificationInfo]:
         """Classify text, returns result with labels."""
+        return self._call_api(text=text)
+
+    def classify_image(
+        self, image: str
+    ) -> ClassificationResult[ModerationClassificationInfo]:
+        """Classify image from URL or local path."""
+        return self._call_api(image=image)
+
+    def classify_multi(
+        self, image: str, text: str
+    ) -> ClassificationResult[ModerationClassificationInfo]:
+        """Classify image with text context."""
+        return self._call_api(image=image, text=text)
+
+    def _call_api(
+        self, text: t.Optional[str] = None, image: t.Optional[str] = None
+    ) -> ClassificationResult[ModerationClassificationInfo]:
+        """Build input payload and call API."""
+        if text and not image:
+            payload: t.Dict[str, t.Any] = {"input": text, "model": self.model}
+        else:
+            parts: t.List[t.Dict[str, t.Any]] = []
+            if text:
+                parts.append({"type": "text", "text": text})
+            if image:
+                parts.append(
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": self._image_to_url(image)},
+                    }
+                )
+            payload = {"input": parts, "model": self.model}
+
         resp = requests.post(
             self.ENDPOINT,
             headers={"Authorization": f"Bearer {self.api_key}"},
-            json={"input": text, "model": self.model},
-            timeout=30,
+            json=payload,
+            timeout=60,
         )
         resp.raise_for_status()
         return self._parse_response(resp.json())
+
+    def _image_to_url(self, image: str) -> str:
+        """Convert image path or URL to API-compatible URL."""
+        if image.startswith(("http://", "https://")):
+            return image
+        # Local file: base64 encode
+        with open(image, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        ext = image.lower().rsplit(".", 1)[-1]
+        mime_types = {
+            "jpg": "jpeg",
+            "jpeg": "jpeg",
+            "png": "png",
+            "gif": "gif",
+            "webp": "webp",
+        }
+        mime = mime_types.get(ext, "jpeg")
+        return f"data:image/{mime};base64,{b64}"
 
     def _parse_response(
         self, data: t.Dict[str, t.Any]
