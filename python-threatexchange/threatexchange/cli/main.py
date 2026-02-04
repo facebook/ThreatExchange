@@ -25,65 +25,55 @@ State is persisted between runs, entirely in the ~/.threatexchange directory
 """
 
 import argparse
-import inspect
+from contextlib import contextmanager
+from importlib import metadata
 import logging
+import inspect
 import os
-import pathlib
-import shutil
 import subprocess
 import sys
 import typing as t
+import pathlib
+import shutil
 import warnings
-from contextlib import contextmanager
-from importlib import metadata
 
 # Import pdq first with its hash order warning squelched, it's before our time
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     from threatexchange.signal_type.pdq import signal
 
-from threatexchange import interface_validation
-from threatexchange.cli import (
-    command_base as base,
-    config_cmd,
-    dataset_cmd,
-    fetch_cmd,
-    hash_cmd,
-    label_cmd,
-    match_cmd,
-)
-from threatexchange.cli.cli_config import CLiConfig, CLISettings, CliState
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.content_type import file, photo, text, url, video
+from threatexchange import interface_validation
 from threatexchange.content_type.content_base import ContentType
-from threatexchange.exchanges.auth import (
-    SignalExchangeAPIInvalidAuthException,
-    SignalExchangeAPIMissingAuthException,
-)
+from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
+from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
+from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCredentials,
     FBThreatExchangeSignalExchangeAPI,
 )
-from threatexchange.exchanges.impl.file_api import LocalFileSignalExchangeAPI
-from threatexchange.exchanges.impl.ncmec_api import (
-    NCMECCredentials,
-    NCMECSignalExchangeAPI,
-)
-from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.stop_ncii_api import (
     StopNCIICredentials,
     StopNCIISignalExchangeAPI,
+)
+from threatexchange.exchanges.impl.ncmec_api import (
+    NCMECCredentials,
+    NCMECSignalExchangeAPI,
 )
 from threatexchange.exchanges.impl.techagainstterrorism_api import (
     TATCredentials,
     TATSignalExchangeAPI,
 )
+
+from threatexchange.content_type import photo, video, text, url, file
 from threatexchange.exchanges.signal_exchange_api import SignalExchangeAPI
-from threatexchange.extensions.manifest import ThreatExchangeExtensionManifest
+from threatexchange.exchanges.auth import (
+    SignalExchangeAPIInvalidAuthException,
+    SignalExchangeAPIMissingAuthException,
+)
 from threatexchange.signal_type import (
     md5,
     raw_text,
-    trend_query,
     url as url_signal,
     url_md5,
     trend_query,
