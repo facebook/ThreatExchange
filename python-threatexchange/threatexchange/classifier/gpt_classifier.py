@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from openai import BadRequestError, OpenAI
+from threatexchange.classifier.classifier import Classifier
 
 DEFAULT_OPENAI_POLICY_MODEL = "osb-120b-ev3"
 
@@ -64,12 +65,12 @@ def _maybe_raise_helpful_model_error(exc: BadRequestError, *, model: str) -> Non
 
 
 @dataclass(frozen=True)
-class SafeguardClient:
+class GPTClassifier(Classifier):
     client: OpenAI
     model: str
 
     @classmethod
-    def from_env(cls) -> "SafeguardClient":
+    def from_env(cls) -> "GPTClassifier":
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("Missing OPENAI_API_KEY")
@@ -82,6 +83,9 @@ class SafeguardClient:
             project=os.getenv("OPENAI_PROJECT_ID") or None,
         )
         return cls(client=client, model=model)  # type: ignore[arg-type]
+
+    def get_content_types(self) -> str:
+        return "text"
 
     def classify(self, *, content: str, policy: str) -> dict[str, Any]:
         """
