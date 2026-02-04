@@ -87,6 +87,20 @@ from threatexchange.signal_type import (
     trend_query,
     url as url_signal,
     url_md5,
+    trend_query,
+)
+from threatexchange.cli.cli_config import CLiConfig, CliState
+from threatexchange.cli.cli_config import CLISettings
+from threatexchange.cli import (
+    command_base as base,
+    fetch_cmd,
+    label_cmd,
+    dataset_cmd,
+    hash_cmd,
+    match_cmd,
+    config_cmd,
+    classify_cmd,
+    chat_cmd,
 )
 from threatexchange.signal_type.signal_base import SignalType
 
@@ -109,6 +123,7 @@ def get_subcommands() -> t.List[t.Type[base.Command]]:
         dataset_cmd.DatasetCommand,
         hash_cmd.HashCommand,
         chat_cmd.ChatCommand,
+        classify_cmd.ClassifyCommand,
     ]
 
 

@@ -19,7 +19,7 @@ for a specific project. This avoids conflicting package dependencies when workin
 * Install virtualenv - `pip install virtualenv`
 * Create a virtualenv in this directory: `virtualenv .venv`
 * Activate the virtualenv: `source .venv/bin/activate`
-* Install `python-threatexchange` into the virtualenv in editable mode with dev extras: `pip install --editable '.[dev]'`
+* Install `python-threatexchange` into the virtualenv in editable mode with dev extras: `pip install --editable .`
 * You should now be able to run the CLI by executing the `threatexchange` or `tx` command within the activated venv.
 
 ### VSCode with a Dev Container
