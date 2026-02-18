@@ -60,8 +60,11 @@ class ClassifyTextCommand(command_base.Command):
             "-p",
             "--policy",
             type=Path,
-            default=(Path("threatexchange/classifier/safeguard/policy/basic_policy.md")),
+            default=(
+                Path("threatexchange/classifier/safeguard/policy/basic_policy.md")
+            ),
             help="Path to policy file (default: threatexchange/classifier/safeguard/policy/basic_policy.md)",
+        )
         ap.add_argument(
             "-m",
             "--model",
@@ -103,7 +106,9 @@ class ClassifyTextCommand(command_base.Command):
                 gpt_result = classifier.classify(
                     content=self.input, policy=self.policy.read_text(encoding="utf-8")
                 )
-                print(json.dumps(gpt_result, indent=2, ensure_ascii=False, sort_keys=True))
+                print(
+                    json.dumps(gpt_result, indent=2, ensure_ascii=False, sort_keys=True)
+                )
                 return
             else:
                 classifier = OpenAIModerationClassifier(model=self.model)
