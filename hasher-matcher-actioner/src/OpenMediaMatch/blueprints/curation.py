@@ -573,7 +573,13 @@ def exchange_show_by_name(path: ExchangePathParams):
     )
 
 
-@bp.route("/exchange/<string:exchange_name>/status")
+@bp.get(
+    "/exchange/<string:exchange_name>/status",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": {"description": "Fetch status"}, "404": ErrorResponse},
+    summary="Get exchange fetch status",
+    description="Get last fetch time, checkpoint time, and success status for an exchange",
+)
 def exchange_get_fetch_status(path: ExchangePathParams):
     """
     Inputs:
