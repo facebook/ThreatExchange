@@ -30,6 +30,7 @@ The full list of paths available to the caller can be found at `GET /site-map`. 
   "/c/exchange/<string:exchange_name>/status",
   "/c/exchanges",
   "/c/exchanges/api/<string:api_name>",
+  "/c/exchanges/api/<string:api_name>/schema",
   "/c/exchanges/apis",
   "/c/signal_type",
   "/c/signal_type/<signal_type_name>",

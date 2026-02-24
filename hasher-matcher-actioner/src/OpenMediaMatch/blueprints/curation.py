@@ -18,6 +18,7 @@ from threatexchange.exchanges import auth
 
 from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
+from OpenMediaMatch.utils.exchange_schema import exchange_api_schema
 import OpenMediaMatch.storage.interface as iface
 from OpenMediaMatch.blueprints import hashing
 from OpenMediaMatch.schemas.curation import (
@@ -52,6 +53,10 @@ class BankContentPathParams(BankPathParams):
 
 class ExchangePathParams(BaseModel):
     exchange_name: str
+
+
+class ExchangeApiPathParams(BaseModel):
+    api_name: str
 
 
 @bp.get(
@@ -468,6 +473,37 @@ def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
         ),
         "has_set_authentification": api_cfg.credentials is not None,
     }
+
+
+@bp.get(
+    "/exchanges/api/<string:api_name>/schema",
+    tags=[Tag(name="Exchanges")],
+    responses={
+        "200": {"description": "Schema for config (api_json) and optional credentials"},
+        "400": ErrorResponse,
+    },
+    summary="Get exchange API schema",
+    description=(
+        "Returns field descriptors for the exchange type-specific config (api_json) "
+        "and, if the API uses credentials, for credential_json. Use this to build "
+        "dynamic forms instead of raw JSON textareas."
+    ),
+)
+def exchange_api_schema_get(path: ExchangeApiPathParams):
+    """
+    Returns schema for creating an exchange of this type and (if applicable)
+    for setting credentials.
+
+    Response:
+      - config_schema: { "fields": [ { "name", "type", "required", "default", "help", "choices" } ] }
+      - credentials_schema: same shape or null if API does not use auth
+    """
+    storage = persistence.get_storage()
+    api_types = storage.exchange_apis_get_installed()
+    api_cls = api_types.get(path.api_name)
+    if api_cls is None:
+        abort(400, f"no such Exchange API '{path.api_name}'")
+    return jsonify(exchange_api_schema(api_cls))
 
 
 @bp.post(

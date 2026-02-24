@@ -169,6 +169,7 @@ def exchanges():
     template_vars = {
         "exchange_apis": _api_cls_info(),
         "collabs": _collab_info(),
+        "production": current_app.config.get("PRODUCTION", False),
     }
     return render_template("bootstrap.html.j2", page="exchanges", **template_vars)
 
