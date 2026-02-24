@@ -193,8 +193,17 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
 
 def test_exchange_api_schema(app: Flask, client: FlaskClient):
     """Schema endpoint returns config and optional credential field descriptors."""
+    storage = get_storage()
     sample_name = StaticSampleSignalExchangeAPI.get_name()
     tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
+    # Patch installed types so both sample and fb_threatexchange are available
+    storage.exchange_types = {  # type: ignore[assignment]
+        api_cls.get_name(): api_cls
+        for api_cls in (
+            StaticSampleSignalExchangeAPI,
+            FBThreatExchangeSignalExchangeAPI,
+        )
+    }
 
     # Sample API has no type-specific config fields and no credentials
     resp = client.get(f"/c/exchanges/api/{sample_name}/schema")
