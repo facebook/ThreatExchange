@@ -11,7 +11,6 @@ import typing as t
 from dataclasses import MISSING
 from enum import Enum
 
-
 # Fields that are set by the UI (bank name, api type, enabled) and should
 # not appear in the "type-specific" config schema for creating an exchange.
 CONFIG_IGNORE_FIELDS = frozenset({"name", "api", "enabled"})
@@ -26,7 +25,9 @@ def _field_type_kind(field: dataclasses.Field) -> t.Tuple[str, t.Any]:
     if origin is not None:
         args = t.get_args(typ)
         # Optional[X] is Union[X, None]; X | None is UnionType in 3.10+
-        if origin is t.Union or (getattr(t, "UnionType", None) and origin is getattr(t, "UnionType")):
+        if origin is t.Union or (
+            getattr(t, "UnionType", None) and origin is getattr(t, "UnionType")
+        ):
             non_none = [a for a in args if a is not type(None)]
             if len(non_none) == 1:
                 sub_kind, sub_choices = _type_to_kind(non_none[0])
@@ -66,7 +67,10 @@ def _default_to_json(default: t.Any) -> t.Any:
     if isinstance(default, (list, tuple)):
         return [_default_to_json(x) for x in default]
     if dataclasses.is_dataclass(default) and not isinstance(default, type):
-        return {f.name: _default_to_json(getattr(default, f.name)) for f in dataclasses.fields(default)}
+        return {
+            f.name: _default_to_json(getattr(default, f.name))
+            for f in dataclasses.fields(default)
+        }
     if isinstance(default, (str, int, float, bool)) or default is None:
         return default
     return str(default)  # fallback
@@ -112,14 +116,16 @@ def dataclass_field_descriptors(
             else:
                 default = _default_to_json(f.default)
         help_text = (f.metadata.get("help") or "") if f.metadata else ""
-        out.append({
-            "name": f.name,
-            "type": kind,
-            "required": required,
-            "default": default,
-            "help": help_text,
-            "choices": choices,
-        })
+        out.append(
+            {
+                "name": f.name,
+                "type": kind,
+                "required": required,
+                "default": default,
+                "help": help_text,
+                "choices": choices,
+            }
+        )
     return out
 
 
@@ -148,7 +154,7 @@ def exchange_api_schema(
     }
     if hasattr(api_cls, "get_credential_cls"):
         try:
-            cred_cls = api_cls.get_credential_cls()  # type: ignore[attr-defined]
+            cred_cls = api_cls.get_credential_cls()
             cred_fields = dataclass_field_descriptors(
                 cred_cls,
                 ignore_fields=frozenset(),

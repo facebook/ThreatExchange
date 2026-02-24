@@ -199,7 +199,8 @@ def test_exchange_api_schema(app: Flask, client: FlaskClient):
     # Sample API has no type-specific config fields and no credentials
     resp = client.get(f"/c/exchanges/api/{sample_name}/schema")
     assert resp.status_code == 200
-    data = resp.json
+    data = resp.get_json()
+    assert data is not None and isinstance(data, dict)
     assert "config_schema" in data
     assert "fields" in data["config_schema"]
     assert data["credentials_schema"] is None
@@ -207,14 +208,16 @@ def test_exchange_api_schema(app: Flask, client: FlaskClient):
     # FB ThreatExchange has config (e.g. privacy_group) and credentials (api_token)
     resp = client.get(f"/c/exchanges/api/{tx_name}/schema")
     assert resp.status_code == 200
-    data = resp.json
+    data = resp.get_json()
+    assert data is not None and isinstance(data, dict)
     assert "config_schema" in data
     config_fields = {f["name"]: f for f in data["config_schema"]["fields"]}
     assert "privacy_group" in config_fields
     assert config_fields["privacy_group"]["type"] == "number"
     assert config_fields["privacy_group"]["required"] is True
-    assert data["credentials_schema"] is not None
-    cred_fields = {f["name"]: f for f in data["credentials_schema"]["fields"]}
+    cred_schema = data["credentials_schema"]
+    assert cred_schema is not None
+    cred_fields = {f["name"]: f for f in cred_schema["fields"]}
     assert "api_token" in cred_fields
     assert cred_fields["api_token"]["type"] == "string"
 
