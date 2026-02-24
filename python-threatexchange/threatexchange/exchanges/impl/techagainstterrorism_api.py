@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from threatexchange.exchanges import auth, fetch_state as state, signal_exchange_api
 from threatexchange.exchanges.clients.techagainstterrorism import api
@@ -30,8 +30,12 @@ class TATCredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "PYTX_TAT_CREDENTIALS"
     FILE_NAME: t.ClassVar[str] = "~/.pytx_tat_credentials"
 
-    username: str
-    password: str
+    username: str = field(
+        metadata={"help": "Tech Against Terrorism hash list API username."}
+    )
+    password: str = field(
+        metadata={"help": "Tech Against Terrorism hash list API password."}
+    )
 
     @classmethod
     def _from_str(cls, s: str) -> "TATCredentials":

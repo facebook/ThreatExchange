@@ -5,7 +5,7 @@
 from functools import lru_cache
 import time
 import typing as t
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from threatexchange.exchanges.clients.stopncii import api
 
@@ -89,9 +89,16 @@ class StopNCIICredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_STOPNCII_KEYS"
     FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
 
-    fetch_function_key: str
-    subscription_key: str
-    base_url_override: t.Optional[str]
+    fetch_function_key: str = field(
+        metadata={"help": "API key for the Fetch Hashes endpoint. Used when downloading hashes from StopNCII."}
+    )
+    subscription_key: str = field(
+        metadata={"help": "Azure API Management subscription key. Sent as Ocp-Apim-Subscription-Key on all requests."}
+    )
+    base_url_override: t.Optional[str] = field(
+        default=None,
+        metadata={"help": "Optional. Override the API base URL (e.g. for testing). Leave blank to use https://api.stopncii.org/v1"},
+    )
 
     @classmethod
     def _from_str(cls, s: str) -> "StopNCIICredentials":

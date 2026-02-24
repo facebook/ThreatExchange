@@ -222,7 +222,11 @@ class FBThreatExchangeCredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_ACCESS_TOKEN"
     FILE_NAME: t.ClassVar[str] = "~/.txtoken"
 
-    api_token: str
+    api_token: str = field(
+        metadata={
+            "help": "Meta app access token. Create one at https://developers.facebook.com/tools/accesstoken/ for your ThreatExchange app."
+        }
+    )
 
     @classmethod
     def _from_str(cls, s: str) -> t.Optional["FBThreatExchangeCredentials"]:
