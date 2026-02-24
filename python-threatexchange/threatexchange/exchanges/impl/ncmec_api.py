@@ -172,8 +172,8 @@ class NCMECCredentials(auth.CredentialHelper):
     ENV_VARIABLE: t.ClassVar[str] = "TX_NCMEC_CREDENTIALS"
     FILE_NAME: t.ClassVar[str] = "~/.tx_ncmec_credentials"
 
-    user: str
-    password: str
+    user: str = field(metadata={"help": "NCMEC hash sharing API username."})
+    password: str = field(metadata={"help": "NCMEC hash sharing API password."})
 
     @classmethod
     def _from_str(cls, s: str) -> "NCMECCredentials":
