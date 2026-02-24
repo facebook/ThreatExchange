@@ -502,7 +502,7 @@ def exchange_api_schema_get(path: ExchangeApiPathParams):
     api_types = storage.exchange_apis_get_installed()
     api_cls = api_types.get(path.api_name)
     if api_cls is None:
-        abort(400, f"no such Exchange API '{path.api_name}'")
+        abort(404, f"Exchange API '{path.api_name}' not found")
     return jsonify(exchange_api_schema(api_cls))
 
 

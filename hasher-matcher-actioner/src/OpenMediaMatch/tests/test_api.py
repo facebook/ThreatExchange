@@ -197,7 +197,7 @@ def test_exchange_api_schema(app: Flask, client: FlaskClient):
     sample_name = StaticSampleSignalExchangeAPI.get_name()
     tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
     # Patch installed types so both sample and fb_threatexchange are available
-    storage.exchange_types = {  # type: ignore[assignment]
+    storage.exchange_types = {  # type: ignore[attr-defined]
         api_cls.get_name(): api_cls
         for api_cls in (
             StaticSampleSignalExchangeAPI,

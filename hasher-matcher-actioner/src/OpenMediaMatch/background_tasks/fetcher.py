@@ -1,10 +1,11 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 from dataclasses import dataclass
-import typing as t
-import logging
 import datetime
+import logging
+import threading
 import time
+import typing as t
 
 from threatexchange.exchanges.fetch_state import (
     CollaborationConfigBase,
@@ -25,6 +26,9 @@ COMMIT_TO_DB_MAX_SEC = 60
 
 ONE_FETCH_MAX_SEC = 60 * 4
 
+# Prevents concurrent fetch_all runs (scheduler and e.g. POST /dev/run_fetch).
+_fetch_lock = threading.Lock()
+
 
 def apscheduler_fetch_all() -> None:
     with get_apscheduler().app.app_context():
@@ -37,8 +41,23 @@ def fetch_all(
     signal_type_cfgs: t.Mapping[str, SignalTypeConfig],
 ) -> None:
     """
-    For all collaborations registered with OMM, fetch()
+    For all collaborations registered with OMM, fetch().
+    Only one fetch_all runs at a time (scheduler or manual trigger).
     """
+    if not _fetch_lock.acquire(blocking=False):
+        logger.info("Skipping fetch - another fetch is already in progress")
+        return
+    try:
+        _fetch_all_impl(collab_store, signal_type_cfgs)
+    finally:
+        _fetch_lock.release()
+
+
+def _fetch_all_impl(
+    collab_store: ISignalExchangeStore,
+    signal_type_cfgs: t.Mapping[str, SignalTypeConfig],
+) -> None:
+    """Actual fetch logic; called by fetch_all while holding _fetch_lock."""
     logger.info("Running the %s background task", fetch_all.__name__)
     start = time.time()
     collabs = collab_store.exchanges_get()
