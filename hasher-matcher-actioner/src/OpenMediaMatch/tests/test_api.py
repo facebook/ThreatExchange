@@ -239,3 +239,29 @@ def test_exchange_delete(app: Flask, client: FlaskClient):
     )
     assert delete_response.status_code == 200
     assert delete_response.get_json()["message"] == "Exchange deleted"
+
+
+def test_exchange_get_fetch_status(app: Flask, client: FlaskClient):
+    # Unknown exchange returns 404
+    resp = client.get("/c/exchange/NONEXISTENT_EXCHANGE/status")
+    assert resp.status_code == 404
+
+    # Create an exchange and get fetch status
+    post_resp = client.post(
+        "/c/exchanges",
+        json={"api": "sample", "bank": "BAR_EXCHANGE", "api_json": {}},
+    )
+    assert post_resp.status_code == 201
+
+    resp = client.get("/c/exchange/BAR_EXCHANGE/status")
+    assert resp.status_code == 200
+    assert resp.is_json
+    data = resp.get_json()
+    assert data is not None
+    # FetchStatus fields (from storage.interface.FetchStatus)
+    assert "checkpoint_ts" in data
+    assert "running_fetch_start_ts" in data
+    assert "last_fetch_complete_ts" in data
+    assert "last_fetch_succeeded" in data
+    assert "up_to_date" in data
+    assert "fetched_items" in data

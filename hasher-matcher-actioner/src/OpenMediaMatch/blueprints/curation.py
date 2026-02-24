@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import dataclasses
 import re
 import time
 import typing as t
@@ -595,11 +596,10 @@ def exchange_get_fetch_status(path: ExchangePathParams):
         success: true
     }
     """
-    return jsonify(
-        persistence.get_storage().exchange_get_fetch_status(
-            _get_collab(path.exchange_name).name
-        )
+    status = persistence.get_storage().exchange_get_fetch_status(
+        _get_collab(path.exchange_name).name
     )
+    return jsonify(dataclasses.asdict(status))
 
 
 @bp.put(
