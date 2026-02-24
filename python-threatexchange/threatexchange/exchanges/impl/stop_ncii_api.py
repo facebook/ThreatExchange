@@ -90,14 +90,20 @@ class StopNCIICredentials(auth.CredentialHelper):
     FILE_NAME: t.ClassVar[str] = "~/.tx_stopncii_keys"
 
     fetch_function_key: str = field(
-        metadata={"help": "API key for the Fetch Hashes endpoint. Used when downloading hashes from StopNCII."}
+        metadata={
+            "help": "API key for the Fetch Hashes endpoint. Used when downloading hashes from StopNCII."
+        }
     )
     subscription_key: str = field(
-        metadata={"help": "Azure API Management subscription key. Sent as Ocp-Apim-Subscription-Key on all requests."}
+        metadata={
+            "help": "Azure API Management subscription key. Sent as Ocp-Apim-Subscription-Key on all requests."
+        }
     )
     base_url_override: t.Optional[str] = field(
         default=None,
-        metadata={"help": "Optional. Override the API base URL (e.g. for testing). Leave blank to use https://api.stopncii.org/v1"},
+        metadata={
+            "help": "Optional. Override the API base URL (e.g. for testing). Leave blank to use https://api.stopncii.org/v1"
+        },
     )
 
     @classmethod
