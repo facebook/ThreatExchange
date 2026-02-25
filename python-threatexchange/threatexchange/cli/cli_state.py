@@ -141,7 +141,6 @@ class CliSimpleState(helpers.SimpleFetchedStateStore):
                 delta = pickle.load(f)
 
             assert isinstance(delta, FetchDelta), "Unexpected class type?"
-            delta = t.cast(FetchDeltaTyped, delta)
             assert (
                 delta.checkpoint.__class__ == self.api_cls.get_checkpoint_cls()
             ), f"wrong checkpoint class stored in {file}?"
