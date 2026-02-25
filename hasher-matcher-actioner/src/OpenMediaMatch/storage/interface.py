@@ -327,6 +327,8 @@ class BankContentConfig:
 
     bank: BankConfig
 
+    note: t.Optional[str] = None
+
     @property
     def enabled(self) -> bool:
         if self.disable_until_ts == 0:

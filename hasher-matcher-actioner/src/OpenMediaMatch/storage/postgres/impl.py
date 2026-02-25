@@ -610,6 +610,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if config is not None:
             content.original_content_uri = config.original_media_uri
             content.disable_until_ts = config.disable_until_ts
+            content.note = config.note
         sesh.add(content)
         for signal_type, value in signals.items():
             hash = database.ContentSignal(
