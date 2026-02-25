@@ -33,7 +33,7 @@ class TATHashListEntry:
     file_type: str
     deleted: bool
     updated_on: float
-    created_on: datetime
+    created_on: datetime.datetime
     id: int
 
 

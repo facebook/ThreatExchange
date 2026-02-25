@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import typing as t
+
 from PIL import Image
 
 
@@ -21,7 +23,10 @@ def detect_top_border(image: Image.Image, black_threshold: int = 0) -> int:
     width, height = image.size
     for y in range(height):
         row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
-        if all(is_pixel_black(pixel, black_threshold) for pixel in row_pixels):
+        if all(
+            is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
+            for pixel in row_pixels
+        ):
             continue
         return y
     return height
@@ -36,7 +41,10 @@ def detect_bottom_border(image: Image.Image, black_threshold: int = 0) -> int:
     width, height = image.size
     for y in range(height - 1, -1, -1):
         row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
-        if all(is_pixel_black(pixel, black_threshold) for pixel in row_pixels):
+        if all(
+            is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
+            for pixel in row_pixels
+        ):
             continue
         return height - y - 1
     return height
@@ -51,7 +59,10 @@ def detect_left_border(image: Image.Image, black_threshold: int = 0) -> int:
     width, height = image.size
     for x in range(width):
         col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
-        if all(is_pixel_black(pixel, black_threshold) for pixel in col_pixels):
+        if all(
+            is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
+            for pixel in col_pixels
+        ):
             continue
         return x
     return width
@@ -66,7 +77,10 @@ def detect_right_border(image: Image.Image, black_threshold: int = 0) -> int:
     width, height = image.size
     for x in range(width - 1, -1, -1):
         col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
-        if all(is_pixel_black(pixel, black_threshold) for pixel in col_pixels):
+        if all(
+            is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
+            for pixel in col_pixels
+        ):
             continue
         return width - x - 1
     return width

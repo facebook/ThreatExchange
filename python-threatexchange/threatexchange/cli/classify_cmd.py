@@ -20,7 +20,7 @@ from threatexchange.classifier.openai_moderation import (
 class ClassifyCommand(command_base.CommandWithSubcommands):
     """Classify content using moderation APIs."""
 
-    _SUBCOMMANDS: t.ClassVar[t.List[t.Type[command_base.Command]]] = []
+    _SUBCOMMANDS: t.List[t.Type[command_base.Command]] = []
 
     @classmethod
     def get_name(cls) -> str:
