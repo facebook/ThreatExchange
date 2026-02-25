@@ -26,7 +26,7 @@ def test_store_collab_config(app: Flask) -> None:
     assert existing == []
 
     all_exchange_apis: t.List[TSignalExchangeAPICls] = [
-        StaticSampleSignalExchangeAPI,
+        StaticSampleSignalExchangeAPI,  # type: ignore[list-item]
         FBThreatExchangeSignalExchangeAPI,  # type: ignore[list-item]  # another mypy corner case
     ]
     exchange_apis = {ex.get_name(): ex for ex in all_exchange_apis}

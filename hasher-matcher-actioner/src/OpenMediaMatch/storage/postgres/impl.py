@@ -81,7 +81,9 @@ class DefaultOMMStore(interface.IUnifiedStore):
         if content_types is None:
             content_types = [PhotoContent, VideoContent]
         if exchange_types is None:
-            exchange_types = [StaticSampleSignalExchangeAPI]
+            exchange_types = [
+                t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI)
+            ]
 
         self.signal_types = {st.get_name(): st for st in signal_types}
         self.content_types = {ct.get_name(): ct for ct in content_types}

@@ -48,7 +48,9 @@ def storage(app: Flask) -> t.Iterator[DefaultOMMStore]:
 def make_collab(
     storage: DefaultOMMStore,
     *,
-    api: TSignalExchangeAPICls = StaticSampleSignalExchangeAPI,
+    api: TSignalExchangeAPICls = t.cast(
+        TSignalExchangeAPICls, StaticSampleSignalExchangeAPI
+    ),
     retain_data_with_unknown_signal_types: bool = False,
 ) -> CollaborationConfigBase:
     cfg = CollaborationConfigBase(name="SAMPLE", api=api.get_name(), enabled=True)
@@ -303,8 +305,8 @@ def test_exchange_get_data(storage: DefaultOMMStore):
     cfg = make_collab(storage)
     fetch(storage)
     patched_signal_types = dict(storage.exchange_types)
-    patched_signal_types[_UnknownSampleExchangeAPI.get_name()] = (
-        _UnknownSampleExchangeAPI
+    patched_signal_types[_UnknownSampleExchangeAPI.get_name()] = t.cast(
+        TSignalExchangeAPICls, _UnknownSampleExchangeAPI
     )
     storage.exchange_types = patched_signal_types
 
@@ -326,7 +328,9 @@ def test_exchange_get_data(storage: DefaultOMMStore):
 
     storage.exchange_delete(cfg.name)
     # pretend like we don't know what any signal types are
-    cfg = make_collab(storage, api=_UnknownSampleExchangeAPI)
+    cfg = make_collab(
+        storage, api=t.cast(TSignalExchangeAPICls, _UnknownSampleExchangeAPI)
+    )
     fetch(storage)
 
     # We don't store the unknown signal type
