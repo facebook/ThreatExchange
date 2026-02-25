@@ -6,7 +6,9 @@
 import argparse
 import os
 import sys
+import json
 import typing as t
+from pathlib import Path
 
 from threatexchange.cli.cli_config import CLISettings
 from threatexchange.cli.exceptions import CommandError
@@ -15,6 +17,7 @@ from threatexchange.classifier.openai_moderation import (
     OpenAIModerationClassifier,
     MissingAPIKeyError,
 )
+from threatexchange.classifier.safeguard.gpt_classifier import GPTClassifier
 
 
 class ClassifyCommand(command_base.CommandWithSubcommands):
@@ -52,6 +55,16 @@ class ClassifyTextCommand(command_base.Command):
         ap.add_argument(
             "-a", "--show-all", action="store_true", help="show all categories"
         )
+        ap.add_argument("-s", "--safeguard", action="store_true")
+        ap.add_argument(
+            "-p",
+            "--policy",
+            type=Path,
+            default=(
+                Path("threatexchange/classifier/safeguard/policy/basic_policy.md")
+            ),
+            help="Path to policy file (default: threatexchange/classifier/safeguard/policy/basic_policy.md)",
+        )
         ap.add_argument(
             "-m",
             "--model",
@@ -65,11 +78,15 @@ class ClassifyTextCommand(command_base.Command):
         mod_api: bool = False,
         show_all: bool = False,
         model: str = "omni-moderation-latest",
+        safeguard: bool = False,
+        policy: str = "threatexchange/classifier/safeguard/policy/basic_policy.md",
     ):
         self.input = input
         self.mod_api = mod_api
         self.show_all = show_all
         self.model = model
+        self.safeguard = safeguard
+        self.policy = policy
 
     def execute(self, settings: CLISettings) -> None:
         # Resolve text input
@@ -84,7 +101,17 @@ class ClassifyTextCommand(command_base.Command):
         # Default to mod-api if no API flag specified
         # (currently only mod-api is supported)
         try:
-            classifier = OpenAIModerationClassifier(model=self.model)
+            if self.safeguard:
+                classifier = GPTClassifier.from_env()
+                gpt_result = classifier.classify(
+                    content=self.input, policy=self.policy.read_text(encoding="utf-8")
+                )
+                print(
+                    json.dumps(gpt_result, indent=2, ensure_ascii=False, sort_keys=True)
+                )
+                return
+            else:
+                classifier = OpenAIModerationClassifier(model=self.model)
         except MissingAPIKeyError as e:
             raise CommandError.user(str(e)) from e
 
