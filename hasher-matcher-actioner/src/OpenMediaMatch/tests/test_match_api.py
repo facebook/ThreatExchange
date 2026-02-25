@@ -7,6 +7,7 @@ from flask.testing import FlaskClient
 
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 
 from OpenMediaMatch.tests.utils import app
@@ -21,7 +22,9 @@ from OpenMediaMatch.storage import interface as iface
 def client_with_sample_data(app) -> FlaskClient:
     storage = get_storage()
     storage.exchange_api_config_update(
-        iface.SignalExchangeAPIConfig(StaticSampleSignalExchangeAPI)
+        iface.SignalExchangeAPIConfig(
+            t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI)
+        )
     )
     storage.exchange_update(
         StaticSampleSignalExchangeAPI.get_config_cls()(

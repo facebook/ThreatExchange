@@ -86,7 +86,9 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self,
     ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
         return {
-            e.get_name(): interface.SignalExchangeAPIConfig(e)
+            e.get_name(): interface.SignalExchangeAPIConfig(
+                t.cast(TSignalExchangeAPICls, e)
+            )
             for e in (StaticSampleSignalExchangeAPI,)
         }
 

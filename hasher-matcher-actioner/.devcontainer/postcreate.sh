@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 
-pip install --editable .[all]
+pip install --no-cache-dir --editable .[all]
