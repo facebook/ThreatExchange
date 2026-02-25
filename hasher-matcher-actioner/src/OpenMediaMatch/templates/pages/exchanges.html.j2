@@ -1,6 +1,16 @@
 {# Copyright (c) Meta Platforms, Inc. and affiliates. #}
 <div class="container my-3">
-    <h3>Exchange Status</h3>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Exchange Status</h3>
+        {% if not production %}
+        <form action="/dev/run_fetch" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-primary btn-sm">Run fetch now</button>
+        </form>
+        {% endif %}
+    </div>
     {% include 'components/create_exchange_modal.html.j2' %}
     {% include "components/exchange_status.html.j2" %}
+    <p class="text-muted small mt-2">
+        Fetches run automatically when <code>TASK_FETCHER</code> is enabled. Use “Run fetch now” to trigger once, or check server logs for <code>Fetcher</code> and the exchange name to debug.
+    </p>
 </div>

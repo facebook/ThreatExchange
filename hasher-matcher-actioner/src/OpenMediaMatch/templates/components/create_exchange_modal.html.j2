@@ -6,7 +6,7 @@
 
 <!-- Modal -->
 <div class="modal fade" id="createExchange" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <form id="exchange_create_form">
                 <div class="modal-header">
@@ -19,7 +19,7 @@
                         <select class="form-select" name="api" id="exchange_create_form_api" required>
                             <option selected disabled value="">Select API</option>
                             {% for name, c in exchange_apis.items() %}
-                                <option>{{name}}</option>
+                                <option value="{{ name }}">{{ name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -27,13 +27,20 @@
                         <label for="exchange_create_form_bank" class="form-label">New bank name</label>
                         <input type="text" class="form-control" name="bank" id="exchange_create_form_bank"
                             placeholder="BANK_NAME" required>
-                            <span id="bank-name-error" class="text-danger"></span>
+                        <span id="bank-name-error" class="text-danger"></span>
                     </div>
-                    <div class="mb-3">
-                        <label for="exchange_create_form_json" class="form-label">Type-specific JSON</label>
-                        <textarea type="text" class="form-control" name="api_json" id="exchange_create_form_json" rows=5
-                            placeholder="{}" onblur="validatePrettyFormJSON(this)"></textarea>
-                        <span id="json-error" class="text-danger"></span>
+
+                    <!-- Dynamic config fields (filled when API schema is loaded) -->
+                    <div id="exchange_create_config_section" class="mb-3" style="display: none;">
+                        <label class="form-label">Configuration</label>
+                        <div id="exchange_create_config_fields"></div>
+                    </div>
+
+                    <!-- Credentials (shown when API requires auth) -->
+                    <div id="exchange_create_credentials_section" class="mb-3" style="display: none;">
+                        <label class="form-label">Credentials</label>
+                        <p class="form-text text-muted small">Optional. You can set credentials later from the API config.</p>
+                        <div id="exchange_create_credential_fields"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -44,78 +51,4 @@
         </div>
     </div>
 </div>
-<script>
-    function validatePrettyFormJSON(elem) {
-        const errorSpan = document.getElementById('json-error');
-        errorSpan.textContent = ''; // Clear previous error message
-        try {
-            const obj = JSON.parse(elem.value || "{}");
-            const pretty = JSON.stringify(obj, undefined, 4);
-            elem.value = pretty;
-            elem.classList.remove("is-invalid");
-            elem.classList.add("is-valid");
-            submitButton.disabled = false;
-        } catch (e) {
-            errorSpan.textContent = 'Invalid JSON';
-            elem.classList.remove("is-valid");
-            elem.classList.add("is-invalid");
-            submitButton.disabled = true;
-        }
-    }
-
-    document.getElementById('exchange_create_form_bank').addEventListener('blur', function() {
-        const bankNameField = this;
-        // auto uppercase and trim input
-        bankNameField.value = bankNameField.value.trim().toUpperCase();
-        const submitButton = document.getElementById('exchange_create_form_submit');
-        submitButton.disabled = true;
-        const errorSpan = document.getElementById('bank-name-error');
-        errorSpan.textContent = ''; // Clear previous error message
-
-        const regex = /^[A-Z0-9_]+$/;
-
-        // Validate the input
-        if (bankNameField.value.trim() === '') {
-            errorSpan.textContent = 'This field is required!';
-            bankNameField.classList.remove("is-valid");
-            bankNameField.classList.add("is-invalid");
-        } else if (!regex.test(bankNameField.value)) {
-            errorSpan.textContent = 'Bank name must be all uppercase and snake cased';
-            bankNameField.classList.remove("is-valid");
-            bankNameField.classList.add("is-invalid");
-        } else {
-            submitButton.disabled = false;
-            bankNameField.classList.remove("is-invalid");
-            bankNameField.classList.add("is-valid");
-        }
-    });
-
-    document.getElementById("exchange_create_form").addEventListener("submit", async event => {
-        event.preventDefault();
-        const data = new FormData(event.target);
-        const as_object = Object.fromEntries(data.entries());
-        const reload = window.location
-        if (!data.get("api_json")) {
-            as_object["api_json"] = {}
-        } else {
-            as_object["api_json"] = JSON.parse(data.get("api_json"))
-        }
-
-        fetch(`/c/exchanges`, {
-            method: 'POST',
-            body: JSON.stringify(as_object),
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-        })
-            .then(async response => {
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    json = await response.json()
-                    alert("Exchange create failed! " + response.statusText + " : " + (json['message'] ?? '<no message>)'))
-                }
-            });
-    })
-</script>
+<script src="{{ url_for('static', filename='js/create_exchange_modal.js') }}"></script>

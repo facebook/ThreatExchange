@@ -191,6 +191,46 @@ def test_exchange_api_set_auth(app: Flask, client: FlaskClient):
     }
 
 
+def test_exchange_api_schema(app: Flask, client: FlaskClient):
+    """Schema endpoint returns config and optional credential field descriptors."""
+    storage = get_storage()
+    sample_name = StaticSampleSignalExchangeAPI.get_name()
+    tx_name = FBThreatExchangeSignalExchangeAPI.get_name()
+    # Patch installed types so both sample and fb_threatexchange are available
+    storage.exchange_types = {  # type: ignore[attr-defined]
+        api_cls.get_name(): api_cls
+        for api_cls in (
+            StaticSampleSignalExchangeAPI,
+            FBThreatExchangeSignalExchangeAPI,
+        )
+    }
+
+    # Sample API has no type-specific config fields and no credentials
+    resp = client.get(f"/c/exchanges/api/{sample_name}/schema")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data is not None and isinstance(data, dict)
+    assert "config_schema" in data
+    assert "fields" in data["config_schema"]
+    assert data["credentials_schema"] is None
+
+    # FB ThreatExchange has config (e.g. privacy_group) and credentials (api_token)
+    resp = client.get(f"/c/exchanges/api/{tx_name}/schema")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data is not None and isinstance(data, dict)
+    assert "config_schema" in data
+    config_fields = {f["name"]: f for f in data["config_schema"]["fields"]}
+    assert "privacy_group" in config_fields
+    assert config_fields["privacy_group"]["type"] == "number"
+    assert config_fields["privacy_group"]["required"] is True
+    cred_schema = data["credentials_schema"]
+    assert cred_schema is not None
+    cred_fields = {f["name"]: f for f in cred_schema["fields"]}
+    assert "api_token" in cred_fields
+    assert cred_fields["api_token"]["type"] == "string"
+
+
 def test_compare_hashes(app: Flask, client: FlaskClient):
     specimen1 = "facd8bcb2a49bcebdec1985298d5fe84bcd006c187c598c720c3c087b3fdb318"
     specimen2 = "facd8bcb2a49bcebdec1985228d5ae84bcd006c187c598c720c2b087b3fdb318"

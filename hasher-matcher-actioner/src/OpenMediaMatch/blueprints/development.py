@@ -13,6 +13,7 @@ from OpenMediaMatch.utils.flask_utils import api_error_handler
 
 from OpenMediaMatch.utils import dev_utils
 from OpenMediaMatch import persistence
+from OpenMediaMatch.background_tasks import fetcher
 from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.schemas.shared import SuccessResponse
 
@@ -65,6 +66,19 @@ def setup_tx_example():
 def seed_banks():
     dev_utils.seed_banks_random()
     return redirect(url_for("ui.home"))
+
+
+@bp.post(
+    "/run_fetch",
+    tags=[Tag(name="Development")],
+    responses={"200": SuccessResponse, "302": {"description": "Redirect to exchanges"}},
+    summary="Run fetch now",
+    description="Trigger the exchange fetcher once immediately (same as background task). Use for debugging.",
+)
+def run_fetch():
+    storage = persistence.get_storage()
+    fetcher.fetch_all(storage, storage.get_signal_type_configs())
+    return redirect(url_for("ui.exchanges"))
 
 
 @bp.post(
