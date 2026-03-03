@@ -185,6 +185,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                 collab_metadata={},
                 original_media_uri=None,
                 bank=interface.BankConfig(name="MOCK_BANK", matching_enabled_ratio=1.0),
+                note=None,
             )
             content_configs.append(cfg)
         return content_configs

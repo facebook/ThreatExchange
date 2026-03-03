@@ -344,3 +344,76 @@ def test_exchange_get_data(storage: DefaultOMMStore):
 
     val = storage.exchange_get_data(cfg.name, example_key)
     assert val == example_metadata
+
+
+def test_bank_content_note(storage: DefaultOMMStore) -> None:
+    """Test adding, reading, and updating notes on bank content."""
+    bank_cfg = interface.BankConfig("TEST_NOTES", matching_enabled_ratio=1.0)
+    storage.bank_update(bank_cfg, create=True)
+
+    # Test adding content without a note
+    content_id_no_note = storage.bank_add_content(
+        bank_cfg.name, {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
+    )
+    content_configs = storage.bank_content_get([content_id_no_note])
+    assert len(content_configs) == 1
+    assert content_configs[0].note is None
+
+    # Test adding content with a note
+    note_text = "Reported by user123 on 2024-01-15"
+    content_config_with_note = interface.BankContentConfig(
+        id=0,
+        disable_until_ts=interface.BankContentConfig.ENABLED,
+        collab_metadata={},
+        original_media_uri="http://example.com/image.jpg",
+        bank=bank_cfg,
+        note=note_text,
+    )
+    content_id_with_note = storage.bank_add_content(
+        bank_cfg.name,
+        {VideoMD5Signal: f"{1:032x}"},
+        config=content_config_with_note,
+    )
+    content_configs = storage.bank_content_get([content_id_with_note])
+    assert len(content_configs) == 1
+    assert content_configs[0].note == note_text
+
+    # Test updating a note
+    updated_note = "Updated: confirmed malicious"
+    content_configs[0].note = updated_note
+    storage.bank_content_update(content_configs[0])
+
+    # Verify the update persisted
+    content_configs = storage.bank_content_get([content_id_with_note])
+    assert content_configs[0].note == updated_note
+
+    # Test clearing a note (setting to None)
+    content_configs[0].note = None
+    storage.bank_content_update(content_configs[0])
+
+    content_configs = storage.bank_content_get([content_id_with_note])
+    assert content_configs[0].note is None
+
+
+def test_bank_content_note_max_length(storage: DefaultOMMStore) -> None:
+    """Test that notes respect the 255 character limit."""
+    bank_cfg = interface.BankConfig("TEST_NOTE_LENGTH", matching_enabled_ratio=1.0)
+    storage.bank_update(bank_cfg, create=True)
+
+    # Test with exactly 255 characters (should work)
+    note_255 = "a" * 255
+    content_config = interface.BankContentConfig(
+        id=0,
+        disable_until_ts=interface.BankContentConfig.ENABLED,
+        collab_metadata={},
+        original_media_uri=None,
+        bank=bank_cfg,
+        note=note_255,
+    )
+    content_id = storage.bank_add_content(
+        bank_cfg.name,
+        {VideoMD5Signal: f"{2:032x}"},
+        config=content_config,
+    )
+    content_configs = storage.bank_content_get([content_id])
+    assert len(content_configs[0].note) == 255
