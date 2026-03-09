@@ -28,7 +28,7 @@ from threatexchange.content_type import content_base
 from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
-from threatexchange.interface_validation import FunctionalityMapping
+from threatexchange.interface_validation import FunctionalityMapping, SignalTypeMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.storage import interfaces as iface
 from threatexchange.utils import dataclass_json
@@ -223,7 +223,9 @@ class CLISettings:
         self.index = CliIndexStore(cli_state.index_dir)
         self.fetched_state = _FetchStoreAccessor(self)
         self.apis = _SignalExchangeAccessor(self)
-        self.new_iface = CLICompatibilityStorage(self)
+        self.new_iface = CLICompatibilityStorage(
+            cli_state.index_dir, mapping.signal_and_content
+        )
 
     def get_persistent_config(self) -> CLiConfig:
         if self._config is None:
@@ -318,18 +320,21 @@ class CLICompatibilityStorage(
          being one.
     """
 
-    def __init__(self, old_iface: CLISettings) -> None:
-        self.old_iface = old_iface
+    def __init__(
+        self,
+        dir: pathlib.Path,
+        installed_signal_and_content_types: SignalTypeMapping,
+    ) -> None:
+        self._installed_signal_and_content_types = installed_signal_and_content_types
 
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
         """Return all installed signal types."""
-        # TODO replace with body of old_iface impl after refactor
         return {
-            st.get_name(): iface.SignalTypeConfig(
+            name: iface.SignalTypeConfig(
                 enabled_ratio=1.0,
                 signal_type=st,
             )
-            for st in self.old_iface.get_all_signal_types()
+            for name, st in self._installed_signal_and_content_types.signal_type_by_name.items()
         }
 
     def _create_or_update_signal_type_override(
@@ -340,11 +345,11 @@ class CLICompatibilityStorage(
     def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
         """Return all installed content types."""
         return {
-            ct.get_name(): iface.ContentTypeConfig(
+            name: iface.ContentTypeConfig(
                 enabled=True,  # CLI doesn't support disabling content types
                 content_type=ct,
             )
-            for ct in self.old_iface._mapping.signal_and_content.content_by_name.values()
+            for name, ct in self._installed_signal_and_content_types.content_by_name.items()
         }
 
     def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
