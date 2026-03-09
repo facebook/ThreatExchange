@@ -246,7 +246,7 @@ class FetchStatus:
         return self.running_fetch_start_ts is not None
 
     @classmethod
-    def get_default(cls) -> t.Self:
+    def get_default(cls) -> "FetchStatus":
         return cls(
             checkpoint_ts=None,
             running_fetch_start_ts=None,
