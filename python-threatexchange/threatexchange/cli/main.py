@@ -278,7 +278,9 @@ def _get_settings(
 
     return (
         CLISettings(
-            interface_validation.FunctionalityMapping(signals, apis, state), state, storage
+            interface_validation.FunctionalityMapping(signals, apis, state),
+            state,
+            storage,
         ),
         extensions,
     )

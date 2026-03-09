@@ -24,7 +24,7 @@ def test_signal_type(tmpdir: pathlib.Path):
 
 
 def test_content_type(tmpdir: pathlib.Path):
-    storage: iface.IContentTypeConfigStore = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    storage = local_dbm.DBMStore(pathlib.Path(tmpdir))
 
     # Get with unset values — all enabled by default
     cfgs = storage.get_content_type_configs()

@@ -63,8 +63,7 @@ class CliState(collab_config.CollaborationConfigStoreBase):
     ):
         self._dir = dir.expanduser()
 
-        self._name_to_ctype = {ft.get_name(): ft.get_config_cls()
-                               for ft in fetch_types}
+        self._name_to_ctype = {ft.get_name(): ft.get_config_cls() for ft in fetch_types}
 
         self._cache: t.Optional[t.Dict[str, collab_config.CollaborationConfigBase]] = (
             None
@@ -130,23 +129,21 @@ class CliState(collab_config.CollaborationConfigStoreBase):
             ret = []
             for f in collab_dir.glob("*.json"):
                 if not f.is_file():
-                    logging.warning(
-                        "Ignoring strange file in collab dir: %s", f)
+                    logging.warning("Ignoring strange file in collab dir: %s", f)
                     continue
                 with f.open() as fp:
                     try:
                         content = json.load(fp)
                     except json.JSONDecodeError:
-                        logging.exception(
-                            "Failed to parse collab config: %s", f)
+                        logging.exception("Failed to parse collab config: %s", f)
                         continue
                     ctype = None
                     if isinstance(content, dict):
                         ctype = self._name_to_ctype.get(
-                            content.get("api"))  # type: ignore
+                            content.get("api")  # type: ignore
+                        )
                     if ctype is None:
-                        logging.warning(
-                            "Ignoring collab config of unknown type: %s", f)
+                        logging.warning("Ignoring collab config of unknown type: %s", f)
                         continue
                 try:
                     config = dataclass_json.dataclass_load_dict(content, ctype)
@@ -236,8 +233,7 @@ class CLISettings(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
     def _create_or_update_signal_type_override(
         self, signal_type: str, enabled_ratio: float
     ) -> None:
-        self._storage._create_or_update_signal_type_override(
-            signal_type, enabled_ratio)
+        self._storage._create_or_update_signal_type_override(signal_type, enabled_ratio)
 
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
         """Return all installed signal types, merged with any stored overrides."""
