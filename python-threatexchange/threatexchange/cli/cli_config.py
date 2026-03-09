@@ -31,6 +31,7 @@ from threatexchange.signal_type import signal_base
 from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.storage import interfaces as iface
+from threatexchange.storage.local_dbm import DBMStore
 from threatexchange.utils import dataclass_json
 
 CONFIG_FILENAME = "config.json"
@@ -138,7 +139,9 @@ class CliState(collab_config.CollaborationConfigStoreBase):
                         continue
                     ctype = None
                     if isinstance(content, dict):
-                        ctype = self._name_to_ctype.get(content.get("api"))  # type: ignore
+                        ctype = self._name_to_ctype.get(
+                            content.get("api")  # type: ignore
+                        )
                     if ctype is None:
                         logging.warning("Ignoring collab config of unknown type: %s", f)
                         continue
@@ -215,9 +218,12 @@ class CLISettings(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
         self,
         mapping: FunctionalityMapping,
         cli_state: CliState,
+        storage: DBMStore,
     ) -> None:
         self._mapping = mapping
         self._state = cli_state
+        # TODO: switch to a unified store once DBMStore covers all CLI storage needs
+        self._storage = storage
         self._sample_message_printed = False
         self._config: t.Optional[CLiConfig] = None
         self.index = CliIndexStore(cli_state.index_dir)
@@ -227,27 +233,15 @@ class CLISettings(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
     def _create_or_update_signal_type_override(
         self, signal_type: str, enabled_ratio: float
     ) -> None:
-        raise NotImplementedError("Not yet supported")
+        self._storage._create_or_update_signal_type_override(signal_type, enabled_ratio)
 
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
-        """Return all installed signal types."""
-        return {
-            name: iface.SignalTypeConfig(
-                enabled_ratio=1.0,
-                signal_type=st,
-            )
-            for name, st in self._mapping.signal_and_content.signal_type_by_name.items()
-        }
+        """Return all installed signal types, merged with any stored overrides."""
+        return self._storage.get_signal_type_configs()
 
     def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
-        """Return all installed content types."""
-        return {
-            name: iface.ContentTypeConfig(
-                enabled=True,
-                content_type=ct,
-            )
-            for name, ct in self._mapping.signal_and_content.content_by_name.items()
-        }
+        """Return all installed content types, merged with any stored overrides."""
+        return self._storage.get_content_type_configs()
 
     def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
         """Get a content type by name."""
