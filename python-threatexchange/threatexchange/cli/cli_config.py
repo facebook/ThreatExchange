@@ -234,12 +234,6 @@ class CLISettings:
         self._state.update_persistent_config(config)
         self._config = config
 
-    def get_all_content_types(self) -> t.List[t.Type[content_base.ContentType]]:
-        return list(self._mapping.signal_and_content.content_by_name.values())
-
-    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
-        return self._mapping.signal_and_content.content_by_name[name]
-
     def get_all_signal_types(self) -> t.List[t.Type[signal_base.SignalType]]:
         return list(self._mapping.signal_and_content.signal_type_by_name.values())
 
@@ -350,12 +344,9 @@ class CLICompatibilityStorage(
                 enabled=True,  # CLI doesn't support disabling content types
                 content_type=ct,
             )
-            for ct in self.old_iface.get_all_content_types()
+            for ct in self.old_iface._mapping.signal_and_content.content_by_name.values()
         }
 
     def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
         """Get a content type by name."""
-        configs = self.get_content_type_configs()
-        if name not in configs:
-            raise KeyError(f"Unknown content type: {name}")
-        return configs[name].content_type
+        return self.old_iface._mapping.signal_and_content.content_by_name[name]
