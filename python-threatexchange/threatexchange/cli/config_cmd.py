@@ -423,12 +423,12 @@ class ConfigExtensionsCommand(command_base.Command):
             raise ValueError(f"Manifest failed verification: {self.module}") from exc
 
         # Validate our new setups by pretending to create a new mapping with the new classes
+        existing_content_types = [
+            cfg.content_type
+            for cfg in settings.new_iface.get_content_type_configs().values()
+        ]
         content_and_settings = interface_validation.SignalTypeMapping(
-            list(
-                itertools.chain(
-                    settings.get_all_content_types(), manifest.content_types
-                )
-            ),
+            list(itertools.chain(existing_content_types, manifest.content_types)),
             list(
                 itertools.chain(settings.get_all_signal_types(), manifest.signal_types)
             ),
@@ -536,9 +536,10 @@ class ConfigContentCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        content_types = settings.get_all_content_types()
+        content_type_configs = settings.new_iface.get_content_type_configs()
         for name, class_name in sorted(
-            (c.get_name(), _fully_qualified_name(c)) for c in content_types
+            (cfg.content_type.get_name(), _fully_qualified_name(cfg.content_type))
+            for cfg in content_type_configs.values()
         ):
             print(name, class_name)
 

@@ -292,7 +292,9 @@ class CLISettings:
 
 
 # TODO - eventually to unified store
-class CLICompatibilityStorage(iface.ISignalTypeConfigStore):
+class CLICompatibilityStorage(
+    iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore
+):
     """
     Translate the new-style interface to the previous version.
 
@@ -340,3 +342,20 @@ class CLICompatibilityStorage(iface.ISignalTypeConfigStore):
         self, signal_type: str, enabled_ratio: float
     ) -> None:
         raise NotImplementedError("Not yet supported")
+
+    def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
+        """Return all installed content types."""
+        return {
+            ct.get_name(): iface.ContentTypeConfig(
+                enabled=True,  # CLI doesn't support disabling content types
+                content_type=ct,
+            )
+            for ct in self.old_iface.get_all_content_types()
+        }
+
+    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
+        """Get a content type by name."""
+        configs = self.get_content_type_configs()
+        if name not in configs:
+            raise KeyError(f"Unknown content type: {name}")
+        return configs[name].content_type
