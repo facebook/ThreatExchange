@@ -223,7 +223,7 @@ class CLISettings:
         self.index = CliIndexStore(cli_state.index_dir)
         self.fetched_state = _FetchStoreAccessor(self)
         self.apis = _SignalExchangeAccessor(self)
-        self.new_iface = CLICompatibilityStorage(
+        self.storage = CLICompatibilityStorage(
             cli_state.index_dir, mapping.signal_and_content
         )
 
@@ -354,4 +354,4 @@ class CLICompatibilityStorage(
 
     def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
         """Get a content type by name."""
-        return self.old_iface._mapping.signal_and_content.content_by_name[name]
+        return self._installed_signal_and_content_types.content_by_name[name]

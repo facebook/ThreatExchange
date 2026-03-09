@@ -425,7 +425,7 @@ class ConfigExtensionsCommand(command_base.Command):
         # Validate our new setups by pretending to create a new mapping with the new classes
         existing_content_types = [
             cfg.content_type
-            for cfg in settings.new_iface.get_content_type_configs().values()
+            for cfg in settings.storage.get_content_type_configs().values()
         ]
         content_and_settings = interface_validation.SignalTypeMapping(
             list(itertools.chain(existing_content_types, manifest.content_types)),
@@ -536,7 +536,7 @@ class ConfigContentCommand(command_base.Command):
         self.action(settings)
 
     def execute_list(self, settings: CLISettings) -> None:
-        content_type_configs = settings.new_iface.get_content_type_configs()
+        content_type_configs = settings.storage.get_content_type_configs()
         for name, class_name in sorted(
             (cfg.content_type.get_name(), _fully_qualified_name(cfg.content_type))
             for cfg in content_type_configs.values()
