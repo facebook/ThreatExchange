@@ -80,6 +80,7 @@ from threatexchange.signal_type import (
 )
 from threatexchange.cli.cli_config import CLiConfig, CliState
 from threatexchange.cli.cli_config import CLISettings
+from threatexchange.storage.local_dbm import DBMStore
 from threatexchange.cli import (
     command_base as base,
     fetch_cmd,
@@ -268,10 +269,16 @@ def _get_settings(
         base_apis + extensions.api_types
     )
     state = CliState(list(apis.api_by_name.values()), dir=dir)
+    storage = DBMStore(
+        state._dir,
+        signal_types=list(signals.signal_type_by_name.values()),
+        content_types=list(signals.content_by_name.values()),
+        exchange_types=list(apis.api_by_name.values()),
+    )
 
     return (
         CLISettings(
-            interface_validation.FunctionalityMapping(signals, apis, state), state
+            interface_validation.FunctionalityMapping(signals, apis, state), state, storage
         ),
         extensions,
     )

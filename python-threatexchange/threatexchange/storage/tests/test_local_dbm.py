@@ -21,3 +21,20 @@ def test_signal_type(tmpdir: pathlib.Path):
     assert set(cfgs) == {"pdq", "video_md5"}
     assert cfgs["pdq"].enabled_ratio == 0.5
     assert cfgs["video_md5"].enabled_ratio == 1.0
+
+
+def test_content_type(tmpdir: pathlib.Path):
+    storage: iface.IContentTypeConfigStore = local_dbm.DBMStore(pathlib.Path(tmpdir))
+
+    # Get with unset values — all enabled by default
+    cfgs = storage.get_content_type_configs()
+    assert set(cfgs) == {"photo", "video"}
+    for val in cfgs.values():
+        assert val.enabled is True
+
+    # Override one
+    storage._create_or_update_content_type_override("photo", False)
+    cfgs = storage.get_content_type_configs()
+    assert set(cfgs) == {"photo", "video"}
+    assert cfgs["photo"].enabled is False
+    assert cfgs["video"].enabled is True

@@ -36,8 +36,13 @@ class _SignalTypeCfg:
     enabled_ratio: float = 1.0
 
 
+@dataclass
+class _ContentTypeCfg:
+    enabled: bool = True
+
+
 # TODO - eventually to unified store
-class DBMStore(iface.ISignalTypeConfigStore):
+class DBMStore(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
     """
     Local machine storage based on python dbm library,
 
@@ -112,4 +117,29 @@ class DBMStore(iface.ISignalTypeConfigStore):
         with self._open(_DbType.SIGNAL_TYPE) as db:
             db[signal_type] = dataclass_json.dataclass_dumps(
                 _SignalTypeCfg(enabled_ratio=enabled_ratio)
+            ).encode()
+
+    def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
+        """Return all installed content types, merged with any stored overrides."""
+        with self._open(_DbType.CONTENT_TYPE) as db:
+            ret = {}
+            for name, ct in self.content_types.items():
+                raw_cfg = db.get(name)
+                cfg = _ContentTypeCfg()
+                if raw_cfg is not None:
+                    cfg = dataclass_json.dataclass_loads(
+                        raw_cfg.decode(), _ContentTypeCfg
+                    )
+                ret[name] = iface.ContentTypeConfig(
+                    content_type=ct,
+                    enabled=cfg.enabled,
+                )
+        return ret
+
+    def _create_or_update_content_type_override(
+        self, content_type: str, enabled: bool
+    ) -> None:
+        with self._open(_DbType.CONTENT_TYPE) as db:
+            db[content_type] = dataclass_json.dataclass_dumps(
+                _ContentTypeCfg(enabled=enabled)
             ).encode()
