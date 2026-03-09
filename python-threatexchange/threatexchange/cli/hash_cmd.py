@@ -52,7 +52,7 @@ class HashCommand(command_base.Command):
             s for s in settings.get_all_signal_types() if issubclass(s, FileHasher)
         ]
 
-        content_choices = sorted(settings.storage.get_content_type_configs().keys())
+        content_choices = sorted(settings.get_content_type_configs().keys())
         signal_choices = sorted(
             s.get_name() for s in signal_types if issubclass(s, FileHasher)
         )
@@ -61,7 +61,7 @@ class HashCommand(command_base.Command):
             "content_type",
             **common.argparse_choices_pre_type_kwargs(
                 choices=content_choices,
-                type=settings.storage.get_content_type,
+                type=settings.get_content_type,
             ),
             help="what kind of content to hash",
         )
