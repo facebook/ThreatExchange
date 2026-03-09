@@ -33,7 +33,6 @@ from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.storage import interfaces as iface
 from threatexchange.utils import dataclass_json
 
-
 CONFIG_FILENAME = "config.json"
 
 
@@ -312,4 +311,3 @@ class CLISettings(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
     ) -> t.List[collab_config.CollaborationConfigBase]:
         api_name = api.get_name()
         return [c for c in self.get_all_collabs() if c.api == api_name]
-
