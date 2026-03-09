@@ -99,8 +99,8 @@ class MatchCommand(command_base.Command):
         ap.add_argument(
             "content_type",
             **common.argparse_choices_pre_type_kwargs(
-                sorted(settings.new_iface.get_content_type_configs().keys()),
-                settings.new_iface.get_content_type,
+                sorted(settings.storage.get_content_type_configs().keys()),
+                settings.storage.get_content_type,
             ),
             help="what kind of content to match",
         )
