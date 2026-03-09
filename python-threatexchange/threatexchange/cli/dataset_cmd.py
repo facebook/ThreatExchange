@@ -87,8 +87,8 @@ class DatasetCommand(command_base.Command):
             nargs="+",
             default=[],
             type=common.argparse_choices_pre_type(
-                choices=sorted(settings.storage.get_content_type_configs().keys()),
-                type=settings.storage.get_content_type,
+                choices=sorted(settings.get_content_type_configs().keys()),
+                type=settings.get_content_type,
             ),
             metavar="CONTENT_TYPE",
             help="only use signals for these content types",

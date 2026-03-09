@@ -28,10 +28,11 @@ from threatexchange.content_type import content_base
 from threatexchange.exchanges import fetch_state
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.signal_type import signal_base
-from threatexchange.interface_validation import FunctionalityMapping, SignalTypeMapping
+from threatexchange.interface_validation import FunctionalityMapping
 from threatexchange.cli.cli_state import CliSimpleState, CliIndexStore
 from threatexchange.storage import interfaces as iface
 from threatexchange.utils import dataclass_json
+
 
 CONFIG_FILENAME = "config.json"
 
@@ -206,7 +207,7 @@ class _FetchStoreAccessor:
         return self.get_for_api(self._parent._mapping.exchange.api_by_name[collab.api])
 
 
-class CLISettings:
+class CLISettings(iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore):
     """
     A God object for all miscellanious persisted state to make the CLI work
     """
@@ -223,9 +224,35 @@ class CLISettings:
         self.index = CliIndexStore(cli_state.index_dir)
         self.fetched_state = _FetchStoreAccessor(self)
         self.apis = _SignalExchangeAccessor(self)
-        self.storage = CLICompatibilityStorage(
-            cli_state.index_dir, mapping.signal_and_content
-        )
+
+    def _create_or_update_signal_type_override(
+        self, signal_type: str, enabled_ratio: float
+    ) -> None:
+        raise NotImplementedError("Not yet supported")
+
+    def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
+        """Return all installed signal types."""
+        return {
+            name: iface.SignalTypeConfig(
+                enabled_ratio=1.0,
+                signal_type=st,
+            )
+            for name, st in self._mapping.signal_and_content.signal_type_by_name.items()
+        }
+
+    def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
+        """Return all installed content types."""
+        return {
+            name: iface.ContentTypeConfig(
+                enabled=True,
+                content_type=ct,
+            )
+            for name, ct in self._mapping.signal_and_content.content_by_name.items()
+        }
+
+    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
+        """Get a content type by name."""
+        return self._mapping.signal_and_content.content_by_name[name]
 
     def get_persistent_config(self) -> CLiConfig:
         if self._config is None:
@@ -286,72 +313,3 @@ class CLISettings:
         api_name = api.get_name()
         return [c for c in self.get_all_collabs() if c.api == api_name]
 
-
-# TODO - eventually to unified store
-class CLICompatibilityStorage(
-    iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore
-):
-    """
-    Translate the new-style interface to the previous version.
-
-    The goal is to eventually allow the CLI to use the storage interface
-    for the operations that make sense for it, to allow using the CLI to
-    test new storage interfaces.
-
-    How to make a little progress on the migration:
-      1. Implement a little more of the iface classes
-      2. Change the equivalent interface on the old storage from
-         method_name -> _method_name (new interface calls _method_name())
-      3. Fix all the errors that appear, by calling
-         old_iface.new_iface.new_method()
-      4. Move the body of the implementation into this class
-
-    How to make faster progress on the migration:
-      1. Refactor the base command to take the new iface instead of the old one
-      2. Use .old_iface() as needed
-
-    You may eventually run into something that doesn't translate at all, which
-    might require changing some of the underlying commands. Here are some
-    tricky ones to watch out for:
-      1. Some persistent data doesn't have an equivalent on the interface -
-         e.g. extensions. That's fine, those will always be CLI specific, and
-         the eventual model is probably one where the CLI config "contains" the
-         interface elements (allowing you to swap storage classes), rather than
-         being one.
-    """
-
-    def __init__(
-        self,
-        dir: pathlib.Path,
-        installed_signal_and_content_types: SignalTypeMapping,
-    ) -> None:
-        self._installed_signal_and_content_types = installed_signal_and_content_types
-
-    def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
-        """Return all installed signal types."""
-        return {
-            name: iface.SignalTypeConfig(
-                enabled_ratio=1.0,
-                signal_type=st,
-            )
-            for name, st in self._installed_signal_and_content_types.signal_type_by_name.items()
-        }
-
-    def _create_or_update_signal_type_override(
-        self, signal_type: str, enabled_ratio: float
-    ) -> None:
-        raise NotImplementedError("Not yet supported")
-
-    def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
-        """Return all installed content types."""
-        return {
-            name: iface.ContentTypeConfig(
-                enabled=True,  # CLI doesn't support disabling content types
-                content_type=ct,
-            )
-            for name, ct in self._installed_signal_and_content_types.content_by_name.items()
-        }
-
-    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
-        """Get a content type by name."""
-        return self._installed_signal_and_content_types.content_by_name[name]
