@@ -234,12 +234,6 @@ class CLISettings:
         self._state.update_persistent_config(config)
         self._config = config
 
-    def get_all_content_types(self) -> t.List[t.Type[content_base.ContentType]]:
-        return list(self._mapping.signal_and_content.content_by_name.values())
-
-    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
-        return self._mapping.signal_and_content.content_by_name[name]
-
     def get_all_signal_types(self) -> t.List[t.Type[signal_base.SignalType]]:
         return list(self._mapping.signal_and_content.signal_type_by_name.values())
 
@@ -292,7 +286,9 @@ class CLISettings:
 
 
 # TODO - eventually to unified store
-class CLICompatibilityStorage(iface.ISignalTypeConfigStore):
+class CLICompatibilityStorage(
+    iface.ISignalTypeConfigStore, iface.IContentTypeConfigStore
+):
     """
     Translate the new-style interface to the previous version.
 
@@ -340,3 +336,17 @@ class CLICompatibilityStorage(iface.ISignalTypeConfigStore):
         self, signal_type: str, enabled_ratio: float
     ) -> None:
         raise NotImplementedError("Not yet supported")
+
+    def get_content_type_configs(self) -> t.Mapping[str, iface.ContentTypeConfig]:
+        """Return all installed content types."""
+        return {
+            ct.get_name(): iface.ContentTypeConfig(
+                enabled=True,  # CLI doesn't support disabling content types
+                content_type=ct,
+            )
+            for ct in self.old_iface._mapping.signal_and_content.content_by_name.values()
+        }
+
+    def get_content_type(self, name: str) -> t.Type[content_base.ContentType]:
+        """Get a content type by name."""
+        return self.old_iface._mapping.signal_and_content.content_by_name[name]

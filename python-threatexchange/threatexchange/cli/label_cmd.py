@@ -90,8 +90,8 @@ class LabelCommand(command_base.Command):
         ap.add_argument(
             "content_type",
             type=common.argparse_choices_pre_type(
-                [c.get_name() for c in settings.get_all_content_types()],
-                settings.get_content_type,
+                sorted(settings.new_iface.get_content_type_configs().keys()),
+                settings.new_iface.get_content_type,
             ),
             help="the type of what you are labeling",
         )
