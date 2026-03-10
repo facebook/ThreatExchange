@@ -1,5 +1,6 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.13-bullseye
 
+# Remove expired yarn apt source that breaks apt-get update
 RUN rm -f /etc/apt/sources.list.d/yarn.list \
   && apt-get update && export DEBIAN_FRONTEND=noninteractive \
   && apt-get -y install --no-install-recommends postgresql-client \
