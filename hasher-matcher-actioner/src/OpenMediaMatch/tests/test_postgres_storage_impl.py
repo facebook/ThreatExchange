@@ -413,3 +413,20 @@ def test_bank_content_note_max_length(storage: DefaultOMMStore) -> None:
     )
     content_configs = storage.bank_content_get([content_id])
     assert len(content_configs[0].note) == 255
+
+    # Test with 256 characters (should fail)
+    note_256 = "a" * 256
+    content_config_over = interface.BankContentConfig(
+        id=0,
+        disable_until_ts=interface.BankContentConfig.ENABLED,
+        collab_metadata={},
+        original_media_uri=None,
+        bank=bank_cfg,
+        note=note_256,
+    )
+    with pytest.raises(Exception):
+        storage.bank_add_content(
+            bank_cfg.name,
+            {VideoMD5Signal: f"{3:032x}"},
+            config=content_config_over,
+        )
