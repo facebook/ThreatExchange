@@ -412,6 +412,7 @@ def test_bank_content_note_max_length(storage: DefaultOMMStore) -> None:
         config=content_config,
     )
     content_configs = storage.bank_content_get([content_id])
+    assert content_configs[0].note is not None
     assert len(content_configs[0].note) == 255
 
     # Test with 256 characters (should fail)
