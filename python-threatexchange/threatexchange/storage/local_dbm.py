@@ -377,7 +377,7 @@ class DBMStore(
         self,
         collab: CollaborationConfigBase,
         old_checkpoint: t.Optional[FetchCheckpointBase],
-        dat: t.Dict[str, t.Any],
+        dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
     ) -> None:
         """Commit fetched data and update the checkpoint."""

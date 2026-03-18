@@ -52,8 +52,8 @@ def _make_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
     return local_dbm.DBMStore(
         pathlib.Path(tmpdir),
         exchange_types=[
-            StaticSampleSignalExchangeAPI,
-            FBThreatExchangeSignalExchangeAPI,
+            StaticSampleSignalExchangeAPI,  # type: ignore[list-item]
+            FBThreatExchangeSignalExchangeAPI,  # type: ignore[list-item]
         ],
     )
 
@@ -93,7 +93,7 @@ def test_exchange_api_config_update(tmpdir: pathlib.Path) -> None:
     store = _make_store(tmpdir)
 
     # StaticSampleSignalExchangeAPI doesn't support auth; update with no credentials
-    cfg = iface.SignalExchangeAPIConfig(api_cls=StaticSampleSignalExchangeAPI)
+    cfg = iface.SignalExchangeAPIConfig(api_cls=StaticSampleSignalExchangeAPI)  # type: ignore[arg-type]
     store.exchange_api_config_update(cfg)
 
     cfgs = store.exchange_apis_get_configs()
