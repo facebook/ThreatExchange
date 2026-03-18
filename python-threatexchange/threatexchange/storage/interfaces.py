@@ -350,7 +350,7 @@ class ISignalExchangeStore(metaclass=abc.ABCMeta):
         collab: CollaborationConfigBase,
         old_checkpoint: t.Optional[FetchCheckpointBase],
         # The merged data from sequential fetches of the API
-        dat: t.Dict[str, t.Any],
+        dat: t.Dict[t.Any, t.Any],
         # The last checkpoint received by the API
         checkpoint: FetchCheckpointBase,
     ) -> None:
