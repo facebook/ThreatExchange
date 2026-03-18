@@ -24,8 +24,6 @@ from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres import database
 from sqlalchemy.sql import text
 
-TEST_IMAGE_DIR = Path(__file__).parent.parent.parent.parent / "test_data"
-
 # Populated at session start by the image_server fixture
 IMAGE_URL_TO_PDQ: dict[str, str] = {}
 
@@ -39,16 +37,18 @@ def image_server() -> t.Iterator[str]:
     """
     tmpdir = Path(tempfile.mkdtemp())
     try:
-        # image1: the provided test image
-        shutil.copy(TEST_IMAGE_DIR / "square-128x128.jpg", tmpdir / "image1.jpg")
-        # image2: a distinct synthetic checkerboard image with a different PDQ hash
-        img2 = Image.new("RGB", (128, 128))
-        pixels = img2.load()
-        assert pixels is not None
-        for x in range(128):
-            for y in range(128):
-                pixels[x, y] = (255, 255, 255) if (x // 16 + y // 16) % 2 else (0, 0, 0)
-        img2.save(tmpdir / "image2.jpg", format="JPEG")
+        def make_checkerboard(cell: int) -> Image.Image:
+            img = Image.new("RGB", (128, 128))
+            pixels = img.load()
+            assert pixels is not None
+            for x in range(128):
+                for y in range(128):
+                    pixels[x, y] = (255, 255, 255) if (x // cell + y // cell) % 2 else (0, 0, 0)
+            return img
+
+        # Two checkerboards with different cell sizes → different PDQ hashes
+        make_checkerboard(cell=8).save(tmpdir / "image1.jpg", format="JPEG")
+        make_checkerboard(cell=16).save(tmpdir / "image2.jpg", format="JPEG")
 
         handler = functools.partial(
             http.server.SimpleHTTPRequestHandler, directory=str(tmpdir)
