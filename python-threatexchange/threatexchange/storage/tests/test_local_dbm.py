@@ -6,6 +6,10 @@ import pytest
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.exchanges.fetch_state import NoCheckpointing
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.exchanges.impl.fb_threatexchange_api import (
+    FBThreatExchangeCollabConfig,
+    FBThreatExchangeSignalExchangeAPI,
+)
 from threatexchange.storage import interfaces as iface
 from threatexchange.storage import local_dbm
 
@@ -45,7 +49,10 @@ def test_content_type(tmpdir: pathlib.Path):
 
 
 def _make_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
-    return local_dbm.DBMStore(pathlib.Path(tmpdir))
+    return local_dbm.DBMStore(
+        pathlib.Path(tmpdir),
+        exchange_types=[StaticSampleSignalExchangeAPI, FBThreatExchangeSignalExchangeAPI],
+    )
 
 
 def _make_collab(name: str = "test_collab") -> CollaborationConfigBase:
@@ -54,15 +61,29 @@ def _make_collab(name: str = "test_collab") -> CollaborationConfigBase:
     )
 
 
+def _make_tx_collab(
+    name: str = "tx_collab", privacy_group: int = 12345, enabled: bool = True
+) -> FBThreatExchangeCollabConfig:
+    return FBThreatExchangeCollabConfig(
+        name=name, enabled=enabled, privacy_group=privacy_group
+    )
+
+
 def test_exchange_apis_get_configs(tmpdir: pathlib.Path) -> None:
     store = _make_store(tmpdir)
 
     cfgs = store.exchange_apis_get_configs()
-    assert set(cfgs) == {"sample"}
-    cfg = cfgs["sample"]
-    assert cfg.api_cls is StaticSampleSignalExchangeAPI
-    assert cfg.credentials is None
-    assert cfg.supports_auth is False
+    assert set(cfgs) == {"sample", FBThreatExchangeSignalExchangeAPI.get_name()}
+
+    sample_cfg = cfgs["sample"]
+    assert sample_cfg.api_cls is StaticSampleSignalExchangeAPI
+    assert sample_cfg.credentials is None
+    assert sample_cfg.supports_auth is False
+
+    tx_cfg = cfgs[FBThreatExchangeSignalExchangeAPI.get_name()]
+    assert tx_cfg.api_cls is FBThreatExchangeSignalExchangeAPI
+    assert tx_cfg.credentials is None
+    assert tx_cfg.supports_auth is True
 
 
 def test_exchange_api_config_update(tmpdir: pathlib.Path) -> None:
@@ -114,6 +135,36 @@ def test_exchange_crud(tmpdir: pathlib.Path) -> None:
     store.exchange_delete("test_collab")
 
 
+def test_exchange_crud_tx_collab(tmpdir: pathlib.Path) -> None:
+    """Test CRUD using FBThreatExchangeCollabConfig, which has a custom privacy_group field."""
+    store = _make_store(tmpdir)
+
+    # Create with initial privacy group
+    collab = _make_tx_collab(privacy_group=11111)
+    store.exchange_update(collab, create=True)
+
+    collabs = store.exchanges_get()
+    assert set(collabs) == {"tx_collab"}
+    stored = collabs["tx_collab"]
+    assert isinstance(stored, FBThreatExchangeCollabConfig)
+    assert stored.privacy_group == 11111
+    assert stored.enabled is True
+
+    # Update: change both privacy_group and enabled
+    updated = _make_tx_collab(privacy_group=99999, enabled=False)
+    store.exchange_update(updated)
+
+    collabs = store.exchanges_get()
+    stored = collabs["tx_collab"]
+    assert isinstance(stored, FBThreatExchangeCollabConfig)
+    assert stored.privacy_group == 99999
+    assert stored.enabled is False
+
+    # Delete
+    store.exchange_delete("tx_collab")
+    assert store.exchanges_get() == {}
+
+
 def test_exchange_fetch_lifecycle(tmpdir: pathlib.Path) -> None:
     store = _make_store(tmpdir)
     collab = _make_collab()
@@ -157,11 +208,13 @@ def test_exchange_commit_and_checkpoint(tmpdir: pathlib.Path) -> None:
     # No checkpoint before any fetch
     assert store.exchange_get_fetch_checkpoint("test_collab") is None
 
+    from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
+
     checkpoint = NoCheckpointing()
     dat: dict = {
         ("pdq", "abc123"): None,  # will be ignored (None = delete, but nothing to delete)
-        ("pdq", "def456"): object(),  # non-None value → stored as marker
-        ("video_md5", "hash789"): object(),
+        ("pdq", "def456"): FetchedSignalMetadata(),
+        ("video_md5", "hash789"): FetchedSignalMetadata(),
     }
 
     store.exchange_commit_fetch(collab, None, dat, checkpoint)
@@ -191,7 +244,38 @@ def test_exchange_get_client(tmpdir: pathlib.Path) -> None:
     assert isinstance(client, StaticSampleSignalExchangeAPI)
 
 
-def test_exchange_get_data_not_implemented(tmpdir: pathlib.Path) -> None:
+def test_exchange_get_data(tmpdir: pathlib.Path) -> None:
+    """exchange_get_data returns the stored FetchedSignalMetadata for a key."""
+    from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
+
     store = _make_store(tmpdir)
-    with pytest.raises(NotImplementedError):
-        store.exchange_get_data("test_collab", ("pdq", "abc"))
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+
+    # Spoof fetch data using StaticSampleSignalExchangeAPI's record type
+    dat: dict = {
+        ("pdq", "abc123"): FetchedSignalMetadata(),
+        ("pdq", "def456"): FetchedSignalMetadata(),
+        ("video_md5", "hash789"): FetchedSignalMetadata(),
+    }
+    store.exchange_commit_fetch(collab, None, dat, NoCheckpointing())
+
+    # Retrieve each stored record
+    result = store.exchange_get_data("test_collab", ("pdq", "abc123"))
+    assert isinstance(result, FetchedSignalMetadata)
+
+    result2 = store.exchange_get_data("test_collab", ("video_md5", "hash789"))
+    assert isinstance(result2, FetchedSignalMetadata)
+
+    # Missing key raises KeyError
+    with pytest.raises(KeyError):
+        store.exchange_get_data("test_collab", ("pdq", "not_stored"))
+
+    # Missing collab raises KeyError
+    with pytest.raises(KeyError):
+        store.exchange_get_data("no_such_collab", ("pdq", "abc123"))
+
+    # After deletion, data is gone
+    store.exchange_delete("test_collab")
+    with pytest.raises(KeyError):
+        store.exchange_get_data("test_collab", ("pdq", "abc123"))

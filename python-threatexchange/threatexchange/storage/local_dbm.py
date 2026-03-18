@@ -142,6 +142,12 @@ class DBMStore(
             file = file / sub_db
         return dbm.open(str(file), "c")
 
+    def _open_collab_data(self, collab_name: str):
+        """Open a per-collab exchange data db in its own subfolder."""
+        d = self._folder / str(_DbType.EXCHANGE_DATA)
+        d.mkdir(exist_ok=True)
+        return dbm.open(str(d / collab_name), "c")
+
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
         """Return all installed signal types."""
         with self._open(_DbType.SIGNAL_TYPE) as db:
@@ -252,10 +258,8 @@ class DBMStore(
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             if name in db:
                 del db[name]
-        prefix = f"{name}\x00".encode()
-        with self._open(_DbType.EXCHANGE_DATA) as db:
-            keys_to_delete = [k for k in db.keys() if k.startswith(prefix)]
-            for k in keys_to_delete:
+        with self._open_collab_data(name) as db:
+            for k in list(db.keys()):
                 del db[k]
 
     def exchanges_get(self) -> t.Mapping[str, CollaborationConfigBase]:
@@ -285,9 +289,8 @@ class DBMStore(
                 status = _ExchangeStatus()
             else:
                 status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
-        prefix = f"{name}\x00".encode()
-        with self._open(_DbType.EXCHANGE_DATA) as db:
-            fetched_items = sum(1 for k in db.keys() if k.startswith(prefix))
+        with self._open_collab_data(name) as db:
+            fetched_items = len(db)
         return iface.FetchStatus(
             checkpoint_ts=status.checkpoint_ts,
             running_fetch_start_ts=status.running_fetch_start_ts,
@@ -370,15 +373,14 @@ class DBMStore(
         checkpoint: FetchCheckpointBase,
     ) -> None:
         """Commit fetched data and update the checkpoint."""
-        prefix = f"{collab.name}\x00"
-        with self._open(_DbType.EXCHANGE_DATA) as db:
+        with self._open_collab_data(collab.name) as db:
             for key, val in dat.items():
-                db_key = (prefix + _key_str(key)).encode()
+                db_key = _key_str(key).encode()
                 if val is None:
                     if db_key in db:
                         del db[db_key]
                 else:
-                    db[db_key] = b"1"
+                    db[db_key] = dataclass_json.dataclass_dumps(val).encode()
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             raw = db.get(collab.name)
             status = (
@@ -396,7 +398,20 @@ class DBMStore(
         collab_name: str,
         key: TUpdateRecordKey,
     ) -> iface.FetchedSignalMetadata:
-        """Not supported — DBMStore does not store per-record metadata."""
-        raise NotImplementedError(
-            "DBMStore does not support per-record metadata lookup via exchange_get_data"
-        )
+        """Return the stored metadata for a fetched record."""
+        with self._open(_DbType.EXCHANGES) as db:
+            raw_collab = db.get(collab_name)
+            if raw_collab is None:
+                raise KeyError(f"No such collaboration: {collab_name!r}")
+            collab_data = dataclass_json.dataclass_loads(
+                raw_collab.decode(), _ExchangeCollab
+            )
+        api_cls = self.exchange_types.get(collab_data.api)
+        if api_cls is None:
+            raise KeyError(f"Unknown exchange API: {collab_data.api!r}")
+        record_cls = api_cls.get_record_cls()
+        with self._open_collab_data(collab_name) as db:
+            raw = db.get(_key_str(key).encode())
+            if raw is None:
+                raise KeyError(f"No data for key {key!r} in collaboration {collab_name!r}")
+            return dataclass_json.dataclass_loads(raw.decode(), record_cls)
