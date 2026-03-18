@@ -110,9 +110,9 @@ def _key_str(key: t.Any) -> str:
 _NEXT_ID_KEY = b"__next_id__"
 
 
-def _content_key(content_id: int) -> bytes:
+def _content_key(content_id: int) -> str:
     """Key for a bank content record in the per-bank DBM."""
-    return str(content_id).encode()
+    return str(content_id)
 
 
 # TODO - eventually to unified store

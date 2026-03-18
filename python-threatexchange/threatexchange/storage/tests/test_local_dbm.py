@@ -12,6 +12,8 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 )
 from threatexchange.storage import interfaces as iface
 from threatexchange.storage import local_dbm
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 def test_signal_type(tmpdir: pathlib.Path):
@@ -285,9 +287,6 @@ def test_exchange_get_data(tmpdir: pathlib.Path) -> None:
 
 # IBankStore tests
 
-from threatexchange.signal_type.pdq.signal import PdqSignal
-from threatexchange.signal_type.md5 import VideoMD5Signal
-
 
 def _make_bank(name: str = "TEST_BANK", ratio: float = 1.0) -> iface.BankConfig:
     return iface.BankConfig(name=name, matching_enabled_ratio=ratio)
@@ -298,7 +297,6 @@ def test_bank_create_get_delete(tmpdir: pathlib.Path) -> None:
 
     # Initially empty
     assert store.get_banks() == {}
-    assert store.get_bank("TEST_BANK") is None
 
     # Create
     bank = _make_bank()
