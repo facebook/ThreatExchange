@@ -264,9 +264,11 @@ class DBMStore(
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             if name in db:
                 del db[name]
-        with self._open_collab_data(name) as db:
-            for k in list(db.keys()):
-                del db[k]
+        # Delete the per-collab data db file(s). Different dbm backends create
+        # files with different extensions, so try all known suffixes.
+        base = self._folder / str(_DbType.EXCHANGE_DATA) / name
+        for ext in ("", ".db", ".dir", ".dat", ".bak"):
+            base.with_name(base.name + ext).unlink(missing_ok=True)
 
     def exchanges_get(self) -> t.Mapping[str, CollaborationConfigBase]:
         """Get all collaboration configs."""
