@@ -20,7 +20,7 @@ from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchan
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.pdq.pdq_index2 import PDQIndex2
 
-from OpenMediaMatch.tests.utils import app, client, create_bank
+from OpenMediaMatch.tests.utils import app, client, create_bank, image_server
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import matching
@@ -81,7 +81,7 @@ def test_openapi_documentation_available(client: FlaskClient):
     assert payload.get("info", {}).get("title") == "Open Media Match API"
 
 
-def test_lookup_success(app: Flask, client: FlaskClient):
+def test_lookup_success(app: Flask, client: FlaskClient, image_server: str):
     storage = get_storage()
     # ensure index is empty to start with
     assert storage.get_signal_type_index(PdqSignal) is None
@@ -90,7 +90,7 @@ def test_lookup_success(app: Flask, client: FlaskClient):
     build_all_indices(storage, storage, storage)
 
     # test GET
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     get_resp = client.get(f"/m/lookup?url={image_url}")
     assert get_resp.status_code == 200
 
@@ -108,12 +108,12 @@ def test_lookup_success(app: Flask, client: FlaskClient):
         assert resp.status_code == 200
 
 
-def test_lookup_without_role(app: Flask, client: FlaskClient):
+def test_lookup_without_role(app: Flask, client: FlaskClient, image_server: str):
     # role resets to True in the next test
     client.application.config["ROLE_HASHER"] = False
 
     # test GET
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     get_resp = client.get(f"/m/lookup?url={image_url}")
     assert get_resp.status_code == 403
 
