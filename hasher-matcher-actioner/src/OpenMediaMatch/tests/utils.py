@@ -37,13 +37,16 @@ def image_server() -> t.Iterator[str]:
     """
     tmpdir = Path(tempfile.mkdtemp())
     try:
+
         def make_checkerboard(cell: int) -> Image.Image:
             img = Image.new("RGB", (128, 128))
             pixels = img.load()
             assert pixels is not None
             for x in range(128):
                 for y in range(128):
-                    pixels[x, y] = (255, 255, 255) if (x // cell + y // cell) % 2 else (0, 0, 0)
+                    pixels[x, y] = (
+                        (255, 255, 255) if (x // cell + y // cell) % 2 else (0, 0, 0)
+                    )
             return img
 
         # Two checkerboards with different cell sizes → different PDQ hashes
