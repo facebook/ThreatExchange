@@ -355,6 +355,16 @@ def _perform_lookup_with_details(
         )
     )
 
+    content_ids = [m["content_id"] for m in all_matches]
+    if content_ids:
+        storage = get_storage()
+        configs = storage.bank_content_get(content_ids)
+        config_by_id = {c.id: c for c in configs}
+        for entry in all_matches:
+            cfg = config_by_id.get(entry["content_id"])
+            if cfg and cfg.user_metadata:
+                entry["metadata"] = cfg.user_metadata
+
     return {"hashes": signals, "banks": sorted(bank_names), "matches": all_matches}
 
 

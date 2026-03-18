@@ -74,8 +74,101 @@ class BankManager {
       });
     }
 
+    // Metadata checkbox toggle and add/remove row
+    this.setupMetadataUI(bankTitle);
+
     // Setup modal event listeners
     this.setupModalEventListeners(bankTitle, addResultDiv, removeResultDiv);
+  }
+
+  setupMetadataUI(bankTitle) {
+    const fileCheckbox = document.getElementById(`add_metadata_file_${bankTitle}`);
+    const urlCheckbox = document.getElementById(`add_metadata_url_${bankTitle}`);
+    const fileFields = document.querySelector(`.metadata-fields-file-${bankTitle}`);
+    const urlFields = document.querySelector(`.metadata-fields-url-${bankTitle}`);
+
+    if (fileCheckbox && fileFields) {
+      fileCheckbox.addEventListener("change", () => {
+        fileFields.style.display = fileCheckbox.checked ? "block" : "none";
+      });
+    }
+    if (urlCheckbox && urlFields) {
+      urlCheckbox.addEventListener("change", () => {
+        urlFields.style.display = urlCheckbox.checked ? "block" : "none";
+      });
+    }
+
+    // Add row buttons (delegate from document so dynamically added rows work)
+    document.querySelectorAll(`.metadata-kv-add[data-bank-title="${bankTitle}"]`).forEach(btn => {
+      btn.addEventListener("click", () => {
+        const container = btn.previousElementSibling;
+        if (!container || !container.classList.contains("metadata-kv-container")) return;
+        const firstRow = container.querySelector(".metadata-kv-row");
+        if (!firstRow) return;
+        const newRow = firstRow.cloneNode(true);
+        newRow.querySelectorAll("input").forEach(i => i.value = "");
+        container.appendChild(newRow);
+      });
+    });
+
+    document.querySelectorAll(`#metadata-section-file-${bankTitle}, #metadata-section-url-${bankTitle}`).forEach(section => {
+      section.addEventListener("click", (e) => {
+        if (e.target.closest(".metadata-kv-remove")) {
+          const row = e.target.closest(".metadata-kv-row");
+          const container = row?.parentElement;
+          if (container && container.querySelectorAll(".metadata-kv-row").length > 1) {
+            row.remove();
+          }
+        }
+      });
+    });
+  }
+
+  resetMetadata(bankTitle, tab) {
+    const checkbox = document.getElementById(`add_metadata_${tab}_${bankTitle}`);
+    if (checkbox) checkbox.checked = false;
+
+    const fields = document.querySelector(`.metadata-fields-${tab}-${bankTitle}`);
+    if (fields) {
+      fields.style.display = "none";
+      fields.querySelectorAll(".metadata-content-id, .metadata-content-uri").forEach(
+        input => input.value = ""
+      );
+      const container = fields.querySelector(".metadata-kv-container");
+      if (container) {
+        const rows = container.querySelectorAll(".metadata-kv-row");
+        rows.forEach((row, i) => {
+          if (i === 0) {
+            row.querySelectorAll("input").forEach(input => input.value = "");
+          } else {
+            row.remove();
+          }
+        });
+      }
+    }
+  }
+
+  getMetadataFromForm(bankTitle, tab) {
+    const checkbox = document.getElementById(`add_metadata_${tab}_${bankTitle}`);
+    if (!checkbox || !checkbox.checked) return null;
+
+    const section = document.getElementById(`metadata-section-${tab}-${bankTitle}`);
+    if (!section) return null;
+
+    const contentId = section.querySelector(".metadata-content-id")?.value?.trim();
+    const contentUri = section.querySelector(".metadata-content-uri")?.value?.trim();
+    const json = {};
+    section.querySelectorAll(".metadata-kv-row").forEach(row => {
+      const key = row.querySelector(".metadata-key")?.value?.trim();
+      if (key) json[key] = row.querySelector(".metadata-value")?.value?.trim() ?? "";
+    });
+
+    const metadata = {};
+    if (contentId) metadata.content_id = contentId;
+    if (contentUri) metadata.content_uri = contentUri;
+    if (Object.keys(json).length) metadata.json = json;
+    if (Object.keys(metadata).length === 0) return null;
+    return metadata;
   }
 
   setupModalEventListeners(bankTitle, addResultDiv, removeResultDiv) {
@@ -116,14 +209,16 @@ class BankManager {
   async handleAddContentByFile(form, resultDiv) {
     try {
       const formData = new FormData(form);
-
-      // Get the content type and file from the form
       const contentType = formData.get('content_type');
       const file = formData.get('file');
 
-      // Create new FormData with the correct structure
       const correctedFormData = new FormData();
       correctedFormData.append(contentType, file);
+
+      const metadata = this.getMetadataFromForm(form.dataset.bankName, "file");
+      if (metadata) {
+        correctedFormData.append("metadata", JSON.stringify(metadata));
+      }
 
       const response = await fetch(`/c/bank/${form.dataset.bankName}/content`, {
         method: 'POST',
@@ -136,6 +231,8 @@ class BankManager {
 
       const data = await response.json();
       this.renderAddResult(data, resultDiv);
+      form.reset();
+      this.resetMetadata(form.dataset.bankName, "file");
     } catch (error) {
       this.renderError(`Error adding content by file: ${error.message}`, resultDiv);
     }
@@ -147,9 +244,14 @@ class BankManager {
       const url = formData.get('url');
       const contentType = formData.get('content_type');
 
-      const response = await fetch(`/c/bank/${bankTitle}/content?url=${encodeURIComponent(url)}&content_type=${contentType}`, {
-        method: 'POST'
-      });
+      const metadata = this.getMetadataFromForm(bankTitle, "url");
+      const opts = {
+        method: 'POST',
+        headers: metadata ? { 'Content-Type': 'application/json' } : {},
+        body: metadata ? JSON.stringify({ metadata }) : undefined
+      };
+      const query = `url=${encodeURIComponent(url)}&content_type=${encodeURIComponent(contentType)}`;
+      const response = await fetch(`/c/bank/${bankTitle}/content?${query}`, opts);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -157,6 +259,8 @@ class BankManager {
 
       const data = await response.json();
       this.renderAddResult(data, resultDiv);
+      form.reset();
+      this.resetMetadata(bankTitle, "url");
     } catch (error) {
       this.renderError(`Error adding content by URL: ${error.message}`, resultDiv);
     }

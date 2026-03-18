@@ -59,6 +59,31 @@
                                     <input id="bank-add-file-input-{{ bank_title }}" class="form-control" type="file" name="file" required>
                                 </div>
                             </div>
+                            <div class="mt-3" id="metadata-section-file-{{ bank_title }}">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="add_metadata_file_{{ bank_title }}" autocomplete="off">
+                                    <label class="form-check-label" for="add_metadata_file_{{ bank_title }}">Add metadata</label>
+                                </div>
+                                <div class="metadata-fields-file-{{ bank_title }} mt-2 ms-3 border-start border-2 border-secondary ps-2" style="display: none;">
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Content ID (optional)</label>
+                                        <input type="text" class="form-control form-control-sm metadata-content-id" placeholder="e.g. ext-123" data-metadata-tab="file">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Content URI (optional)</label>
+                                        <input type="url" class="form-control form-control-sm metadata-content-uri" placeholder="https://..." data-metadata-tab="file">
+                                    </div>
+                                    <label class="form-label small mb-1">Key-value pairs</label>
+                                    <div class="metadata-kv-container" data-metadata-tab="file">
+                                        <div class="metadata-kv-row input-group input-group-sm mb-1">
+                                            <input type="text" class="form-control metadata-key" placeholder="Key" data-metadata-tab="file">
+                                            <input type="text" class="form-control metadata-value" placeholder="Value" data-metadata-tab="file">
+                                            <button type="button" class="btn btn-outline-danger metadata-kv-remove" aria-label="Remove row" data-metadata-tab="file"><i class="bi bi-x-lg"></i></button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm mt-1 metadata-kv-add" data-bank-title="{{ bank_title }}" data-metadata-tab="file">Add row</button>
+                                </div>
+                            </div>
                             <div class="mt-3">
                                 <button type="submit" class="btn btn-success">
                                     <i class="bi bi-plus-circle me-2"></i>Add Content
@@ -85,6 +110,31 @@
                                 <div class="col">
                                     <label class="form-label">URL</label>
                                     <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required>
+                                </div>
+                            </div>
+                            <div class="mt-3" id="metadata-section-url-{{ bank_title }}">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="add_metadata_url_{{ bank_title }}" autocomplete="off">
+                                    <label class="form-check-label" for="add_metadata_url_{{ bank_title }}">Add metadata</label>
+                                </div>
+                                <div class="metadata-fields-url-{{ bank_title }} mt-2 ms-3 border-start border-2 border-secondary ps-2" style="display: none;">
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Content ID (optional)</label>
+                                        <input type="text" class="form-control form-control-sm metadata-content-id" placeholder="e.g. ext-123" data-metadata-tab="url">
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label small mb-0">Content URI (optional)</label>
+                                        <input type="url" class="form-control form-control-sm metadata-content-uri" placeholder="https://..." data-metadata-tab="url">
+                                    </div>
+                                    <label class="form-label small mb-1">Key-value pairs</label>
+                                    <div class="metadata-kv-container" data-metadata-tab="url">
+                                        <div class="metadata-kv-row input-group input-group-sm mb-1">
+                                            <input type="text" class="form-control metadata-key" placeholder="Key" data-metadata-tab="url">
+                                            <input type="text" class="form-control metadata-value" placeholder="Value" data-metadata-tab="url">
+                                            <button type="button" class="btn btn-outline-danger metadata-kv-remove" aria-label="Remove row" data-metadata-tab="url"><i class="bi bi-x-lg"></i></button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm mt-1 metadata-kv-add" data-bank-title="{{ bank_title }}" data-metadata-tab="url">Add row</button>
                                 </div>
                             </div>
                             <div class="mt-3">

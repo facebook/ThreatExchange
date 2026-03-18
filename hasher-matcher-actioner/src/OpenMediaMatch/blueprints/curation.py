@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import dataclasses
+import json
+import logging
 import re
 import time
 import typing as t
@@ -169,26 +171,28 @@ def bank_delete(path: BankPathParams):
 
 
 def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
-    if not request.is_json:
-        print("Not json")
+    """Read metadata from JSON body or from form field 'metadata' (multipart uploads)."""
+    metadata_raw: t.Any = None
+    if request.is_json and isinstance(request.json, dict):
+        metadata_raw = request.json.get("metadata")
+    elif request.form and "metadata" in request.form:
+        try:
+            metadata_raw = json.loads(request.form["metadata"])
+        except (ValueError, TypeError):
+            abort(400, "metadata form field must be valid JSON")
+
+    if metadata_raw is None:
         return None
-    j = request.json
-    print("json: %s" % j)
-    if not isinstance(j, dict):
-        print("Not dict")
-        return None
-    metadata = j.get("metadata")
-    if metadata is None:
-        print("Not meta")
-        return None
-    # Validate
-    if not isinstance(metadata, dict):
+    if not isinstance(metadata_raw, dict):
         abort(400, "metadata should be a json object")
 
+    metadata_raw.pop("collab", None)
+
     try:
-        return BankedContentMetadata(**metadata)
+        return BankedContentMetadata(**metadata_raw)
     except ValidationError as e:
         abort(400, f"Invalid metadata: {str(e)}")
+    return None  # unreachable; satisfies type checker
 
 
 @bp.get(
@@ -206,14 +210,12 @@ def bank_get_content(path: BankContentPathParams):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
     include_signals = request.args.get("include_signals", "false").lower() == "true"
+    include_metadata = request.args.get("include_metadata", "true").lower() == "true"
     content = storage.bank_content_get([content_id])
     if not content:
         abort(404, f"content '{content_id}' not found")
     content_config = content[0]
 
-    collab_metadata = {
-        key: list(values) for key, values in content_config.collab_metadata.items()
-    }
     bank_schema = BankConfig(
         name=content_config.bank.name,
         matching_enabled_ratio=content_config.bank.matching_enabled_ratio,
@@ -224,18 +226,39 @@ def bank_get_content(path: BankContentPathParams):
         if content_id in signals:
             signals_payload = dict(signals[content_id])
 
+    collab_metadata: t.Optional[dict[str, list[str]]] = {
+        key: list(values) for key, values in content_config.collab_metadata.items()
+    } or None
+
+    metadata_payload: t.Optional[BankedContentMetadata] = None
+    if include_metadata:
+        has_user_meta = bool(content_config.user_metadata)
+        if has_user_meta or collab_metadata:
+            try:
+                user_kwargs = dict(content_config.user_metadata or {})
+                user_kwargs.pop("collab", None)
+                metadata_payload = BankedContentMetadata(
+                    collab=collab_metadata, **user_kwargs
+                )
+            except (ValidationError, TypeError):
+                logging.warning(
+                    "Failed to deserialize metadata for content %d", content_id
+                )
+
     response = BankContentResponse(
         id=content_config.id,
         disable_until_ts=content_config.disable_until_ts,
-        collab_metadata=collab_metadata,
         original_media_uri=content_config.original_media_uri,
         bank=bank_schema,
         signals=signals_payload,
+        metadata=metadata_payload,
     )
 
-    content_response = response.model_dump()
+    content_response = response.model_dump(by_alias=True)
     if signals_payload is None:
         content_response.pop("signals", None)
+    if metadata_payload is None:
+        content_response.pop("metadata", None)
 
     return jsonify(content_response)
 
@@ -327,12 +350,19 @@ def _bank_add_signals(
         except Exception as e:
             abort(400, f"Invalid {name} signal: {str(e)}")
 
+    user_metadata: t.Optional[dict[str, t.Any]] = None
+    if metadata is not None:
+        user_metadata = metadata.model_dump(by_alias=True, exclude_none=True)
+        if not user_metadata:
+            user_metadata = None
+
     content_config = iface.BankContentConfig(
         id=0,
         disable_until_ts=iface.BankContentConfig.ENABLED,
         collab_metadata={},
         original_media_uri=None,
         bank=bank,
+        user_metadata=user_metadata,
     )
 
     content_id = storage.bank_add_content(bank.name, signals, content_config)

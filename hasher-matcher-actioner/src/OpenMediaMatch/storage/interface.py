@@ -326,6 +326,9 @@ class BankContentConfig:
     original_media_uri: t.Optional[str]
 
     bank: BankConfig
+    # User-supplied metadata from POST /bank/<name>/content (content_id, content_uri, json).
+    # Returned on GET when include_metadata is true.
+    user_metadata: t.Optional[t.Dict[str, t.Any]] = None
 
     @property
     def enabled(self) -> bool:

@@ -565,6 +565,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
         contents = (
             get_read_session()
             .query(database.BankContent)
+            .options(
+                joinedload(database.BankContent.imported_from).joinedload(
+                    database.ExchangeData.collab
+                )
+            )
             .filter(database.BankContent.id.in_(ids))
             .all()
         )
@@ -608,8 +613,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         bank = self._get_bank(bank_name, session=sesh)
         content = database.BankContent(bank=bank)
         if config is not None:
-            content.original_content_uri = config.original_media_uri
-            content.disable_until_ts = config.disable_until_ts
+            content.set_typed_config(config)
         sesh.add(content)
         for signal_type, value in signals.items():
             hash = database.ContentSignal(

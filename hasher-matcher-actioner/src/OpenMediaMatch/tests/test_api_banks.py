@@ -252,7 +252,6 @@ def test_banks_add_metadata(client: FlaskClient):
         post_request,
         json={"metadata": {"content_id": "1197433091", "json": {"asdf": {}}}},
     )
-
     assert post_response.status_code == 200, str(post_response.get_json())
 
 
@@ -323,3 +322,80 @@ def test_bank_get_content_with_signals(client: FlaskClient):
         assert isinstance(get_response.json["signals"], dict)
         # If signals exist, they should not be empty
         assert len(get_response.json["signals"]) > 0
+
+
+def test_bank_get_content_returns_stored_metadata(client: FlaskClient):
+    """GET /bank/<name>/content/<id> returns user-supplied metadata stored via POST."""
+    bank_name = "TEST_BANK_METADATA"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    metadata = {
+        "content_id": "ext-id-123",
+        "content_uri": "https://example.com/item/123",
+        "json": {"source": "test", "nested": {"key": "value"}},
+    }
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+        json={"metadata": metadata},
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    add_data = add_response.get_json()
+    assert add_data is not None
+    content_id = add_data["id"]
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    get_data = get_response.get_json()
+    assert get_data is not None
+    assert "metadata" in get_data
+    assert get_data["metadata"]["content_id"] == metadata["content_id"]
+    assert get_data["metadata"]["content_uri"] == metadata["content_uri"]
+    assert get_data["metadata"]["json"] == metadata["json"]
+
+
+def test_bank_get_content_include_metadata_false(client: FlaskClient):
+    """GET with include_metadata=false omits metadata from response."""
+    bank_name = "TEST_BANK_NO_METADATA"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+        json={
+            "metadata": {"content_id": "id1", "content_uri": "https://example.com/1"}
+        },
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    add_data = add_response.get_json()
+    assert add_data is not None
+    content_id = add_data["id"]
+
+    get_response = client.get(
+        f"/c/bank/{bank_name}/content/{content_id}?include_metadata=false"
+    )
+    assert get_response.status_code == 200, str(get_response.get_json())
+    get_data = get_response.get_json()
+    assert get_data is not None
+    assert "metadata" not in get_data
+
+
+def test_bank_get_content_without_metadata_omitted(client: FlaskClient):
+    """Add content without metadata; GET does not include metadata key."""
+    bank_name = "TEST_BANK_NO_META"
+    create_bank(client, bank_name)
+
+    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    add_data = add_response.get_json()
+    assert add_data is not None
+    content_id = add_data["id"]
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    get_data = get_response.get_json()
+    assert get_data is not None
+    assert "metadata" not in get_data
