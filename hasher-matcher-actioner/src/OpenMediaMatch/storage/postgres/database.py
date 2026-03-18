@@ -195,6 +195,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     disable_until_ts: Mapped[int] = mapped_column(default=BankContentConfig.ENABLED)
     original_content_uri: Mapped[t.Optional[str]]
+    note: Mapped[t.Optional[str]] = mapped_column(String(255), default=None)
 
     signals: Mapped[t.List["ContentSignal"]] = relationship(
         back_populates="content", cascade="all, delete"
@@ -202,6 +203,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
 
     def set_typed_config(self, cfg: BankContentConfig) -> t.Self:
         self.disable_until_ts = cfg.disable_until_ts
+        self.note = cfg.note
         return self
 
     def as_storage_iface_cls(self) -> BankContentConfig:
@@ -211,6 +213,7 @@ class BankContent(db.Model):  # type: ignore[name-defined]
             collab_metadata={},
             original_media_uri=None,
             bank=self.bank.as_storage_iface_cls(),
+            note=self.note,
         )
 
 
