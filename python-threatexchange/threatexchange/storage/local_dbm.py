@@ -63,7 +63,9 @@ class _ExchangeCollab:
 class _ExchangeStatus:
     """Per-collab fetch state: timestamps + JSON-serialized checkpoint."""
 
-    checkpoint_json: t.Optional[str] = None  # dataclass_dumps of FetchCheckpointBase subclass
+    checkpoint_json: t.Optional[str] = (
+        None  # dataclass_dumps of FetchCheckpointBase subclass
+    )
     checkpoint_ts: t.Optional[int] = None
     running_fetch_start_ts: t.Optional[int] = None
     last_fetch_complete_ts: t.Optional[int] = None
@@ -75,7 +77,9 @@ class _ExchangeStatus:
 class _ExchangeAPICredsCfg:
     """Stored API-level credentials: JSON-serialized CredentialHelper subclass."""
 
-    credentials_json: t.Optional[str] = None  # dataclass_dumps of CredentialHelper subclass
+    credentials_json: t.Optional[str] = (
+        None  # dataclass_dumps of CredentialHelper subclass
+    )
 
 
 def _key_str(key: t.Any) -> str:
@@ -200,7 +204,9 @@ class DBMStore(
 
     # ISignalExchangeStore
 
-    def exchange_apis_get_configs(self) -> t.Mapping[str, iface.SignalExchangeAPIConfig]:
+    def exchange_apis_get_configs(
+        self,
+    ) -> t.Mapping[str, iface.SignalExchangeAPIConfig]:
         """Returns the configuration for all installed exchange types."""
         ret = {}
         with self._open(_DbType.EXCHANGE_TYPE) as db:
@@ -413,5 +419,7 @@ class DBMStore(
         with self._open_collab_data(collab_name) as db:
             raw = db.get(_key_str(key).encode())
             if raw is None:
-                raise KeyError(f"No data for key {key!r} in collaboration {collab_name!r}")
+                raise KeyError(
+                    f"No data for key {key!r} in collaboration {collab_name!r}"
+                )
             return dataclass_json.dataclass_loads(raw.decode(), record_cls)

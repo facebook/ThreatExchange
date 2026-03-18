@@ -51,7 +51,10 @@ def test_content_type(tmpdir: pathlib.Path):
 def _make_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
     return local_dbm.DBMStore(
         pathlib.Path(tmpdir),
-        exchange_types=[StaticSampleSignalExchangeAPI, FBThreatExchangeSignalExchangeAPI],
+        exchange_types=[
+            StaticSampleSignalExchangeAPI,
+            FBThreatExchangeSignalExchangeAPI,
+        ],
     )
 
 
@@ -182,9 +185,7 @@ def test_exchange_fetch_lifecycle(tmpdir: pathlib.Path) -> None:
     assert status.fetch_in_progress is True
 
     # Complete fetch (success)
-    store.exchange_complete_fetch(
-        "test_collab", is_up_to_date=True, exception=False
-    )
+    store.exchange_complete_fetch("test_collab", is_up_to_date=True, exception=False)
     status = store.exchange_get_fetch_status("test_collab")
     assert status.fetch_in_progress is False
     assert status.last_fetch_complete_ts is not None
@@ -192,9 +193,7 @@ def test_exchange_fetch_lifecycle(tmpdir: pathlib.Path) -> None:
     assert status.up_to_date is True
 
     # Complete fetch (exception)
-    store.exchange_complete_fetch(
-        "test_collab", is_up_to_date=False, exception=True
-    )
+    store.exchange_complete_fetch("test_collab", is_up_to_date=False, exception=True)
     status = store.exchange_get_fetch_status("test_collab")
     assert status.last_fetch_succeeded is False
     assert status.up_to_date is False
@@ -212,7 +211,10 @@ def test_exchange_commit_and_checkpoint(tmpdir: pathlib.Path) -> None:
 
     checkpoint = NoCheckpointing()
     dat: dict = {
-        ("pdq", "abc123"): None,  # will be ignored (None = delete, but nothing to delete)
+        (
+            "pdq",
+            "abc123",
+        ): None,  # will be ignored (None = delete, but nothing to delete)
         ("pdq", "def456"): FetchedSignalMetadata(),
         ("video_md5", "hash789"): FetchedSignalMetadata(),
     }
