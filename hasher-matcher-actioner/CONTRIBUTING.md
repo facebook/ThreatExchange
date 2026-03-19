@@ -183,4 +183,13 @@ This will generate a migration file in `src/OpenMediaMatch/migrations/versions`,
 flask db upgrade
 ```
 
-Note that `flask` CLI commands need to be run from within the `src/OpenMediaMatch` folder.
+To create a new migration file, use the flask command from within the `src/OpenMediaMatch` folder:
+
+```bash
+cd src/OpenMediaMatch
+flask db revision -m "<migration_name_here>"
+```
+
+This will generate a file with a proper random revision ID in `migrations/versions/`. Do **not** hand-write revision IDs — always use this command to avoid collisions.
+
+All `flask` CLI commands (including `flask db upgrade`, `flask db heads`, `flask db history`) must be run from the `src/OpenMediaMatch` directory.
