@@ -29,7 +29,8 @@ class BankUpdateRequest(BaseModel):
 
 
 class BankedContentMetadata(BaseModel):
-    """Schema for banked content metadata.
+    """
+    Schema for banked content metadata.
 
     Combines user-supplied metadata (content_id, content_uri, json) with
     collaboration/exchange provenance data (collab).
