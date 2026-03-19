@@ -29,7 +29,12 @@ class BankUpdateRequest(BaseModel):
 
 
 class BankedContentMetadata(BaseModel):
-    """Schema for banked content metadata."""
+    """
+    Schema for banked content metadata.
+
+    Combines user-supplied metadata (content_id, content_uri, json) with
+    collaboration/exchange provenance data (collab).
+    """
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
@@ -40,6 +45,10 @@ class BankedContentMetadata(BaseModel):
         alias="json",
         serialization_alias="json",
         description="Additional JSON metadata",
+    )
+    collab: Optional[dict[str, list[str]]] = Field(
+        None,
+        description="Collaboration/exchange provenance: maps exchange name to fetch keys",
     )
 
 
@@ -57,12 +66,13 @@ class BankContentResponse(BaseModel):
 
     id: int = Field(..., description="Content ID")
     disable_until_ts: int = Field(..., description="Disable until timestamp")
-    collab_metadata: dict[str, list[str]] = Field(
-        ..., description="Collaboration metadata"
-    )
     original_media_uri: Optional[str] = Field(None, description="Original media URI")
     bank: BankConfig = Field(..., description="Bank configuration")
     signals: Optional[dict[str, str]] = Field(None, description="Signal hashes")
+    metadata: Optional[BankedContentMetadata] = Field(
+        None,
+        description="Content metadata including user-supplied data and collaboration provenance",
+    )
 
 
 class BankContentUpdateRequest(BaseModel):

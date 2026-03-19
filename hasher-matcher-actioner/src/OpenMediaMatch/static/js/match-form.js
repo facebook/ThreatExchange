@@ -177,31 +177,34 @@ class MatchForm {
     // Fetch bank data with enabled ratios
     const bankData = await this.fetchBankData(result.banks);
 
-    // Render detailed matches if available, otherwise fall back to simple bank list
     let matchesContent = '';
-    // Render detailed matches with content IDs and distances
-    const matchesList = result.matches.map(match => {
+    const matchesList = result.matches.map((match, idx) => {
       const bank = bankData[match.bank_name];
       const enabledRatio = bank ? (bank.matching_enabled_ratio * 100).toFixed(1) : 'Unknown';
       const badgeClass = bank && bank.matching_enabled_ratio < 1.0 ? 'bg-warning' : 'bg-success';
       const showBadge = bank && bank.matching_enabled_ratio < 1.0;
 
+      const metadataHtml = this.renderMatchMetadata(match.metadata, idx);
+
       return `
-          <li class="list-group-item d-flex justify-content-between align-items-start">
-            <div class="ms-2 me-auto">
-              <div class="fw-bold">${match.bank_name}</div>
-              <small class="text-muted">
-                Content ID: ${match.content_id} | Signal: ${match.signal_type}
-              </small>
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="ms-2 me-auto">
+                <div class="fw-bold">${match.bank_name}</div>
+                <small class="text-muted">
+                  Content ID: ${match.content_id} | Signal: ${match.signal_type}
+                </small>
+              </div>
+              <div class="d-flex flex-column align-items-end">
+                <span class="badge ${badgeClass} rounded-pill mb-1" title="${showBadge ? `This bank is only partially enabled, and may not count as matching in production based on coinflip. Enable the bank at 100% to ensure it matches consistently.` : ''}">
+                  ${enabledRatio}%
+                </span>
+                <span class="badge bg-info rounded-pill" title="Match distance (lower is better)">
+                  Distance: ${match.distance}
+                </span>
+              </div>
             </div>
-            <div class="d-flex flex-column align-items-end">
-              <span class="badge ${badgeClass} rounded-pill mb-1" title="${showBadge ? `This bank is only partially enabled, and may not count as matching in production based on coinflip. Enable the bank at 100% to ensure it matches consistently.` : ''}">
-                ${enabledRatio}%
-              </span>
-              <span class="badge bg-info rounded-pill" title="Match distance (lower is better)">
-                Distance: ${match.distance}
-              </span>
-            </div>
+            ${metadataHtml}
           </li>
         `;
     }).join('');
@@ -238,6 +241,47 @@ class MatchForm {
     `;
 
     matches.innerHTML = content;
+  }
+
+  renderMatchMetadata(metadata, idx) {
+    if (!metadata) return '';
+
+    const collapseId = `match-meta-${idx}`;
+    const items = [];
+
+    if (metadata.content_id) {
+      items.push(`<span class="me-3"><strong>ID:</strong> ${metadata.content_id}</span>`);
+    }
+    if (metadata.content_uri) {
+      const escaped = metadata.content_uri.replace(/"/g, '&quot;');
+      items.push(`<span class="me-3"><strong>URI:</strong> <a href="${escaped}" target="_blank" rel="noopener noreferrer">${metadata.content_uri}</a></span>`);
+    }
+
+    let jsonHtml = '';
+    if (metadata.json && Object.keys(metadata.json).length > 0) {
+      const rows = Object.entries(metadata.json).map(([k, v]) =>
+        `<tr><td class="fw-medium">${k}</td><td>${typeof v === 'object' ? JSON.stringify(v) : v}</td></tr>`
+      ).join('');
+      jsonHtml = `
+        <table class="table table-sm table-borderless mb-0 mt-1">
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    if (items.length === 0 && !jsonHtml) return '';
+
+    return `
+      <div class="mt-1 ms-2">
+        <a class="small text-decoration-none" data-bs-toggle="collapse" href="#${collapseId}" role="button" aria-expanded="false">
+          <i class="bi bi-info-circle me-1"></i>Metadata
+        </a>
+        <div class="collapse" id="${collapseId}">
+          <div class="mt-1 small text-muted">
+            ${items.length > 0 ? `<div>${items.join('')}</div>` : ''}
+            ${jsonHtml}
+          </div>
+        </div>
+      </div>`;
   }
 
   async fetchBankData(bankNames) {
