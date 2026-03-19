@@ -330,6 +330,8 @@ class BankContentConfig:
     # Returned on GET when include_metadata is true.
     user_metadata: t.Optional[t.Dict[str, t.Any]] = None
 
+    note: t.Optional[str] = None
+
     @property
     def enabled(self) -> bool:
         if self.disable_until_ts == 0:

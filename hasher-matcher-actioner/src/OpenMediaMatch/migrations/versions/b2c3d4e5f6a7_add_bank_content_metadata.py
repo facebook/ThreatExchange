@@ -1,7 +1,7 @@
 """Add bank_content_metadata column for user-supplied metadata (content_id, content_uri, json).
 
-Revision ID: a1b2c3d4e5f6
-Revises: 21cb8a3df884
+Revision ID: b2c3d4e5f6a7
+Revises: a1b2c3d4e5f6
 Create Date: 2025-03-12
 
 """
@@ -9,8 +9,8 @@ Create Date: 2025-03-12
 from alembic import op
 import sqlalchemy as sa
 
-revision = "a1b2c3d4e5f6"
-down_revision = "21cb8a3df884"
+revision = "b2c3d4e5f6a7"
+down_revision = "a1b2c3d4e5f6"
 branch_labels = None
 depends_on = None
 

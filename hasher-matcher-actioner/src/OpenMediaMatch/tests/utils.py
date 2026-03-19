@@ -1,13 +1,22 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import functools
+import http.server
 import os
-import pytest
+import shutil
+import tempfile
+import threading
 import typing as t
+from pathlib import Path
+
+import pytest
+from PIL import Image
 
 from flask import Flask
 from flask.testing import FlaskClient
 
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
+from threatexchange.signal_type.pdq.signal import PdqSignal
 
 from OpenMediaMatch.app import create_app
 from OpenMediaMatch.persistence import get_storage
@@ -15,10 +24,52 @@ from OpenMediaMatch.storage.postgres.flask_utils import reset_tables
 from OpenMediaMatch.storage.postgres import database
 from sqlalchemy.sql import text
 
-IMAGE_URL_TO_PDQ = {
-    "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22",
-    "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true": "e64cc9d91c623882f8d1f1d9a398e78c9f199b3bd83924f2b7e11e0bf861b064",
-}
+# Populated at session start by the image_server fixture
+IMAGE_URL_TO_PDQ: dict[str, str] = {}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def image_server() -> t.Iterator[str]:
+    """Start a local HTTP server serving test images, avoiding external HTTP calls.
+
+    Populates IMAGE_URL_TO_PDQ with computed PDQ hashes for each served image.
+    Yields the base URL (e.g. "http://127.0.0.1:PORT").
+    """
+    tmpdir = Path(tempfile.mkdtemp())
+    try:
+
+        def make_checkerboard(cell: int) -> Image.Image:
+            img = Image.new("RGB", (128, 128))
+            pixels = img.load()
+            assert pixels is not None
+            for x in range(128):
+                for y in range(128):
+                    pixels[x, y] = (
+                        (255, 255, 255) if (x // cell + y // cell) % 2 else (0, 0, 0)
+                    )
+            return img
+
+        # Two checkerboards with different cell sizes → different PDQ hashes
+        make_checkerboard(cell=8).save(tmpdir / "image1.jpg", format="JPEG")
+        make_checkerboard(cell=16).save(tmpdir / "image2.jpg", format="JPEG")
+
+        handler = functools.partial(
+            http.server.SimpleHTTPRequestHandler, directory=str(tmpdir)
+        )
+        server = http.server.HTTPServer(("127.0.0.1", 0), handler)
+        port = server.server_address[1]
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+
+        base_url = f"http://127.0.0.1:{port}"
+        for filename in ("image1.jpg", "image2.jpg"):
+            url = f"{base_url}/{filename}"
+            IMAGE_URL_TO_PDQ[url] = PdqSignal.hash_from_file(tmpdir / filename)
+
+        yield base_url
+    finally:
+        server.shutdown()
+        shutil.rmtree(tmpdir)
 
 
 @pytest.fixture()

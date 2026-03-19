@@ -12,6 +12,7 @@ from OpenMediaMatch.tests.utils import (
     client,
     create_bank,
     add_hash_to_bank,
+    image_server,
     IMAGE_URL_TO_PDQ,
 )
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
@@ -122,12 +123,12 @@ def test_banks_delete(client: FlaskClient):
     assert post_response.status_code == 200
 
 
-def test_bank_get_content(client: FlaskClient):
+def test_bank_get_content(client: FlaskClient, image_server: str):
     bank_name = "TEST_BANK_GET"
     create_bank(client, bank_name)
 
     # Add content
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
@@ -157,11 +158,11 @@ def test_bank_get_content_404(client: FlaskClient):
     assert get_response.status_code == 404, str(get_response.get_json())
 
 
-def test_banks_add_content(client: FlaskClient):
+def test_banks_add_content(client: FlaskClient, image_server: str):
     bank_name = "NEW_BANK"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
 
     post_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
@@ -171,17 +172,17 @@ def test_banks_add_content(client: FlaskClient):
     assert post_response.json == {
         "id": 1,
         "signals": {
-            "pdq": "f8f8f0cee0f4a84f06370a22038f63f0b36e2ed596621e1d33e6b39c4e9c9b22"
+            "pdq": IMAGE_URL_TO_PDQ[image_url],
         },
     }
 
 
-def test_bank_update_content(client: FlaskClient):
+def test_bank_update_content(client: FlaskClient, image_server: str):
     bank_name = "TEST_BANK_UPDATE"
     create_bank(client, bank_name)
 
     # Add content
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
@@ -201,12 +202,12 @@ def test_bank_update_content(client: FlaskClient):
     assert updated_content.get("disable_until_ts") == new_disable_ts
 
 
-def test_bank_update_content_400(client: FlaskClient):
+def test_bank_update_content_400(client: FlaskClient, image_server: str):
     bank_name = "TEST_BANK_UPDATE"
     create_bank(client, bank_name)
 
     # Add content
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
@@ -223,9 +224,9 @@ def test_bank_update_content_400(client: FlaskClient):
     assert update_response.status_code == 400, str(update_response.get_json())
 
 
-def test_banks_delete_content(client: FlaskClient):
+def test_banks_delete_content(client: FlaskClient, image_server: str):
     bank_name = "NEW_BANK"
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
 
     create_bank(client, bank_name)
     add_hash_to_bank(client, bank_name, image_url, 1)
@@ -236,11 +237,11 @@ def test_banks_delete_content(client: FlaskClient):
     assert post_response.json == {"deleted": 1}
 
 
-def test_banks_add_metadata(client: FlaskClient):
+def test_banks_add_metadata(client: FlaskClient, image_server: str):
     bank_name = "NEW_BANK"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     post_request = f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
 
     post_response = client.post(
@@ -255,11 +256,11 @@ def test_banks_add_metadata(client: FlaskClient):
     assert post_response.status_code == 200, str(post_response.get_json())
 
 
-def test_banks_add_hash_index(app: Flask, client: FlaskClient):
+def test_banks_add_hash_index(app: Flask, client: FlaskClient, image_server: str):
     bank_name = "NEW_BANK"
     bank_name_2 = "NEW_BANK_2"
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
-    image_url_2 = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/misc-images/c.png?raw=true"
+    image_url = f"{image_server}/image1.jpg"
+    image_url_2 = f"{image_server}/image2.jpg"
 
     # Make two banks and add images to each bank
     create_bank(client, bank_name)
@@ -289,11 +290,11 @@ def test_banks_add_hash_index(app: Flask, client: FlaskClient):
     assert post_response.json == {"matches": [2]}
 
 
-def test_bank_get_content_with_signals(client: FlaskClient):
+def test_bank_get_content_with_signals(client: FlaskClient, image_server: str):
     bank_name = "TEST_BANK_GET_SIGS"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo"
     )
