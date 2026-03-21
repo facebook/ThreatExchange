@@ -69,13 +69,9 @@ Similar to Live Content Clustering, it’s common that content might already hav
 
 ## Non-goals
 
-### User Interface
-
-Adding in a user interface would require taking on significant additional dependencies, and may not be used by all users. For now, we plan on only providing a UI in the AWS-deployed version of Hasher-Matcher-Actioner. This version uses an API (and some CLI helpers) as the main interface.
-
 ### Actioning Interface / Combining Classification Signals
 
-HMA (AWS) provided a way to rewrite “Action Rules” that trigger after content has been classified by HMA during a match. This allows combining multiple classification signals or triggering multi-step verification. However, we are holding off on any interface for HMA 2.0 for now.
+HMA 1.0 (the original AWS version, now archived) provided a way to rewrite “Action Rules” that trigger after content has been classified by HMA during a match. This allows combining multiple classification signals or triggering multi-step verification. However, we are holding off on any interface for HMA 2.0 for now.
 
 ### Complex Video Lookup (e.g. vPDQ)
 
