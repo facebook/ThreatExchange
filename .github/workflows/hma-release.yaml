@@ -22,7 +22,7 @@ jobs:
     name: Build and Publish Docker Image to registry
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       attestations: write
 
@@ -59,3 +59,22 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:${{ env.VERSION }}
+
+      - name: Create git tag
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "hma-v${{ env.VERSION }}" -m "HMA ${{ env.VERSION }}"
+          git push origin "hma-v${{ env.VERSION }}"
+
+      - name: Create GitHub Release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NOTES=$(awk '/^## \['"$VERSION"'\]/{found=1; next} found && /^## \[/{exit} found{print}' \
+            hasher-matcher-actioner/CHANGELOG.md)
+          gh release create "hma-v${{ env.VERSION }}" \
+            --title "HMA ${{ env.VERSION }}" \
+            --notes "$NOTES"

@@ -23,6 +23,8 @@ We have documentation on the following aspects of the HMA project:
 - [Project History](./docs/history.md)
 - [User Interface](./docs/user-interface.md)
 - [API](./docs/api.md) (work in progress)
+- [Changelog](./CHANGELOG.md) — what's changed in each release
+- [Releasing](./docs/releasing.md) — how to cut a release and subscribe to notifications
 
 ## Configurability
 

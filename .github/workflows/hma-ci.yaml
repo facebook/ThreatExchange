@@ -50,6 +50,26 @@ jobs:
       - name: Check python types
         run: |
           python -m mypy src/OpenMediaMatch
+  changelog-check:
+    name: Changelog updated
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Check CHANGELOG.md was updated
+        working-directory: .
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
+              | grep -q '^hasher-matcher-actioner/src/'; then
+            if ! git diff --name-only origin/${{ github.base_ref }}...HEAD \
+                | grep -q '^hasher-matcher-actioner/CHANGELOG.md'; then
+              echo "src/ was changed but CHANGELOG.md was not updated."
+              echo "Add a line under ## [Unreleased] describing your change."
+              exit 1
+            fi
+          fi
   test:
     name: Pytest
     runs-on: ubuntu-latest
