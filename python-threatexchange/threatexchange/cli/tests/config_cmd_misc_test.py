@@ -24,6 +24,7 @@ def test_config_signal(cli: ThreatExchangeCLIE2eHelper) -> None:
         "url threatexchange.signal_type.url.URLSignal",
         "url_md5 threatexchange.signal_type.url_md5.UrlMD5Signal",
         "video_md5 threatexchange.signal_type.md5.VideoMD5Signal",
+        "video_sha256 threatexchange.signal_type.sha256.VideoSHA256Signal",
     ]
     cli.assert_cli_output(["signal"], expected)
     cli.assert_cli_output(["signal", "list"], expected)

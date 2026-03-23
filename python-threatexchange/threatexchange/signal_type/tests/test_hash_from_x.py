@@ -4,6 +4,7 @@ import pytest
 from threatexchange.signal_type import (
     md5,
     raw_text,
+    sha256,
     trend_query,
     url_md5,
     url,
@@ -14,6 +15,7 @@ import typing as t
 
 SIGNAL_TYPES_TO_TEST = [
     md5.VideoMD5Signal,
+    sha256.VideoSHA256Signal,
     signal.PdqSignal,
     raw_text.RawTextSignal,
     trend_query.TrendQuerySignal,

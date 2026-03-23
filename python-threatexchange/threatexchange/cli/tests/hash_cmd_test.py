@@ -80,6 +80,15 @@ def test_missing(hash_cli: ThreatExchangeCLIE2eHelper):
     hash_cli.assert_cli_usage_error(("photo",))
 
 
+def test_video_sha256_signal_type(hash_cli: ThreatExchangeCLIE2eHelper):
+    """CLI can compute SHA256 for video content when scoped to video_sha256."""
+    with tempfile.NamedTemporaryFile(suffix=".mp4") as f:
+        hash_cli.assert_cli_output(
+            ("video", "-S", "video_sha256", f.name),
+            "video_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        )
+
+
 def test_rotations_with_non_photo_content(
     hash_cli: ThreatExchangeCLIE2eHelper, tmp_file: pathlib.Path
 ):
@@ -203,6 +212,7 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
             ("file", tmp_video_file.name),
             [
                 "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+                "video_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             ],
         )
 
@@ -212,6 +222,7 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
             ("file", tmp_avi_file.name),
             [
                 "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+                "video_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             ],
         )
 
@@ -221,6 +232,7 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
             ("file", tmp_mov_file.name),
             [
                 "video_md5 d41d8cd98f00b204e9800998ecf8427e",
+                "video_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
             ],
         )
 
@@ -263,6 +275,7 @@ def test_file_content(hash_cli: ThreatExchangeCLIE2eHelper):
             ("file", tmp_animated_gif.name),
             [
                 "video_md5 ec82a2d0d4d99a623ec2a939accc7de5",
+                "video_sha256 21c2122c765204217c9ead17f4e41f59ab75dbf0e8fd7377561cfce1e622540c",
             ],
         )
 
