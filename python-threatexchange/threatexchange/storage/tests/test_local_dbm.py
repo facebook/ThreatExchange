@@ -12,6 +12,8 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
 )
 from threatexchange.storage import interfaces as iface
 from threatexchange.storage import local_dbm
+from threatexchange.signal_type.pdq.signal import PdqSignal
+from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 def test_signal_type(tmpdir: pathlib.Path):
@@ -281,3 +283,201 @@ def test_exchange_get_data(tmpdir: pathlib.Path) -> None:
     store.exchange_delete("test_collab")
     with pytest.raises(KeyError):
         store.exchange_get_data("test_collab", ("pdq", "abc123"))
+
+
+# IBankStore tests
+
+
+def _make_bank(name: str = "TEST_BANK", ratio: float = 1.0) -> iface.BankConfig:
+    return iface.BankConfig(name=name, matching_enabled_ratio=ratio)
+
+
+def test_bank_create_get_delete(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+
+    # Initially empty
+    assert store.get_banks() == {}
+
+    # Create
+    bank = _make_bank()
+    store.bank_update(bank, create=True)
+    banks = store.get_banks()
+    assert set(banks) == {"TEST_BANK"}
+    assert banks["TEST_BANK"].name == "TEST_BANK"
+    assert banks["TEST_BANK"].matching_enabled_ratio == 1.0
+
+    # get_bank helper
+    assert store.get_bank("TEST_BANK") is not None
+    assert store.get_bank("NO_SUCH") is None
+
+    # Duplicate create raises
+    with pytest.raises(ValueError, match="already exists"):
+        store.bank_update(bank, create=True)
+
+    # Update (no create flag)
+    updated = _make_bank(ratio=0.5)
+    store.bank_update(updated)
+    assert store.get_bank("TEST_BANK").matching_enabled_ratio == 0.5  # type: ignore[union-attr]
+
+    # Update non-existent raises
+    with pytest.raises(ValueError, match="does not exist"):
+        store.bank_update(_make_bank("GHOST"))
+
+    # Delete
+    store.bank_delete("TEST_BANK")
+    assert store.get_banks() == {}
+
+    # Delete non-existent is a no-op
+    store.bank_delete("TEST_BANK")
+
+
+def test_bank_add_content_and_retrieve(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank(), create=True)
+
+    # Add content with one signal type
+    pdq_val = "a" * 64
+    cid = store.bank_add_content("TEST_BANK", {PdqSignal: pdq_val})
+    assert isinstance(cid, int)
+    assert cid >= 1
+
+    # Retrieve it
+    results = store.bank_content_get([cid])
+    assert len(results) == 1
+    result = results[0]
+    assert result.id == cid
+    assert result.bank.name == "TEST_BANK"
+    assert result.disable_until_ts == iface.BankContentConfig.ENABLED
+
+    # Requesting a non-existent ID returns nothing
+    assert store.bank_content_get([99999]) == []
+
+
+def test_bank_content_signals(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank(), create=True)
+
+    pdq_val = "b" * 64
+    md5_val = "c" * 32
+    cid = store.bank_add_content(
+        "TEST_BANK", {PdqSignal: pdq_val, VideoMD5Signal: md5_val}
+    )
+
+    signals = store.bank_content_get_signals([cid])
+    assert cid in signals
+    assert signals[cid][PdqSignal.get_name()] == pdq_val
+    assert signals[cid][VideoMD5Signal.get_name()] == md5_val
+
+    # Non-existent ID returns empty mapping
+    assert store.bank_content_get_signals([99999]) == {}
+
+
+def test_bank_unique_ids(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank("BANK_A"), create=True)
+    store.bank_update(_make_bank("BANK_B"), create=True)
+
+    pdq_val = "d" * 64
+    ids = [
+        store.bank_add_content("BANK_A", {PdqSignal: pdq_val}),
+        store.bank_add_content("BANK_B", {PdqSignal: pdq_val}),
+        store.bank_add_content("BANK_A", {PdqSignal: pdq_val}),
+    ]
+    assert len(set(ids)) == 3, "all IDs must be globally unique"
+
+    # bank_content_get can retrieve across banks
+    results = store.bank_content_get(ids)
+    assert len(results) == 3
+    bank_names = {r.bank.name for r in results}
+    assert bank_names == {"BANK_A", "BANK_B"}
+
+
+def test_bank_remove_content(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank(), create=True)
+
+    cid = store.bank_add_content("TEST_BANK", {PdqSignal: "e" * 64})
+    assert store.bank_content_get([cid]) != []
+
+    removed = store.bank_remove_content("TEST_BANK", cid)
+    assert removed == 1
+    assert store.bank_content_get([cid]) == []
+
+    # Removing again returns 0
+    assert store.bank_remove_content("TEST_BANK", cid) == 0
+
+
+def test_bank_content_update(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank(), create=True)
+
+    cid = store.bank_add_content("TEST_BANK", {PdqSignal: "f" * 64})
+    original = store.bank_content_get([cid])[0]
+    assert original.disable_until_ts == iface.BankContentConfig.ENABLED
+
+    # Disable it
+    disabled = iface.BankContentConfig(
+        id=cid,
+        disable_until_ts=iface.BankContentConfig.DISABLED,
+        collab_metadata={},
+        original_media_uri=None,
+        bank=original.bank,
+    )
+    store.bank_content_update(disabled)
+    updated = store.bank_content_get([cid])[0]
+    assert updated.disable_until_ts == iface.BankContentConfig.DISABLED
+
+    # Signals are preserved after update
+    signals = store.bank_content_get_signals([cid])
+    assert signals[cid][PdqSignal.get_name()] == "f" * 64
+
+
+def test_bank_yield_content(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    store.bank_update(_make_bank("BANK_A"), create=True)
+    store.bank_update(_make_bank("BANK_B"), create=True)
+
+    pdq_val = "1" * 64
+    md5_val = "2" * 32
+    store.bank_add_content("BANK_A", {PdqSignal: pdq_val, VideoMD5Signal: md5_val})
+    store.bank_add_content("BANK_B", {PdqSignal: "3" * 64})
+
+    # Yield all: 2 PDQ + 1 MD5 = 3 items
+    all_items = list(store.bank_yield_content())
+    assert len(all_items) == 3
+
+    # Yield filtered to PDQ: 2 items
+    pdq_items = list(store.bank_yield_content(signal_type=PdqSignal))
+    assert len(pdq_items) == 2
+    assert all(item.signal_type_name == PdqSignal.get_name() for item in pdq_items)
+
+    # Yield filtered to MD5: 1 item
+    md5_items = list(store.bank_yield_content(signal_type=VideoMD5Signal))
+    assert len(md5_items) == 1
+    assert md5_items[0].signal_val == md5_val
+
+
+def test_index_build_target(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+
+    # Empty store returns get_empty()
+    target = store.get_current_index_build_target(PdqSignal)
+    assert target.total_hash_count == 0
+    assert target.last_item_id == -1
+
+    store.bank_update(_make_bank(), create=True)
+    store.bank_add_content("TEST_BANK", {PdqSignal: "a" * 64})
+    store.bank_add_content("TEST_BANK", {PdqSignal: "b" * 64, VideoMD5Signal: "c" * 32})
+    store.bank_add_content("TEST_BANK", {VideoMD5Signal: "d" * 32})
+
+    pdq_target = store.get_current_index_build_target(PdqSignal)
+    assert pdq_target.total_hash_count == 2
+
+    md5_target = store.get_current_index_build_target(VideoMD5Signal)
+    assert md5_target.total_hash_count == 2
+
+
+def test_bank_add_content_unknown_bank(tmpdir: pathlib.Path) -> None:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir))
+    with pytest.raises(KeyError, match="NO_BANK"):
+        store.bank_add_content("NO_BANK", {PdqSignal: "a" * 64})

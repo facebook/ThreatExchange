@@ -39,6 +39,7 @@ class _DbType(Enum):
     EXCHANGE_DATA = "exchange_data"
     BANKS = "banks"
     INDEX = "index"
+    BANK_CONTENT = "bank_content"
 
 
 @dataclass
@@ -82,6 +83,23 @@ class _ExchangeAPICredsCfg:
     )
 
 
+@dataclass
+class _BankStoredContent:
+    """
+    Stored representation of a bank content item, including all its signals.
+
+    Signals are embedded here rather than stored as separate keys, since
+    there is no fast lookup needed by signal value — indices store content_id.
+    """
+
+    id: int
+    disable_until_ts: int
+    collab_metadata: t.Dict[str, t.List[str]]  # concrete types for JSON roundtrip
+    original_media_uri: t.Optional[str]
+    created_ts: int  # set at insert, preserved on update; used for index checkpoint
+    signals: t.Dict[str, str]  # signal_type_name -> signal_value
+
+
 def _key_str(key: t.Any) -> str:
     """Convert a TUpdateRecordKey to a stable string for DBM storage."""
     if isinstance(key, tuple):
@@ -89,11 +107,20 @@ def _key_str(key: t.Any) -> str:
     return json.dumps(key)
 
 
+_NEXT_ID_KEY = b"__next_id__"
+
+
+def _content_key(content_id: int) -> str:
+    """Key for a bank content record in the per-bank DBM."""
+    return str(content_id)
+
+
 # TODO - eventually to unified store
 class DBMStore(
     iface.ISignalTypeConfigStore,
     iface.IContentTypeConfigStore,
     iface.ISignalExchangeStore,
+    iface.IBankStore,
 ):
     """
     Local machine storage based on python dbm library,
@@ -151,6 +178,26 @@ class DBMStore(
         d = self._folder / str(_DbType.EXCHANGE_DATA)
         d.mkdir(exist_ok=True)
         return dbm.open(str(d / collab_name), "c")
+
+    def _open_bank_content(self, bank_name: str):
+        """Open the per-bank content DBM file, creating the directory if needed."""
+        d = self._folder / str(_DbType.BANK_CONTENT)
+        d.mkdir(exist_ok=True)
+        return dbm.open(str(d / bank_name), "c")
+
+    def _get_next_id(self) -> int:
+        """
+        Allocate and return the next globally unique content ID.
+
+        Stores the counter under the reserved key __next_id__ in the BANKS
+        metadata DB. Safe for single-process use (no concurrent writers).
+        IDs start at 1; 0 is reserved as a sentinel.
+        """
+        with self._open(_DbType.BANKS) as db:
+            raw = db.get(_NEXT_ID_KEY)
+            next_id = int(raw.decode()) if raw is not None else 1
+            db[_NEXT_ID_KEY] = str(next_id + 1).encode()
+        return next_id
 
     def get_signal_type_configs(self) -> t.Mapping[str, iface.SignalTypeConfig]:
         """Return all installed signal types."""
@@ -425,3 +472,237 @@ class DBMStore(
                     f"No data for key {key!r} in collaboration {collab_name!r}"
                 )
             return dataclass_json.dataclass_loads(raw.decode(), record_cls)
+
+    # IBankStore
+
+    def get_banks(self) -> t.Mapping[str, iface.BankConfig]:
+        """Return all bank configs."""
+        with self._open(_DbType.BANKS) as db:
+            ret = {}
+            for raw_key in db.keys():
+                key = raw_key.decode() if isinstance(raw_key, bytes) else raw_key
+                if key.startswith("__"):
+                    continue  # skip reserved keys like __next_id__
+                raw_val = db[raw_key]
+                ret[key] = dataclass_json.dataclass_loads(
+                    raw_val.decode(), iface.BankConfig
+                )
+            return ret
+
+    def bank_update(
+        self,
+        bank: iface.BankConfig,
+        *,
+        create: bool = False,
+        rename_from: t.Optional[str] = None,
+    ) -> None:
+        """Update a bank config. Handles creation and rename."""
+        with self._open(_DbType.BANKS) as db:
+            exists = db.get(bank.name) is not None
+            if create and exists:
+                raise ValueError(f"Bank {bank.name!r} already exists")
+            if not create and not exists and rename_from is None:
+                raise ValueError(f"Bank {bank.name!r} does not exist")
+            if rename_from is not None:
+                old_key = (
+                    rename_from.encode()
+                    if not isinstance(rename_from, bytes)
+                    else rename_from
+                )
+                if old_key in db:
+                    del db[old_key]
+            db[bank.name] = dataclass_json.dataclass_dumps(bank).encode()
+        if rename_from is not None:
+            # Rename the per-bank content DBM file(s) on disk.
+            # Different dbm backends create different file extensions.
+            d = self._folder / str(_DbType.BANK_CONTENT)
+            old_base = d / rename_from
+            new_base = d / bank.name
+            for ext in ("", ".db", ".dir", ".dat", ".bak"):
+                old = old_base.with_name(old_base.name + ext)
+                new = new_base.with_name(new_base.name + ext)
+                if old.exists():
+                    old.rename(new)
+
+    def bank_delete(self, name: str) -> None:
+        """Delete a bank and all its content. No exception if bank doesn't exist."""
+        with self._open(_DbType.BANKS) as db:
+            key = name.encode() if not isinstance(name, bytes) else name
+            if key in db:
+                del db[key]
+        d = self._folder / str(_DbType.BANK_CONTENT)
+        base = d / name
+        for ext in ("", ".db", ".dir", ".dat", ".bak"):
+            base.with_name(base.name + ext).unlink(missing_ok=True)
+
+    def bank_content_get(
+        self, id: t.Iterable[int]
+    ) -> t.Sequence[iface.BankContentConfig]:
+        """Get content configs for a set of IDs, searching across all banks."""
+        remaining = set(id)
+        if not remaining:
+            return []
+        results = []
+        all_banks = self.get_banks()
+        for bank_name, bank_cfg in all_banks.items():
+            if not remaining:
+                break
+            with self._open_bank_content(bank_name) as db:
+                for content_id in list(remaining):
+                    raw = db.get(_content_key(content_id))
+                    if raw is not None:
+                        stored = dataclass_json.dataclass_loads(
+                            raw.decode(), _BankStoredContent
+                        )
+                        results.append(
+                            iface.BankContentConfig(
+                                id=stored.id,
+                                disable_until_ts=stored.disable_until_ts,
+                                collab_metadata=stored.collab_metadata,
+                                original_media_uri=stored.original_media_uri,
+                                bank=bank_cfg,
+                            )
+                        )
+                        remaining.discard(content_id)
+        return results
+
+    def bank_content_get_signals(
+        self, id: t.Iterable[int]
+    ) -> t.Dict[int, t.Dict[str, str]]:
+        """Get signals for content IDs, searching across all banks."""
+        remaining = set(id)
+        if not remaining:
+            return {}
+        result: t.Dict[int, t.Dict[str, str]] = {}
+        all_banks = self.get_banks()
+        for bank_name in all_banks:
+            if not remaining:
+                break
+            with self._open_bank_content(bank_name) as db:
+                for content_id in list(remaining):
+                    raw = db.get(_content_key(content_id))
+                    if raw is not None:
+                        stored = dataclass_json.dataclass_loads(
+                            raw.decode(), _BankStoredContent
+                        )
+                        result[content_id] = dict(stored.signals)
+                        remaining.discard(content_id)
+        return result
+
+    def bank_content_update(self, val: iface.BankContentConfig) -> None:
+        """Update content metadata, preserving created_ts and signals."""
+        with self._open_bank_content(val.bank.name) as db:
+            existing_raw = db.get(_content_key(val.id))
+            if existing_raw is None:
+                raise KeyError(f"No bank content with ID {val.id}")
+            existing = dataclass_json.dataclass_loads(
+                existing_raw.decode(), _BankStoredContent
+            )
+            updated = _BankStoredContent(
+                id=val.id,
+                disable_until_ts=val.disable_until_ts,
+                collab_metadata={k: list(v) for k, v in val.collab_metadata.items()},
+                original_media_uri=val.original_media_uri,
+                created_ts=existing.created_ts,
+                signals=existing.signals,
+            )
+            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(updated).encode()
+
+    def bank_add_content(
+        self,
+        bank_name: str,
+        content_signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[iface.BankContentConfig] = None,
+    ) -> int:
+        """Add content to a bank and return the new globally unique content ID."""
+        if self.get_bank(bank_name) is None:
+            raise KeyError(f"No such bank: {bank_name!r}")
+        content_id = self._get_next_id()
+        now = int(time.time())
+        stored = _BankStoredContent(
+            id=content_id,
+            disable_until_ts=iface.BankContentConfig.ENABLED,
+            collab_metadata={},
+            original_media_uri=None,
+            created_ts=now,
+            signals={st.get_name(): val for st, val in content_signals.items()},
+        )
+        if config is not None:
+            stored.disable_until_ts = config.disable_until_ts
+            stored.collab_metadata = {
+                k: list(v) for k, v in config.collab_metadata.items()
+            }
+            stored.original_media_uri = config.original_media_uri
+        with self._open_bank_content(bank_name) as db:
+            db[_content_key(content_id)] = dataclass_json.dataclass_dumps(
+                stored
+            ).encode()
+        return content_id
+
+    def bank_remove_content(self, bank_name: str, content_id: int) -> int:
+        """Remove content from a bank by ID. Returns 1 if removed, 0 if not found."""
+        with self._open_bank_content(bank_name) as db:
+            key = _content_key(content_id)
+            if key in db:
+                del db[key]
+                return 1
+        return 0
+
+    def get_current_index_build_target(
+        self, signal_type: t.Type[SignalType]
+    ) -> iface.SignalTypeIndexBuildCheckpoint:
+        """Scan all bank content to compute the current index build target."""
+        signal_type_name = signal_type.get_name()
+        total_hash_count = 0
+        last_item_timestamp = -1
+        last_item_id = -1
+        for bank_name in self.get_banks():
+            with self._open_bank_content(bank_name) as db:
+                for raw_key in db.keys():
+                    raw = db[raw_key]
+                    stored = dataclass_json.dataclass_loads(
+                        raw.decode(), _BankStoredContent
+                    )
+                    if signal_type_name not in stored.signals:
+                        continue
+                    total_hash_count += 1
+                    if stored.created_ts > last_item_timestamp or (
+                        stored.created_ts == last_item_timestamp
+                        and stored.id > last_item_id
+                    ):
+                        last_item_timestamp = stored.created_ts
+                        last_item_id = stored.id
+        if total_hash_count == 0:
+            return iface.SignalTypeIndexBuildCheckpoint.get_empty()
+        return iface.SignalTypeIndexBuildCheckpoint(
+            last_item_timestamp=last_item_timestamp,
+            last_item_id=last_item_id,
+            total_hash_count=total_hash_count,
+        )
+
+    def bank_yield_content(
+        self,
+        signal_type: t.Optional[t.Type[SignalType]] = None,
+        batch_size: int = 100,
+    ) -> t.Iterator[iface.BankContentIterationItem]:
+        """Yield all bank content, optionally filtered to a specific signal type."""
+        signal_type_name = signal_type.get_name() if signal_type is not None else None
+        for bank_name in self.get_banks():
+            with self._open_bank_content(bank_name) as db:
+                for raw_key in db.keys():
+                    raw = db[raw_key]
+                    stored = dataclass_json.dataclass_loads(
+                        raw.decode(), _BankStoredContent
+                    )
+                    for stype_name, signal_val in stored.signals.items():
+                        if (
+                            signal_type_name is not None
+                            and stype_name != signal_type_name
+                        ):
+                            continue
+                        yield iface.BankContentIterationItem(
+                            signal_type_name=stype_name,
+                            signal_val=signal_val,
+                            bank_content_id=stored.id,
+                            bank_content_timestamp=stored.created_ts,
+                        )
