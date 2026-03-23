@@ -28,7 +28,7 @@ class VideoSHA256Signal(
     """
     Simple signal type for Video SHA256s.
 
-    SHA256 is a cryptographic hash function similar to MD5, 
+    SHA256 is a cryptographic hash function similar to MD5,
     but less prone to collisions.
 
     Two videos with the same SHA256 hash are almost certainly the same video pixel for pixel.

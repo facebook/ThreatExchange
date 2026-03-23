@@ -16,8 +16,6 @@ def test_can_hash_simple_files():
     with open(TEST_FILE, "rb") as f:
         file_content = f.read()
 
-    expected_hash = (
-        "b5b0799616df52d475a3968dc7e54f1d0724c912244ffa6175bc786375dd7298"
-    )
+    expected_hash = "b5b0799616df52d475a3968dc7e54f1d0724c912244ffa6175bc786375dd7298"
     computed_hash = VideoSHA256Signal.hash_from_bytes(file_content)
     assert computed_hash == expected_hash, "SHA256 hash does not match"
