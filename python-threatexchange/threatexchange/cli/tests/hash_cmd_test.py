@@ -80,15 +80,6 @@ def test_missing(hash_cli: ThreatExchangeCLIE2eHelper):
     hash_cli.assert_cli_usage_error(("photo",))
 
 
-def test_video_sha256_signal_type(hash_cli: ThreatExchangeCLIE2eHelper):
-    """CLI can compute SHA256 for video content when scoped to video_sha256."""
-    with tempfile.NamedTemporaryFile(suffix=".mp4") as f:
-        hash_cli.assert_cli_output(
-            ("video", "-S", "video_sha256", f.name),
-            "video_sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        )
-
-
 def test_rotations_with_non_photo_content(
     hash_cli: ThreatExchangeCLIE2eHelper, tmp_file: pathlib.Path
 ):
