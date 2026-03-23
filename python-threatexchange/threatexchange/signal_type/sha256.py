@@ -31,7 +31,7 @@ class VideoSHA256Signal(
     SHA256 is a cryptographic hash function similar to MD5,
     but less prone to collisions.
 
-    Two videos with the same SHA256 hash are almost certainly the same video pixel for pixel.
+    Two videos with the same SHA256 hash are very likely the same video pixel for pixel.
     """
 
     INDICATOR_TYPE = {"HASH_VIDEO_SHA256": None, "HASH_SHA256": "media_type_video"}
