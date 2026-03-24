@@ -364,6 +364,8 @@ def _perform_lookup_with_details(
             cfg = config_by_id.get(entry["content_id"])
             if cfg and cfg.user_metadata:
                 entry["metadata"] = cfg.user_metadata
+            if cfg and cfg.note:
+                entry["note"] = cfg.note
 
     return {"hashes": signals, "banks": sorted(bank_names), "matches": all_matches}
 

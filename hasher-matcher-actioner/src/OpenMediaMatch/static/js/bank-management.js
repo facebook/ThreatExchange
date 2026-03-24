@@ -148,6 +148,21 @@ class BankManager {
     }
   }
 
+  getNoteFromForm(bankTitle, tab) {
+    const form = document.getElementById(`add_content_${tab}_${bankTitle}`);
+    if (!form) return null;
+    const input = form.querySelector(`.note-input[data-tab="${tab}"]`);
+    const val = input?.value?.trim();
+    return val || null;
+  }
+
+  resetNote(bankTitle, tab) {
+    const form = document.getElementById(`add_content_${tab}_${bankTitle}`);
+    if (!form) return;
+    const input = form.querySelector(`.note-input[data-tab="${tab}"]`);
+    if (input) input.value = "";
+  }
+
   getMetadataFromForm(bankTitle, tab) {
     const checkbox = document.getElementById(`add_metadata_${tab}_${bankTitle}`);
     if (!checkbox || !checkbox.checked) return null;
@@ -220,6 +235,11 @@ class BankManager {
         correctedFormData.append("metadata", JSON.stringify(metadata));
       }
 
+      const note = this.getNoteFromForm(form.dataset.bankName, "file");
+      if (note) {
+        correctedFormData.append("note", note);
+      }
+
       const response = await fetch(`/c/bank/${form.dataset.bankName}/content`, {
         method: 'POST',
         body: correctedFormData
@@ -232,6 +252,7 @@ class BankManager {
       const data = await response.json();
       this.renderAddResult(data, resultDiv);
       form.reset();
+      this.resetNote(form.dataset.bankName, "file");
       this.resetMetadata(form.dataset.bankName, "file");
     } catch (error) {
       this.renderError(`Error adding content by file: ${error.message}`, resultDiv);
@@ -245,10 +266,15 @@ class BankManager {
       const contentType = formData.get('content_type');
 
       const metadata = this.getMetadataFromForm(bankTitle, "url");
+      const note = this.getNoteFromForm(bankTitle, "url");
+      const hasBody = metadata || note;
+      const bodyObj = {};
+      if (metadata) bodyObj.metadata = metadata;
+      if (note) bodyObj.note = note;
       const opts = {
         method: 'POST',
-        headers: metadata ? { 'Content-Type': 'application/json' } : {},
-        body: metadata ? JSON.stringify({ metadata }) : undefined
+        headers: hasBody ? { 'Content-Type': 'application/json' } : {},
+        body: hasBody ? JSON.stringify(bodyObj) : undefined
       };
       const query = `url=${encodeURIComponent(url)}&content_type=${encodeURIComponent(contentType)}`;
       const response = await fetch(`/c/bank/${bankTitle}/content?${query}`, opts);
@@ -260,6 +286,7 @@ class BankManager {
       const data = await response.json();
       this.renderAddResult(data, resultDiv);
       form.reset();
+      this.resetNote(bankTitle, "url");
       this.resetMetadata(bankTitle, "url");
     } catch (error) {
       this.renderError(`Error adding content by URL: ${error.message}`, resultDiv);
@@ -275,6 +302,9 @@ class BankManager {
       const payload = {};
       payload[signalType] = signalValue;
 
+      const note = this.getNoteFromForm(bankTitle, "hash");
+      if (note) payload.note = note;
+
       const response = await fetch(`/c/bank/${bankTitle}/signal`, {
         method: 'POST',
         headers: {
@@ -289,6 +319,8 @@ class BankManager {
 
       const data = await response.json();
       this.renderAddResult(data, resultDiv);
+      form.reset();
+      this.resetNote(bankTitle, "hash");
     } catch (error) {
       this.renderError(`Error adding content by hash: ${error.message}`, resultDiv);
     }

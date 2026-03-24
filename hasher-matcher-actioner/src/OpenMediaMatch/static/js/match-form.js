@@ -185,6 +185,9 @@ class MatchForm {
       const showBadge = bank && bank.matching_enabled_ratio < 1.0;
 
       const metadataHtml = this.renderMatchMetadata(match.metadata, idx);
+      const noteHtml = match.note
+        ? `<div class="mt-1 ms-2 small text-muted"><i class="bi bi-sticky me-1"></i><em>${match.note}</em></div>`
+        : '';
 
       return `
           <li class="list-group-item">
@@ -204,6 +207,7 @@ class MatchForm {
                 </span>
               </div>
             </div>
+            ${noteHtml}
             ${metadataHtml}
           </li>
         `;

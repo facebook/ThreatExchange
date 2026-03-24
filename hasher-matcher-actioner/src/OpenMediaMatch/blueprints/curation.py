@@ -195,6 +195,23 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     return None  # unreachable; satisfies type checker
 
 
+def _validate_bank_add_note() -> t.Optional[str]:
+    """Read note from JSON body or from form field 'note' (multipart uploads)."""
+    note: t.Any = None
+    if request.is_json and isinstance(request.json, dict):
+        note = request.json.get("note")
+    elif request.form and "note" in request.form:
+        note = request.form["note"]
+
+    if not note:
+        return None
+    if not isinstance(note, str):
+        abort(400, "note should be a string")
+    if len(note) > 255:
+        abort(400, "note must be at most 255 characters")
+    return note
+
+
 @bp.get(
     "/bank/<bank_name>/content/<int:content_id>",
     tags=[Tag(name="Bank Content")],
@@ -252,6 +269,7 @@ def bank_get_content(path: BankContentPathParams):
         bank=bank_schema,
         signals=signals_payload,
         metadata=metadata_payload,
+        note=content_config.note,
     )
 
     content_response = response.model_dump(by_alias=True)
@@ -259,6 +277,8 @@ def bank_get_content(path: BankContentPathParams):
         content_response.pop("signals", None)
     if metadata_payload is None:
         content_response.pop("metadata", None)
+    if response.note is None:
+        content_response.pop("note", None)
 
     return jsonify(content_response)
 
@@ -311,6 +331,7 @@ def bank_add_content(path: BankPathParams):
         abort(404, f"bank '{bank_name}' not found")
 
     metadata = _validate_bank_add_metadata()
+    note = _validate_bank_add_note()
 
     url = request.args.get("url")
 
@@ -326,13 +347,14 @@ def bank_add_content(path: BankPathParams):
         hashes = hashing.hash_media_from_form_data()
     else:
         abort(400, "Neither `url` nor multipart file upload was received")
-    return _bank_add_signals(bank, hashes, metadata)
+    return _bank_add_signals(bank, hashes, metadata, note)
 
 
 def _bank_add_signals(
     bank: iface.BankConfig,
     signal_type_to_signal_str: dict[str, str],
     metadata: t.Optional[BankedContentMetadata],
+    note: t.Optional[str] = None,
 ) -> dict[str, t.Any]:
     if not signal_type_to_signal_str:
         abort(400, "No signals given")
@@ -363,6 +385,7 @@ def _bank_add_signals(
         original_media_uri=None,
         bank=bank,
         user_metadata=user_metadata,
+        note=note,
     )
 
     content_id = storage.bank_add_content(bank.name, signals, content_config)
@@ -407,6 +430,14 @@ def bank_update_content(path: BankContentPathParams):
             if disable_until_ts > five_years_from_now():
                 abort(400, "disable_until_ts must be less than 5 years in the future")
             content.disable_until_ts = disable_until_ts
+        if "note" in data:
+            note = data["note"]
+            if note is not None:
+                if not isinstance(note, str):
+                    abort(400, "note should be a string")
+                if len(note) > 255:
+                    abort(400, "note must be at most 255 characters")
+            content.note = note if note else None
         storage.bank_content_update(content)
     except KeyError as e:
         abort(404, *e.args)
@@ -454,7 +485,14 @@ def bank_add_as_signals(path: BankPathParams):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    return _bank_add_signals(bank, t.cast(dict[str, str], request.json), None)
+    data = t.cast(dict[str, t.Any], request.json)
+    note = data.pop("note", None)
+    if note is not None:
+        if not isinstance(note, str):
+            abort(400, "note should be a string")
+        if len(note) > 255:
+            abort(400, "note must be at most 255 characters")
+    return _bank_add_signals(bank, data, None, note)
 
 
 def _get_collab(name: str):

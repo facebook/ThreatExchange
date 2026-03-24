@@ -73,6 +73,7 @@ class BankContentResponse(BaseModel):
         None,
         description="Content metadata including user-supplied data and collaboration provenance",
     )
+    note: Optional[str] = Field(None, description="User-supplied note (max 255 chars)")
 
 
 class BankContentUpdateRequest(BaseModel):

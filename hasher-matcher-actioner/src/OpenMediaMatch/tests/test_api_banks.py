@@ -381,6 +381,116 @@ def test_bank_get_content_include_metadata_false(client: FlaskClient):
     assert "metadata" not in get_data
 
 
+def test_bank_add_content_with_note(client: FlaskClient, image_server: str):
+    """POST content with a note; GET returns the note."""
+    bank_name = "TEST_BANK_NOTE"
+    create_bank(client, bank_name)
+
+    image_url = f"{image_server}/image1.jpg"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+        json={"note": "Reported by user X"},
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    content_id = add_response.get_json()["id"]
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    get_data = get_response.get_json()
+    assert get_data["note"] == "Reported by user X"
+
+
+def test_bank_add_content_without_note_omitted(client: FlaskClient, image_server: str):
+    """Add content without a note; GET does not include note key."""
+    bank_name = "TEST_BANK_NO_NOTE"
+    create_bank(client, bank_name)
+
+    image_url = f"{image_server}/image1.jpg"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    content_id = add_response.get_json()["id"]
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    assert "note" not in get_response.get_json()
+
+
+def test_bank_update_content_note(client: FlaskClient, image_server: str):
+    """PUT can set, update, and clear a note."""
+    bank_name = "TEST_BANK_NOTE_UPDATE"
+    create_bank(client, bank_name)
+
+    image_url = f"{image_server}/image1.jpg"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    content_id = add_response.get_json()["id"]
+
+    # Set note
+    update_response = client.put(
+        f"/c/bank/{bank_name}/content/{content_id}",
+        json={"note": "Initial note"},
+    )
+    assert update_response.status_code == 200, str(update_response.get_json())
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.get_json()["note"] == "Initial note"
+
+    # Update note
+    update_response = client.put(
+        f"/c/bank/{bank_name}/content/{content_id}",
+        json={"note": "Updated note"},
+    )
+    assert update_response.status_code == 200
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.get_json()["note"] == "Updated note"
+
+    # Clear note
+    update_response = client.put(
+        f"/c/bank/{bank_name}/content/{content_id}",
+        json={"note": ""},
+    )
+    assert update_response.status_code == 200
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert "note" not in get_response.get_json()
+
+
+def test_bank_add_note_too_long(client: FlaskClient, image_server: str):
+    """Note exceeding 255 characters is rejected."""
+    bank_name = "TEST_BANK_NOTE_LONG"
+    create_bank(client, bank_name)
+
+    image_url = f"{image_server}/image1.jpg"
+    add_response = client.post(
+        f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
+        json={"note": "x" * 256},
+    )
+    assert add_response.status_code == 400
+
+
+def test_bank_add_hash_with_note(client: FlaskClient):
+    """POST signal with a note; GET returns the note."""
+    bank_name = "TEST_BANK_HASH_NOTE"
+    create_bank(client, bank_name)
+
+    pdq_hash = "0" * 64
+    add_response = client.post(
+        f"/c/bank/{bank_name}/signal",
+        json={"pdq": pdq_hash, "note": "Hash from campaign ABC"},
+    )
+    assert add_response.status_code == 200, str(add_response.get_json())
+    content_id = add_response.get_json()["id"]
+
+    get_response = client.get(f"/c/bank/{bank_name}/content/{content_id}")
+    assert get_response.status_code == 200, str(get_response.get_json())
+    assert get_response.get_json()["note"] == "Hash from campaign ABC"
+
+
 def test_bank_get_content_without_metadata_omitted(client: FlaskClient):
     """Add content without metadata; GET does not include metadata key."""
     bank_name = "TEST_BANK_NO_META"
