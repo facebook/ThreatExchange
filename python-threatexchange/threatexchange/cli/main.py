@@ -74,6 +74,7 @@ from threatexchange.exchanges.auth import (
 from threatexchange.signal_type import (
     md5,
     raw_text,
+    sha256,
     url as url_signal,
     url_md5,
     trend_query,
@@ -96,6 +97,7 @@ from threatexchange.signal_type.signal_base import SignalType
 _DEFAULT_SIGNAL_TYPES: t.Sequence[t.Type[SignalType]] = [
     signal.PdqSignal,
     md5.VideoMD5Signal,
+    sha256.VideoSHA256Signal,
     raw_text.RawTextSignal,
     url_signal.URLSignal,
     url_md5.UrlMD5Signal,

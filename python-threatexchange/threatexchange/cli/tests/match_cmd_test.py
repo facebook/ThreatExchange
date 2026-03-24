@@ -20,22 +20,26 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
 
     def test_match_file(self):
         with tempfile.NamedTemporaryFile() as fp:
-            # Empty file
+            # Empty file matches sample MD5 and SHA256 for empty payload
             self.assert_cli_output(
-                ("video", fp.name), "video_md5 - (Sample Signals) INVESTIGATION_SEED"
+                ("video", fp.name),
+                [
+                    "video_md5 - (Sample Signals) INVESTIGATION_SEED",
+                    "video_sha256 - (Sample Signals) INVESTIGATION_SEED",
+                ],
             )
 
     def test_hash(self):
         hash = VideoMD5Signal.get_examples()[0]
         self.assert_cli_output(
-            ("-H", "video", "--", hash),
+            ("-H", "--only-signal", "video_md5", "video", "--", hash),
             "video_md5 - (Sample Signals) INVESTIGATION_SEED",
         )
 
     def test_invalid_hash(self):
         not_hash = "this is not an md5"
         self.assert_cli_usage_error(
-            ("-H", "video", "--", not_hash),
+            ("-H", "--only-signal", "video_md5", "video", "--", not_hash),
             f"{not_hash!r} from .* is not a valid hash for video_md5",
         )
 
