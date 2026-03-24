@@ -59,6 +59,11 @@
                                     <input id="bank-add-file-input-{{ bank_title }}" class="form-control" type="file" name="file" required>
                                 </div>
                             </div>
+                            <div class="mt-3">
+                                <label class="form-label">Note (optional, max 255 chars)</label>
+                                <input type="text" class="form-control note-input" maxlength="255"
+                                       placeholder="e.g. Reported by user X" data-tab="file">
+                            </div>
                             <div class="mt-3" id="metadata-section-file-{{ bank_title }}">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="add_metadata_file_{{ bank_title }}" autocomplete="off">
@@ -112,6 +117,11 @@
                                     <input class="form-control" type="url" name="url" placeholder="https://example.com/image.jpg" required>
                                 </div>
                             </div>
+                            <div class="mt-3">
+                                <label class="form-label">Note (optional, max 255 chars)</label>
+                                <input type="text" class="form-control note-input" maxlength="255"
+                                       placeholder="e.g. Reported by user X" data-tab="url">
+                            </div>
                             <div class="mt-3" id="metadata-section-url-{{ bank_title }}">
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" id="add_metadata_url_{{ bank_title }}" autocomplete="off">
@@ -160,9 +170,14 @@
                                 </div>
                                 <div class="col">
                                     <label class="form-label">Hash Value</label>
-                                    <input class="form-control font-monospace" type="text" name="signal_value" 
+                                    <input class="form-control font-monospace" type="text" name="signal_value"
                                            placeholder="Enter hash value" required>
                                 </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="form-label">Note (optional, max 255 chars)</label>
+                                <input type="text" class="form-control note-input" maxlength="255"
+                                       placeholder="e.g. Reported by user X" data-tab="hash">
                             </div>
                             <div class="mt-3">
                                 <button type="submit" class="btn btn-success">
