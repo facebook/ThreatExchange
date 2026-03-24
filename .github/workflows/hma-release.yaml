@@ -73,8 +73,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          NOTES=$(awk '/^## \['"$VERSION"'\]/{found=1; next} found && /^## \[/{exit} found{print}' \
-            hasher-matcher-actioner/CHANGELOG.md)
-          gh release create "hma-v${{ env.VERSION }}" \
-            --title "HMA ${{ env.VERSION }}" \
-            --notes "$NOTES"
+          PREV_TAG=$(git tag --sort=-version:refname | grep '^hma-v' | sed -n '2p')
+          if [ -n "$PREV_TAG" ]; then
+            gh release create "hma-v${{ env.VERSION }}" \
+              --title "HMA ${{ env.VERSION }}" \
+              --generate-notes \
+              --notes-start-tag "$PREV_TAG"
+          else
+            gh release create "hma-v${{ env.VERSION }}" \
+              --title "HMA ${{ env.VERSION }}" \
+              --generate-notes
+          fi
