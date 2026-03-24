@@ -22,7 +22,7 @@ jobs:
     name: Build and Publish Docker Image to registry
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       attestations: write
 
@@ -59,3 +59,12 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LC }}/hma:${{ env.VERSION }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: hma-v${{ env.VERSION }}
+          name: HMA ${{ env.VERSION }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
