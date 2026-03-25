@@ -195,6 +195,17 @@ def _validate_bank_add_metadata() -> t.Optional[BankedContentMetadata]:
     return None  # unreachable; satisfies type checker
 
 
+def _validate_note(note: t.Any) -> t.Optional[str]:
+    """Validate a note value: must be a string of at most 255 characters or None."""
+    if not note:
+        return None
+    if not isinstance(note, str):
+        abort(400, "note should be a string")
+    if len(note) > 255:
+        abort(400, "note must be at most 255 characters")
+    return note
+
+
 def _validate_bank_add_note() -> t.Optional[str]:
     """Read note from JSON body or from form field 'note' (multipart uploads)."""
     note: t.Any = None
@@ -203,13 +214,7 @@ def _validate_bank_add_note() -> t.Optional[str]:
     elif request.form and "note" in request.form:
         note = request.form["note"]
 
-    if not note:
-        return None
-    if not isinstance(note, str):
-        abort(400, "note should be a string")
-    if len(note) > 255:
-        abort(400, "note must be at most 255 characters")
-    return note
+    return _validate_note(note)
 
 
 @bp.get(
@@ -431,13 +436,7 @@ def bank_update_content(path: BankContentPathParams):
                 abort(400, "disable_until_ts must be less than 5 years in the future")
             content.disable_until_ts = disable_until_ts
         if "note" in data:
-            note = data["note"]
-            if note is not None:
-                if not isinstance(note, str):
-                    abort(400, "note should be a string")
-                if len(note) > 255:
-                    abort(400, "note must be at most 255 characters")
-            content.note = note if note else None
+            content.note = _validate_note(data["note"])
         storage.bank_content_update(content)
     except KeyError as e:
         abort(404, *e.args)
@@ -486,12 +485,7 @@ def bank_add_as_signals(path: BankPathParams):
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
     data = t.cast(dict[str, t.Any], request.json)
-    note = data.pop("note", None)
-    if note is not None:
-        if not isinstance(note, str):
-            abort(400, "note should be a string")
-        if len(note) > 255:
-            abort(400, "note must be at most 255 characters")
+    note = _validate_note(data.pop("note", None))
     return _bank_add_signals(bank, data, None, note)
 
 
