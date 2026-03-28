@@ -48,5 +48,10 @@
     "source=${localEnv:HOME}${localEnv:USERPROFILE},target=/host-home-folder,type=bind,consistency=cached"
   ],
   "postCreateCommand": "/workspace/.devcontainer/postcreate.sh",
-  "postAttachCommand": "/workspace/.devcontainer/startup.sh"
+  "postAttachCommand": "/workspace/.devcontainer/startup.sh",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "installDirectlyFromGitHubRelease": true
+    }
+  }
 }
