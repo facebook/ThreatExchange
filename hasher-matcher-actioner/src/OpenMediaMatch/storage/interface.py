@@ -52,8 +52,7 @@ class IFlaskUnifiedStore(
     # TODO: Merge into pytx, remove this version
     @abc.abstractmethod
     def bank_content_update(
-        self,
-        val: BankContentConfig   # type: ignore[override]
+        self, val: BankContentConfig  # type: ignore[override]
     ) -> None:
         """Update the content config for a bank"""
 
