@@ -29,7 +29,10 @@ from threatexchange.signal_type.index import (
 )
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
-from threatexchange.storage.interfaces import SignalTypeIndexBuildCheckpoint, ISignalTypeConfigStore
+from threatexchange.storage.interfaces import (
+    SignalTypeIndexBuildCheckpoint,
+    ISignalTypeConfigStore,
+)
 from OpenMediaMatch.storage.interface import IFlaskUnifiedStore
 from OpenMediaMatch.blueprints import hashing
 from OpenMediaMatch.utils.flask_utils import (

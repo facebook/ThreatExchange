@@ -41,8 +41,7 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
 
     def __init__(self) -> None:
         self.banks = {
-            b.name: b
-            for b in (BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
+            b.name: b for b in (BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
         }
 
     def is_ready(self) -> bool:
@@ -94,9 +93,7 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
         self,
     ) -> t.Mapping[str, SignalExchangeAPIConfig]:
         return {
-            e.get_name(): SignalExchangeAPIConfig(
-                t.cast(TSignalExchangeAPICls, e)
-            )
+            e.get_name(): SignalExchangeAPIConfig(t.cast(TSignalExchangeAPICls, e))
             for e in (StaticSampleSignalExchangeAPI,)
         }
 
@@ -181,9 +178,7 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
     def bank_delete(self, name: str) -> None:
         self.banks.pop(name, None)
 
-    def bank_content_get(
-        self, id: t.Iterable[int]
-    ) -> t.Sequence[BankContentConfig]:
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
         # For the mock, just return a config
         content_configs = []
         for content_id in id:
@@ -211,11 +206,11 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
             }
         return signals_dict
 
-    def bank_content_update(self, val: BankContentConfig) -> None:
+    def bank_content_update(self, val: BankContentConfig) -> None:  # type: ignore[override]
         # TODO
         raise Exception("Not implemented")
 
-    def bank_add_content(
+    def bank_add_content(  # type: ignore[override]
         self,
         bank_name: str,
         content_signals: t.Dict[t.Type[SignalType], str],

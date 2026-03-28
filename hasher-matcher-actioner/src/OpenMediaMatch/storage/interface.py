@@ -13,18 +13,20 @@ from dataclasses import dataclass
 import typing as t
 
 import flask
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.storage.interfaces import (
     BankContentConfig as _BankContentConfig,
     IUnifiedStore as _IUnifiedStore,
 )
 
 
+# TODO: Merge into pytx, and remove this version
 @dataclass
 class BankContentConfig(_BankContentConfig):
     """
     OMM extension of BankContentConfig adding user-supplied metadata and notes.
 
-    TODO: Complete merging user metadata into the 
+    TODO: Complete merging user metadata into the
     """
 
     # User-supplied metadata from POST /bank/<name>/content (content_id, content_uri, json).
@@ -41,6 +43,27 @@ class IFlaskUnifiedStore(
     """
     All the store classes combined into one interface, extended with OMM-specific hooks.
     """
+
+    # TODO: Merge into pytx, remove this version
+    @abc.abstractmethod
+    def bank_content_get(self, id: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
+        """Get the content config for a bank."""
+
+    # TODO: Merge into pytx, remove this version
+    @abc.abstractmethod
+    # type: ignore[override]
+    def bank_content_update(self, val: BankContentConfig) -> None:
+        """Update the content config for a bank"""
+
+    # TODO: Merge into pytx, remove this version
+    @abc.abstractmethod
+    def bank_add_content(  # type: ignore[override]
+        self,
+        bank_name: str,
+        content_signals: t.Dict[t.Type[SignalType], str],
+        config: t.Optional[BankContentConfig] = None,
+    ) -> int:
+        """Add content to a bank."""
 
     def init_flask(self, app: flask.Flask) -> None:
         """

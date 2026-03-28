@@ -79,9 +79,7 @@ def test_store_index(app: Flask) -> None:
             updated_to_ts=12345,
             updated_to_id=5678,
             signal_count=len(content),
-        ).commit_signal_index(
-            index, SignalTypeIndexBuildCheckpoint.get_empty()
-        )
+        ).commit_signal_index(index, SignalTypeIndexBuildCheckpoint.get_empty())
     )
     database.db.session.commit()
     database.db.session.query()
@@ -108,9 +106,7 @@ def test_store_index_updated_at(app: Flask) -> None:
             updated_to_ts=1234,
             updated_to_id=5678,
             signal_count=len(content),
-        ).commit_signal_index(
-            index, SignalTypeIndexBuildCheckpoint.get_empty()
-        )
+        ).commit_signal_index(index, SignalTypeIndexBuildCheckpoint.get_empty())
     )
     database.db.session.commit()
     db_record = database.db.session.execute(
@@ -122,9 +118,7 @@ def test_store_index_updated_at(app: Flask) -> None:
     index = TrivialSignalTypeIndex.build(content)
 
     # Update index to trigger time change
-    db_record.commit_signal_index(
-        index, SignalTypeIndexBuildCheckpoint.get_empty()
-    )
+    db_record.commit_signal_index(index, SignalTypeIndexBuildCheckpoint.get_empty())
     db_record = database.db.session.execute(
         select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")
     ).scalar_one()

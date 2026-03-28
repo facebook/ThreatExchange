@@ -108,8 +108,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
 
     def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
         return {
-            name: ContentTypeConfig(True, ct)
-            for name, ct in self.content_types.items()
+            name: ContentTypeConfig(True, ct) for name, ct in self.content_types.items()
         }
 
     def exchange_apis_get_configs(
@@ -130,9 +129,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
                 ret[name] = SignalExchangeAPIConfig(api_cls)
         return ret
 
-    def exchange_api_config_update(
-        self, cfg: SignalExchangeAPIConfig
-    ) -> None:
+    def exchange_api_config_update(self, cfg: SignalExchangeAPIConfig) -> None:
         api_cls = cfg.api_cls
         if cfg.credentials is not None:
             if not issubclass(api_cls, auth.SignalExchangeWithAuth):
@@ -567,9 +564,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
         sesh.execute(delete(database.Bank).where(database.Bank.name == name))
         sesh.commit()
 
-    def bank_content_get(
-        self, ids: t.Iterable[int]
-    ) -> t.Sequence[BankContentConfig]:
+    def bank_content_get(self, ids: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
         contents = (
             get_read_session()
             .query(database.BankContent)
@@ -600,7 +595,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
 
         return signals_dict
 
-    def bank_content_update(self, val: BankContentConfig) -> None:
+    def bank_content_update(self, val: BankContentConfig) -> None:  # type: ignore[override]
         sesh = get_write_session()
         bank_content = sesh.execute(
             select(database.BankContent).where(database.BankContent.id == val.id)
@@ -610,7 +605,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
         bank_content.set_typed_config(val)
         sesh.commit()
 
-    def bank_add_content(
+    def bank_add_content(  # type: ignore[override]
         self,
         bank_name: str,
         signals: t.Dict[t.Type[SignalType], str],
