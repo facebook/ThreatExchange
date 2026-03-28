@@ -1,4 +1,4 @@
-alias b='(cd /workspace/src/OpenMediaMatch && black)'
+alias b='(cd /workspace/src/OpenMediaMatch && black .)'
 alias my='(cd /workspace && mypy src/OpenMediaMatch)'
 alias t='(cd /workspace/src/OpenMediaMatch && py.test)'
 alias myt='my && t'
