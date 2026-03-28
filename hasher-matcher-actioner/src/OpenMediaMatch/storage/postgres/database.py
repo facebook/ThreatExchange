@@ -60,14 +60,14 @@ from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.utils import dataclass_json
 
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
-from OpenMediaMatch.storage.interface import (
+from threatexchange.storage.interfaces import (
     BankConfig,
-    BankContentConfig,
     FetchStatus,
     SignalTypeIndexBuildCheckpoint,
     BankContentIterationItem,
     SignalExchangeAPIConfig,
 )
+from OpenMediaMatch.storage.interface import BankContentConfig
 
 
 class Base(DeclarativeBase):

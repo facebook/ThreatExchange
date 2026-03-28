@@ -24,7 +24,8 @@ from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
-from OpenMediaMatch.storage import interface
+from threatexchange.storage.interfaces import BankConfig, SignalExchangeAPIConfig
+from OpenMediaMatch.storage.interface import BankContentConfig
 from OpenMediaMatch.storage.postgres import database
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 
@@ -193,13 +194,12 @@ def test_sequential_fetch_updates(storage: DefaultOMMStore) -> None:
 
 def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     """
-    SignalTypeIndex is stored in the postgres large object interface.
-
+    SignalTypeIndex is stored in the postgres large object
     As part of swapping over to the new index, we need to unlink the old
     interface, but there is a race here because unlinking may not happen
     in a transaction. See github.com/facebook/ThreatExchange/issues/1673
     """
-    bank_cfg = interface.BankConfig("TEST", matching_enabled_ratio=1.0)
+    bank_cfg = BankConfig("TEST", matching_enabled_ratio=1.0)
     storage.bank_update(bank_cfg, create=True)
     storage.bank_add_content(
         bank_cfg.name, {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
@@ -265,7 +265,7 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
     # Can't set a config type that doesn't exist
     with pytest.raises(Exception):
         storage.exchange_api_config_update(
-            interface.SignalExchangeAPIConfig(
+            SignalExchangeAPIConfig(
                 t.cast(TSignalExchangeAPICls, _UnknownSampleExchangeAPI),
                 fb_auth,
             ),
@@ -287,13 +287,13 @@ def test_exchange_type_confg(storage: DefaultOMMStore):
     # Can't set credentials for something that doesn't take it
     with pytest.raises(Exception):
         storage.exchange_api_config_update(
-            interface.SignalExchangeAPIConfig(
+            SignalExchangeAPIConfig(
                 t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI),
                 auth.CredentialHelper(),
             ),
         )
 
-    val_to_set = interface.SignalExchangeAPIConfig(
+    val_to_set = SignalExchangeAPIConfig(
         t.cast(TSignalExchangeAPICls, FBThreatExchangeSignalExchangeAPI),
         fb_auth,
     )
@@ -348,7 +348,7 @@ def test_exchange_get_data(storage: DefaultOMMStore):
 
 def test_bank_content_note(storage: DefaultOMMStore) -> None:
     """Test adding, reading, and updating notes on bank content."""
-    bank_cfg = interface.BankConfig("TEST_NOTES", matching_enabled_ratio=1.0)
+    bank_cfg = BankConfig("TEST_NOTES", matching_enabled_ratio=1.0)
     storage.bank_update(bank_cfg, create=True)
 
     # Test adding content without a note
@@ -361,9 +361,9 @@ def test_bank_content_note(storage: DefaultOMMStore) -> None:
 
     # Test adding content with a note
     note_text = "Reported by user123 on 2024-01-15"
-    content_config_with_note = interface.BankContentConfig(
+    content_config_with_note = BankContentConfig(
         id=0,
-        disable_until_ts=interface.BankContentConfig.ENABLED,
+        disable_until_ts=BankContentConfig.ENABLED,
         collab_metadata={},
         original_media_uri="http://example.com/image.jpg",
         bank=bank_cfg,
@@ -397,14 +397,14 @@ def test_bank_content_note(storage: DefaultOMMStore) -> None:
 
 def test_bank_content_note_max_length(storage: DefaultOMMStore) -> None:
     """Test that notes respect the 255 character limit."""
-    bank_cfg = interface.BankConfig("TEST_NOTE_LENGTH", matching_enabled_ratio=1.0)
+    bank_cfg = BankConfig("TEST_NOTE_LENGTH", matching_enabled_ratio=1.0)
     storage.bank_update(bank_cfg, create=True)
 
     # Test with exactly 255 characters (should work)
     note_255 = "a" * 255
-    content_config = interface.BankContentConfig(
+    content_config = BankContentConfig(
         id=0,
-        disable_until_ts=interface.BankContentConfig.ENABLED,
+        disable_until_ts=BankContentConfig.ENABLED,
         collab_metadata={},
         original_media_uri=None,
         bank=bank_cfg,
@@ -421,9 +421,9 @@ def test_bank_content_note_max_length(storage: DefaultOMMStore) -> None:
 
     # Test with 256 characters (should fail)
     note_256 = "a" * 256
-    content_config_over = interface.BankContentConfig(
+    content_config_over = BankContentConfig(
         id=0,
-        disable_until_ts=interface.BankContentConfig.ENABLED,
+        disable_until_ts=BankContentConfig.ENABLED,
         collab_metadata={},
         original_media_uri=None,
         bank=bank_cfg,

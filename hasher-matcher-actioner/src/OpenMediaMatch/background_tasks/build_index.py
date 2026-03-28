@@ -8,7 +8,7 @@ from threatexchange.signal_type.signal_base import SignalType
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.storage.interface import (
+from threatexchange.storage.interfaces import (
     ISignalTypeIndexStore,
     ISignalTypeConfigStore,
     IBankStore,

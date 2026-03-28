@@ -18,13 +18,13 @@ import typing as t
 
 from flask import current_app
 
-from OpenMediaMatch.storage.interface import IUnifiedStore
+from OpenMediaMatch.storage.interface import IFlaskUnifiedStore
 
 
-def get_storage() -> IUnifiedStore:
+def get_storage() -> IFlaskUnifiedStore:
     """
     Get the storage interface for the current app flask instance
 
     Holdover from earlier development, maybe remove someday.
     """
-    return t.cast(IUnifiedStore, current_app.config["STORAGE_IFACE_INSTANCE"])
+    return t.cast(IFlaskUnifiedStore, current_app.config["STORAGE_IFACE_INSTANCE"])

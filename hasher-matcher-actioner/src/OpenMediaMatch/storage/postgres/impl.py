@@ -38,8 +38,16 @@ from threatexchange.exchanges.fetch_state import (
     TUpdateRecordKey,
 )
 
-from OpenMediaMatch.storage import interface
-from threatexchange.storage.interfaces import SignalTypeConfig
+from threatexchange.storage.interfaces import (
+    SignalTypeConfig,
+    ContentTypeConfig,
+    SignalExchangeAPIConfig,
+    SignalTypeIndexBuildCheckpoint,
+    FetchStatus,
+    BankConfig,
+    BankContentIterationItem,
+)
+from OpenMediaMatch.storage.interface import IFlaskUnifiedStore, BankContentConfig
 from OpenMediaMatch.storage.postgres import database, flask_utils
 from OpenMediaMatch.storage.postgres.database import (
     get_read_session,
@@ -48,7 +56,7 @@ from OpenMediaMatch.storage.postgres.database import (
 )
 
 
-class DefaultOMMStore(interface.IUnifiedStore):
+class DefaultOMMStore(IFlaskUnifiedStore):
     """
     The default store for accessing persistent data on OMM.
 
@@ -98,15 +106,14 @@ class DefaultOMMStore(interface.IUnifiedStore):
             exchange_types
         ), "All exchange types must have unique names"
 
-    def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
+    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
         return {
-            name: interface.ContentTypeConfig(True, ct)
-            for name, ct in self.content_types.items()
+            name: ContentTypeConfig(True, ct) for name, ct in self.content_types.items()
         }
 
     def exchange_apis_get_configs(
         self,
-    ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
+    ) -> t.Mapping[str, SignalExchangeAPIConfig]:
         explicit_settings = {
             s.api: s
             for s in get_read_session()
@@ -119,12 +126,10 @@ class DefaultOMMStore(interface.IUnifiedStore):
             if name in explicit_settings:
                 ret[name] = explicit_settings[name].as_storage_iface_cls(api_cls)
             else:
-                ret[name] = interface.SignalExchangeAPIConfig(api_cls)
+                ret[name] = SignalExchangeAPIConfig(api_cls)
         return ret
 
-    def exchange_api_config_update(
-        self, cfg: interface.SignalExchangeAPIConfig
-    ) -> None:
+    def exchange_api_config_update(self, cfg: SignalExchangeAPIConfig) -> None:
         api_cls = cfg.api_cls
         if cfg.credentials is not None:
             if not issubclass(api_cls, auth.SignalExchangeWithAuth):
@@ -214,7 +219,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self,
         signal_type: t.Type[SignalType],
         index: SignalTypeIndex,
-        checkpoint: interface.SignalTypeIndexBuildCheckpoint,
+        checkpoint: SignalTypeIndexBuildCheckpoint,
     ) -> None:
         sesh = get_write_session()
         db_record = sesh.execute(
@@ -232,7 +237,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+    ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
         db_record = (
             get_read_session()
             .execute(
@@ -301,12 +306,12 @@ class DefaultOMMStore(interface.IUnifiedStore):
         with creds.set_default(creds, "db"):
             return cfg.api_cls.for_collab(collab_config)
 
-    def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
+    def exchange_get_fetch_status(self, name: str) -> FetchStatus:
         collab_config = self._exchange_get_cfg(name)
         assert collab_config is not None, "Config was deleted?"
         status = collab_config.fetch_status
         if status is None:
-            return interface.FetchStatus.get_default()
+            return FetchStatus.get_default()
         ret = status.as_storage_iface_cls()
 
         sesh = get_read_session()
@@ -512,13 +517,13 @@ class DefaultOMMStore(interface.IUnifiedStore):
         assert dat is not None
         return pickle.loads(dat)
 
-    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
+    def get_banks(self) -> t.Mapping[str, BankConfig]:
         return {
             b.name: b.as_storage_iface_cls()
             for b in get_read_session().execute(select(database.Bank)).scalars().all()
         }
 
-    def get_bank(self, name: str) -> t.Optional[interface.BankConfig]:
+    def get_bank(self, name: str) -> t.Optional[BankConfig]:
         """Override for more efficient lookup."""
         bank = (
             get_read_session()
@@ -537,7 +542,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def bank_update(
         self,
-        bank: interface.BankConfig,
+        bank: BankConfig,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -559,9 +564,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         sesh.execute(delete(database.Bank).where(database.Bank.name == name))
         sesh.commit()
 
-    def bank_content_get(
-        self, ids: t.Iterable[int]
-    ) -> t.Sequence[interface.BankContentConfig]:
+    def bank_content_get(self, ids: t.Iterable[int]) -> t.Sequence[BankContentConfig]:
         contents = (
             get_read_session()
             .query(database.BankContent)
@@ -592,7 +595,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
         return signals_dict
 
-    def bank_content_update(self, val: interface.BankContentConfig) -> None:
+    def bank_content_update(self, val: BankContentConfig) -> None:  # type: ignore[override]
         sesh = get_write_session()
         bank_content = sesh.execute(
             select(database.BankContent).where(database.BankContent.id == val.id)
@@ -602,11 +605,11 @@ class DefaultOMMStore(interface.IUnifiedStore):
         bank_content.set_typed_config(val)
         sesh.commit()
 
-    def bank_add_content(
+    def bank_add_content(  # type: ignore[override]
         self,
         bank_name: str,
         signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[interface.BankContentConfig] = None,
+        config: t.Optional[BankContentConfig] = None,
     ) -> int:
         sesh = get_write_session()
 
@@ -637,7 +640,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
-    ) -> interface.SignalTypeIndexBuildCheckpoint:
+    ) -> SignalTypeIndexBuildCheckpoint:
         sesh = get_read_session()
         query = sesh.query(database.ContentSignal).where(
             database.ContentSignal.signal_type == signal_type.get_name()
@@ -648,7 +651,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ).scalar()
 
         if not count:
-            return interface.SignalTypeIndexBuildCheckpoint.get_empty()
+            return SignalTypeIndexBuildCheckpoint.get_empty()
 
         # Count non-zero, so get where we are in the order
         row = sesh.execute(
@@ -664,7 +667,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         ).one()
         create_datetime, content_id = row._tuple()
 
-        return interface.SignalTypeIndexBuildCheckpoint(
+        return SignalTypeIndexBuildCheckpoint(
             last_item_id=content_id,
             last_item_timestamp=int(create_datetime.timestamp()),
             total_hash_count=count,
@@ -674,7 +677,7 @@ class DefaultOMMStore(interface.IUnifiedStore):
         self,
         signal_type: t.Optional[t.Type[SignalType]] = None,
         batch_size: int = 100,
-    ) -> t.Iterator[interface.BankContentIterationItem]:
+    ) -> t.Iterator[BankContentIterationItem]:
         # Query for all ContentSignals and stream results with the proper batch size
         query = (
             select(database.ContentSignal)
