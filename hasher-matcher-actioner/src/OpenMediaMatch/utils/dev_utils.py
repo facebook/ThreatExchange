@@ -9,7 +9,7 @@ from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchan
 from threatexchange.signal_type.signal_base import SignalType, CanGenerateRandomSignal
 
 from OpenMediaMatch import persistence
-from OpenMediaMatch.storage.interface import BankConfig
+from threatexchange.storage.interfaces import BankConfig
 
 
 def seed_sample() -> None:

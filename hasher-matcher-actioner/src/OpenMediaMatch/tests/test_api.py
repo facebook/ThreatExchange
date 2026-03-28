@@ -24,7 +24,7 @@ from OpenMediaMatch.tests.utils import app, client, create_bank, image_server
 from OpenMediaMatch.background_tasks.build_index import build_all_indices
 from OpenMediaMatch.persistence import get_storage
 from OpenMediaMatch.blueprints import matching
-from OpenMediaMatch.storage import interface
+from threatexchange.storage.interfaces import SignalTypeIndexBuildCheckpoint
 
 
 def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
@@ -35,7 +35,7 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     cache_val = matching._SignalIndexInMemoryCache(
         PdqSignal,
         PDQIndex2(),
-        interface.SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        SignalTypeIndexBuildCheckpoint(0, 0, 0),
         last_check_ts=0.0,
         sec_old_before_stale=0,
     )

@@ -22,7 +22,11 @@ from threatexchange.exchanges import auth
 from OpenMediaMatch import persistence
 from OpenMediaMatch.utils import flask_utils
 from OpenMediaMatch.utils.exchange_schema import exchange_api_schema
-import OpenMediaMatch.storage.interface as iface
+from threatexchange.storage.interfaces import (
+    BankConfig as StoreBankConfig,
+    SignalTypeIndexBuildCheckpoint,
+)
+from OpenMediaMatch.storage.interface import BankContentConfig
 from OpenMediaMatch.blueprints import hashing
 from OpenMediaMatch.schemas.curation import (
     BankConfig,
@@ -108,8 +112,8 @@ def bank_create(body: BankCreateRequest):
     return jsonify(bank_create_impl(body.name, enabled_ratio)), 201
 
 
-def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> iface.BankConfig:
-    bank = iface.BankConfig(name=name, matching_enabled_ratio=enabled_ratio)
+def bank_create_impl(name: str, enabled_ratio: float = 1.0) -> StoreBankConfig:
+    bank = StoreBankConfig(name=name, matching_enabled_ratio=enabled_ratio)
     try:
         persistence.get_storage().bank_update(bank, create=True)
     except ValueError as e:
@@ -356,7 +360,7 @@ def bank_add_content(path: BankPathParams):
 
 
 def _bank_add_signals(
-    bank: iface.BankConfig,
+    bank: StoreBankConfig,
     signal_type_to_signal_str: dict[str, str],
     metadata: t.Optional[BankedContentMetadata],
     note: t.Optional[str] = None,
@@ -383,9 +387,9 @@ def _bank_add_signals(
         if not user_metadata:
             user_metadata = None
 
-    content_config = iface.BankContentConfig(
+    content_config = BankContentConfig(
         id=0,
-        disable_until_ts=iface.BankContentConfig.ENABLED,
+        disable_until_ts=BankContentConfig.ENABLED,
         collab_metadata={},
         original_media_uri=None,
         bank=bank,
@@ -855,9 +859,9 @@ def signal_type_index_status() -> dict[str, dict[str, t.Any]]:
             config.signal_type,
         )
         if tar is None:
-            tar = iface.SignalTypeIndexBuildCheckpoint.get_empty()
+            tar = SignalTypeIndexBuildCheckpoint.get_empty()
         if last is None:
-            last = iface.SignalTypeIndexBuildCheckpoint.get_empty()
+            last = SignalTypeIndexBuildCheckpoint.get_empty()
         ret[name] = {
             "db_size": tar.total_hash_count,
             "index_size": last.total_hash_count,

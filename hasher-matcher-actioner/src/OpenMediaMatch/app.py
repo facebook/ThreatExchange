@@ -25,7 +25,8 @@ from flask_openapi3.models import Info, Tag
 
 from threatexchange.exchanges import auth
 
-from OpenMediaMatch.storage import interface
+from threatexchange.storage.interfaces import SignalExchangeAPIConfig
+from OpenMediaMatch.storage.interface import IFlaskUnifiedStore
 from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
 from OpenMediaMatch.background_tasks import (
     build_index,
@@ -171,7 +172,7 @@ def create_app() -> OpenAPI:
         app.config["STORAGE_IFACE_INSTANCE"] = DefaultOMMStore()
     storage = app.config["STORAGE_IFACE_INSTANCE"]
     assert isinstance(
-        storage, interface.IUnifiedStore
+        storage, IFlaskUnifiedStore
     ), "STORAGE_IFACE_INSTANCE is not an instance of IUnifiedStore"
 
     _setup_task_logging(app.logger)
@@ -335,7 +336,7 @@ def create_app() -> OpenAPI:
     )
     @click.option("--unset", is_flag=True, help="clear credentials")
     def set_credentials(
-        api_name: interface.SignalExchangeAPIConfig, from_str: str | None, unset: bool
+        api_name: SignalExchangeAPIConfig, from_str: str | None, unset: bool
     ) -> None:
         """
         Persist credentials for apis.

@@ -15,14 +15,14 @@ from OpenMediaMatch.tests.utils import app
 from OpenMediaMatch.background_tasks import fetcher, build_index
 from OpenMediaMatch.blueprints.matching import TMatchByBank
 from OpenMediaMatch.persistence import get_storage
-from OpenMediaMatch.storage import interface as iface
+from threatexchange.storage.interfaces import SignalExchangeAPIConfig, BankConfig
 
 
 @pytest.fixture()
 def client_with_sample_data(app) -> FlaskClient:
     storage = get_storage()
     storage.exchange_api_config_update(
-        iface.SignalExchangeAPIConfig(
+        SignalExchangeAPIConfig(
             t.cast(TSignalExchangeAPICls, StaticSampleSignalExchangeAPI)
         )
     )
@@ -111,9 +111,9 @@ def client_with_multi_bank_data(app) -> FlaskClient:
     storage = get_storage()
 
     # Create multiple banks
-    storage.bank_update(iface.BankConfig("BANK_A", 1.0), create=True)
-    storage.bank_update(iface.BankConfig("BANK_B", 1.0), create=True)
-    storage.bank_update(iface.BankConfig("BANK_C", 1.0), create=True)
+    storage.bank_update(BankConfig("BANK_A", 1.0), create=True)
+    storage.bank_update(BankConfig("BANK_B", 1.0), create=True)
+    storage.bank_update(BankConfig("BANK_C", 1.0), create=True)
 
     # Add content to each bank using PDQ signals
     pdq_signal = PdqSignal.get_examples()[0]

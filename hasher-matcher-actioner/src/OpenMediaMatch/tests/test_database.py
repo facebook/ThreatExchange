@@ -15,7 +15,7 @@ from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from OpenMediaMatch.storage.postgres import database
-from OpenMediaMatch.storage import interface
+from threatexchange.storage.interfaces import SignalTypeIndexBuildCheckpoint
 from OpenMediaMatch.tests.utils import app
 
 
@@ -80,7 +80,7 @@ def test_store_index(app: Flask) -> None:
             updated_to_id=5678,
             signal_count=len(content),
         ).commit_signal_index(
-            index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+            index, SignalTypeIndexBuildCheckpoint.get_empty()
         )
     )
     database.db.session.commit()
@@ -109,7 +109,7 @@ def test_store_index_updated_at(app: Flask) -> None:
             updated_to_id=5678,
             signal_count=len(content),
         ).commit_signal_index(
-            index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+            index, SignalTypeIndexBuildCheckpoint.get_empty()
         )
     )
     database.db.session.commit()
@@ -123,7 +123,7 @@ def test_store_index_updated_at(app: Flask) -> None:
 
     # Update index to trigger time change
     db_record.commit_signal_index(
-        index, interface.SignalTypeIndexBuildCheckpoint.get_empty()
+        index, SignalTypeIndexBuildCheckpoint.get_empty()
     )
     db_record = database.db.session.execute(
         select(database.SignalIndex).where(database.SignalIndex.signal_type == "test")

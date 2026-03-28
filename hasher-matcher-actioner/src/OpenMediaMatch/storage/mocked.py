@@ -20,29 +20,37 @@ from threatexchange.exchanges.fetch_state import (
     TUpdateRecordKey,
 )
 
-from OpenMediaMatch.storage import interface
-from threatexchange.storage.interfaces import SignalTypeConfig
+from threatexchange.storage.interfaces import (
+    SignalTypeConfig,
+    BankConfig,
+    ContentTypeConfig,
+    SignalTypeIndexBuildCheckpoint,
+    SignalExchangeAPIConfig,
+    FetchStatus,
+    BankContentIterationItem,
+)
+from OpenMediaMatch.storage.interface import IFlaskUnifiedStore, BankContentConfig
 
 
-class MockedUnifiedStore(interface.IUnifiedStore):
+class MockedUnifiedStore(IFlaskUnifiedStore):
     """
     Provides plausible default values for all store interfaces.
     """
 
-    banks: t.Dict[str, interface.BankConfig]
+    banks: t.Dict[str, BankConfig]
 
     def __init__(self) -> None:
         self.banks = {
             b.name: b
-            for b in (interface.BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
+            for b in (BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
         }
 
     def is_ready(self) -> bool:
         return True
 
-    def get_content_type_configs(self) -> t.Mapping[str, interface.ContentTypeConfig]:
+    def get_content_type_configs(self) -> t.Mapping[str, ContentTypeConfig]:
         return {
-            c.get_name(): interface.ContentTypeConfig(True, c)
+            c.get_name(): ContentTypeConfig(True, c)
             for c in (PhotoContent, VideoContent)
         }
 
@@ -72,27 +80,27 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self,
         signal_type: t.Type[SignalType],
         index: SignalTypeIndex,
-        checkpoint: interface.SignalTypeIndexBuildCheckpoint,
+        checkpoint: SignalTypeIndexBuildCheckpoint,
     ) -> None:
         raise Exception("Not implemented")
 
     def get_last_index_build_checkpoint(
         self, signal_type: t.Type[SignalType]
-    ) -> t.Optional[interface.SignalTypeIndexBuildCheckpoint]:
+    ) -> t.Optional[SignalTypeIndexBuildCheckpoint]:
         return None
 
     # Exchanges
     def exchange_type_get_configs(
         self,
-    ) -> t.Mapping[str, interface.SignalExchangeAPIConfig]:
+    ) -> t.Mapping[str, SignalExchangeAPIConfig]:
         return {
-            e.get_name(): interface.SignalExchangeAPIConfig(
+            e.get_name(): SignalExchangeAPIConfig(
                 t.cast(TSignalExchangeAPICls, e)
             )
             for e in (StaticSampleSignalExchangeAPI,)
         }
 
-    def exchange_type_update(self, cfg: interface.SignalExchangeAPIConfig) -> None:
+    def exchange_type_update(self, cfg: SignalExchangeAPIConfig) -> None:
         raise Exception("Not implemented")
 
     def exchange_update(
@@ -121,8 +129,8 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             collab_config
         )
 
-    def exchange_get_fetch_status(self, name: str) -> interface.FetchStatus:
-        return interface.FetchStatus.get_default()
+    def exchange_get_fetch_status(self, name: str) -> FetchStatus:
+        return FetchStatus.get_default()
 
     def exchange_get_fetch_checkpoint(
         self, name: str
@@ -153,12 +161,12 @@ class MockedUnifiedStore(interface.IUnifiedStore):
     ) -> FetchedSignalMetadata:
         raise Exception("Not implemented")
 
-    def get_banks(self) -> t.Mapping[str, interface.BankConfig]:
+    def get_banks(self) -> t.Mapping[str, BankConfig]:
         return dict(self.banks)
 
     def bank_update(
         self,
-        bank: interface.BankConfig,
+        bank: BankConfig,
         *,
         create: bool = False,
         rename_from: t.Optional[str] = None,
@@ -175,16 +183,16 @@ class MockedUnifiedStore(interface.IUnifiedStore):
 
     def bank_content_get(
         self, id: t.Iterable[int]
-    ) -> t.Sequence[interface.BankContentConfig]:
+    ) -> t.Sequence[BankContentConfig]:
         # For the mock, just return a config
         content_configs = []
         for content_id in id:
-            cfg = interface.BankContentConfig(
+            cfg = BankContentConfig(
                 id=content_id,
-                disable_until_ts=interface.BankContentConfig.ENABLED,
+                disable_until_ts=BankContentConfig.ENABLED,
                 collab_metadata={},
                 original_media_uri=None,
-                bank=interface.BankConfig(name="MOCK_BANK", matching_enabled_ratio=1.0),
+                bank=BankConfig(name="MOCK_BANK", matching_enabled_ratio=1.0),
                 user_metadata=None,
                 note=None,
             )
@@ -203,7 +211,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
             }
         return signals_dict
 
-    def bank_content_update(self, val: interface.BankContentConfig) -> None:
+    def bank_content_update(self, val: BankContentConfig) -> None:
         # TODO
         raise Exception("Not implemented")
 
@@ -211,7 +219,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
         self,
         bank_name: str,
         content_signals: t.Dict[t.Type[SignalType], str],
-        config: t.Optional[interface.BankContentConfig] = None,
+        config: t.Optional[BankContentConfig] = None,
     ) -> int:
         # TODO
         raise Exception("Not implemented")
@@ -222,15 +230,15 @@ class MockedUnifiedStore(interface.IUnifiedStore):
 
     def get_current_index_build_target(
         self, signal_type: t.Type[SignalType]
-    ) -> interface.SignalTypeIndexBuildCheckpoint:
-        return interface.SignalTypeIndexBuildCheckpoint.get_empty()
+    ) -> SignalTypeIndexBuildCheckpoint:
+        return SignalTypeIndexBuildCheckpoint.get_empty()
 
     def bank_yield_content(
         self, signal_type: t.Optional[t.Type[SignalType]] = None, batch_size: int = 100
-    ) -> t.Iterator[interface.BankContentIterationItem]:
+    ) -> t.Iterator[BankContentIterationItem]:
         if signal_type in (None, PdqSignal):
             for fake_id, signal in enumerate(PdqSignal.get_examples()):
-                yield interface.BankContentIterationItem(
+                yield BankContentIterationItem(
                     signal_type_name=PdqSignal.get_name(),
                     signal_val=signal,
                     bank_content_timestamp=1,
@@ -238,7 +246,7 @@ class MockedUnifiedStore(interface.IUnifiedStore):
                 )
         elif signal_type in (None, VideoMD5Signal):
             for fake_id, signal in enumerate(VideoMD5Signal.get_examples()):
-                yield interface.BankContentIterationItem(
+                yield BankContentIterationItem(
                     signal_type_name=VideoMD5Signal.get_name(),
                     signal_val=signal,
                     bank_content_timestamp=1,

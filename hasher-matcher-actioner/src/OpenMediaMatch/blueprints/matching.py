@@ -29,7 +29,8 @@ from threatexchange.signal_type.index import (
 )
 
 from OpenMediaMatch.background_tasks.development import get_apscheduler
-from OpenMediaMatch.storage import interface
+from threatexchange.storage.interfaces import SignalTypeIndexBuildCheckpoint, ISignalTypeConfigStore
+from OpenMediaMatch.storage.interface import IFlaskUnifiedStore
 from OpenMediaMatch.blueprints import hashing
 from OpenMediaMatch.utils.flask_utils import (
     api_error_handler,
@@ -68,7 +69,7 @@ TBankMatchBySignalType = dict[str, TMatchByBank]
 class _SignalIndexInMemoryCache:
     signal_type: t.Type[SignalType]
     index: SignalTypeIndex[int]
-    checkpoint: interface.SignalTypeIndexBuildCheckpoint
+    checkpoint: SignalTypeIndexBuildCheckpoint
     last_check_ts: float
     sec_old_before_stale: int
 
@@ -93,12 +94,12 @@ class _SignalIndexInMemoryCache:
         return cls(
             signal_type,
             signal_type.get_index_cls().build([]),
-            interface.SignalTypeIndexBuildCheckpoint.get_empty(),
+            SignalTypeIndexBuildCheckpoint.get_empty(),
             0,
             sec_old_before_stale,
         )
 
-    def reload_if_needed(self, store: interface.IUnifiedStore) -> None:
+    def reload_if_needed(self, store: IFlaskUnifiedStore) -> None:
         now = time.time()
         # There's a race condition here, but it's unclear if we should solve it
         curr_checkpoint = store.get_last_index_build_checkpoint(self.signal_type)
@@ -255,7 +256,7 @@ def _checkpoint_timestamp_to_str(checkpoint: int) -> str:
 
 
 def _validate_and_transform_signal_type(
-    signal_type_name: str, storage: interface.ISignalTypeConfigStore
+    signal_type_name: str, storage: ISignalTypeConfigStore
 ) -> type[SignalType]:
     """
     Accepts a signal type name and returns the corresponding signal type class,
