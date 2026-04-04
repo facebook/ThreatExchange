@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
