@@ -1,3 +1,5 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
 import pytest
 from unittest.mock import Mock, patch
 
