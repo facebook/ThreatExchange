@@ -495,28 +495,34 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         store_start_time = time.time()
         # Deep dark magic - direct access postgres large object API
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)
-        self._log(
-            "imported tmpfile as lobject oid %d took %s",
-            l_obj.oid,
-            duration_to_human_str(time.time() - store_start_time),
-        )
-        if self.serialized_index_large_object_oid is not None:
-            if self.index_lobj_exists():
-                old_obj = raw_conn.lobject(self.serialized_index_large_object_oid, "n")
-                self._log("deallocating old lobject %d", old_obj.oid)
-                old_obj.unlink()
-            else:
-                self._log(
-                    "old lobject %d doesn't exist? "
-                    + "This might be a previous partial failure",
-                    self.serialized_index_large_object_oid,
-                    level=logging.WARNING,
-                )
+        try:
+            l_obj = raw_conn.lobject(0, "wb", 0, tmpfile.name)
+            self._log(
+                "imported tmpfile as lobject oid %d took %s",
+                l_obj.oid,
+                duration_to_human_str(time.time() - store_start_time),
+            )
+            if self.serialized_index_large_object_oid is not None:
+                if self.index_lobj_exists():
+                    old_obj = raw_conn.lobject(
+                        self.serialized_index_large_object_oid, "n"
+                    )
+                    self._log("deallocating old lobject %d", old_obj.oid)
+                    old_obj.unlink()
+                else:
+                    self._log(
+                        "old lobject %d doesn't exist? "
+                        + "This might be a previous partial failure",
+                        self.serialized_index_large_object_oid,
+                        level=logging.WARNING,
+                    )
 
-        self.serialized_index_large_object_oid = l_obj.oid
-        db.session.add(self)
-        raw_conn.commit()
+            self.serialized_index_large_object_oid = l_obj.oid
+            db.session.add(self)
+            raw_conn.commit()
+        finally:
+            # explicitly close the raw connection to free memory
+            raw_conn.close()
 
         self._log(
             "commited new index, %d signals %s took %s",
@@ -546,28 +552,35 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # I'm sorry future debugger finding this comment.
         load_start_time = time.time()
         raw_conn = db.engine.raw_connection()
-        l_obj = raw_conn.lobject(oid, "rb")
+        try:
+            l_obj = raw_conn.lobject(oid, "rb")
 
-        with tempfile.NamedTemporaryFile("rb") as tmpfile:
-            self._log("importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name)
-            l_obj.export(tmpfile.name)
-            tmpfile.seek(0, io.SEEK_END)
-            self._log(
-                "downloading %s to tmpfile took %s",
-                _human_friendly_bytesize(tmpfile.tell()),
-                duration_to_human_str(time.time() - load_start_time),
-            )
-            tmpfile.seek(0)
+            with tempfile.NamedTemporaryFile("rb") as tmpfile:
+                self._log(
+                    "importing lobject oid %d to tmpfile %s", l_obj.oid, tmpfile.name
+                )
+                l_obj.export(tmpfile.name)
+                tmpfile.seek(0, io.SEEK_END)
+                self._log(
+                    "downloading %s to tmpfile took %s",
+                    _human_friendly_bytesize(tmpfile.tell()),
+                    duration_to_human_str(time.time() - load_start_time),
+                )
+                tmpfile.seek(0)
 
-            deserialize_start = time.time()
-            index = t.cast(
-                SignalTypeIndex[int],
-                SignalTypeIndex.deserialize(t.cast(t.BinaryIO, tmpfile.file)),
-            )
-            self._log(
-                "deserialize took %s",
-                duration_to_human_str(time.time() - deserialize_start),
-            )
+                deserialize_start = time.time()
+                index = t.cast(
+                    SignalTypeIndex[int],
+                    SignalTypeIndex.deserialize(t.cast(t.BinaryIO, tmpfile.file)),
+                )
+                self._log(
+                    "deserialize took %s",
+                    duration_to_human_str(time.time() - deserialize_start),
+                )
+        finally:
+            # explicitly close the raw connection to free memory
+            raw_conn.close()
+
         self._log(
             "loading signal index took %s",
             duration_to_human_str(time.time() - load_start_time),
