@@ -1,6 +1,8 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import logging
+import multiprocessing
+import os
 import time
 import typing as t
 
@@ -19,11 +21,64 @@ from OpenMediaMatch.utils.memory_utils import trim_process_memory
 
 logger = logging.getLogger(__name__)
 
+# 4-hour safety timeout for the subprocess build.
+_SUBPROCESS_TIMEOUT_SEC = 4 * 60 * 60
 
-def apscheduler_build_all_indices() -> None:
-    with get_apscheduler().app.app_context():
+
+def _subprocess_build_target() -> None:
+    """
+    Entry point for the index-build child process.
+
+    Creates its own Flask app (scheduler/cache disabled via OMM_SKIP_BACKGROUND_TASKS)
+    and runs the full index build. When this process exits the OS reclaims
+    all memory, which avoids RSS growth from C-level heap fragmentation
+    caused by FAISS and other native allocators.
+    """
+    os.environ["OMM_SKIP_BACKGROUND_TASKS"] = "1"
+
+    from OpenMediaMatch.app import create_app
+
+    app = create_app()
+    with app.app_context():
         storage = get_storage()
         build_all_indices(storage, storage, storage)
+
+
+def apscheduler_build_all_indices() -> None:
+    """
+    APScheduler entry point — spawn an isolated subprocess for the build.
+
+    FAISS indexes allocate large C++ buffers that fragment glibc's heap.
+    Even after the Python references are dropped, free() cannot return
+    interior pages to the OS, so RSS ratchets up with every build cycle.
+    Running in a subprocess sidesteps this: the OS reclaims everything
+    when the child exits.
+    """
+    app = get_apscheduler().app
+
+    ctx = multiprocessing.get_context("spawn")
+    proc = ctx.Process(target=_subprocess_build_target, name="omm-index-builder")
+    proc.start()
+    app.logger.info("Index build subprocess started (pid=%s)", proc.pid)
+
+    proc.join(timeout=_SUBPROCESS_TIMEOUT_SEC)
+
+    if proc.exitcode is None:
+        app.logger.error(
+            "Index build subprocess timed out after %ds (pid=%s), killing",
+            _SUBPROCESS_TIMEOUT_SEC,
+            proc.pid,
+        )
+        proc.kill()
+        proc.join()
+    elif proc.exitcode != 0:
+        app.logger.error(
+            "Index build subprocess exited with code %d (pid=%s)",
+            proc.exitcode,
+            proc.pid,
+        )
+    else:
+        app.logger.info("Index build subprocess completed successfully")
 
 
 def build_all_indices(

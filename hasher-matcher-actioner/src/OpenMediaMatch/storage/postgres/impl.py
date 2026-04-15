@@ -694,17 +694,20 @@ class DefaultOMMStore(IFlaskUnifiedStore):
                 database.ContentSignal.signal_type == signal_type.get_name()
             )
 
-        # Execute the query and stream results with the proper yield batch size
+        # Execute the query and stream results with the proper yield batch size.
+        # Wrap in try/finally so the server-side cursor is closed even if the
+        # caller abandons iteration early (e.g. due to an exception).
         result = get_read_session().execute(query).yield_per(batch_size)
 
-        for partition in result.partitions():
-            # If there are no more results, break the loop
-            if not partition:
-                break
+        try:
+            for partition in result.partitions():
+                if not partition:
+                    break
 
-            # Yield the results as BankContentIterationItem
-            for row in partition:
-                yield row._tuple()[0].as_iteration_item()
+                for row in partition:
+                    yield row._tuple()[0].as_iteration_item()
+        finally:
+            result.close()
 
     def init_flask(self, app: flask.Flask) -> None:
         migrate = flask_migrate.Migrate()
