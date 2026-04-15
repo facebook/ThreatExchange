@@ -162,6 +162,10 @@ def create_app() -> OpenAPI:
         logging.config.dictConfig(logging_config)
 
     running_migrations = os.getenv("MIGRATION_COMMAND") == "1"
+    # Subprocess builds only need DB access, not the scheduler or index cache.
+    skip_background_tasks = (
+        running_migrations or os.getenv("OMM_SKIP_BACKGROUND_TASKS") == "1"
+    )
 
     engine_logging = app.config.get("SQLALCHEMY_ENGINE_LOG_LEVEL")
     if engine_logging is not None:
@@ -191,7 +195,7 @@ def create_app() -> OpenAPI:
         # or other undesirable behavior
         if (
             _is_werkzeug_reloaded_process() or _is_gunicorn()
-        ) and not running_migrations:
+        ) and not skip_background_tasks:
             now = datetime.datetime.now()
             scheduler = dev_apscheduler.get_apscheduler()
             scheduler.init_app(app)
@@ -234,7 +238,7 @@ def create_app() -> OpenAPI:
 
         if app.config.get("ROLE_MATCHER", False):
             app.register_api(matching.bp)
-            if app.config.get("TASK_INDEX_CACHE", False) and not running_migrations:
+            if app.config.get("TASK_INDEX_CACHE", False) and not skip_background_tasks:
                 matching.initiate_index_cache(app, scheduler)
 
         if app.config.get("ROLE_CURATOR", False):
