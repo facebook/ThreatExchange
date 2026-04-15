@@ -84,6 +84,8 @@ def build_index(
         index_store.store_signal_type_index(for_signal_type, built_index, checkpoint)
     finally:
         # Force garbage collection to reclaim memory and attempt to free pages
+        # explicitly free the built index before reclaiming memory
+        built_index = None
         trim_process_memory(logger, "Indexer")
 
     logger.info(
@@ -114,6 +116,9 @@ def _prepare_index(
     # Build index
     index_cls = for_signal_type.get_index_cls()
     built_index = index_cls.build(signal_list)
+
+    # explicitly free the signal list before returning
+    signal_list.clear()
 
     # Create checkpoint
     checkpoint = SignalTypeIndexBuildCheckpoint.get_empty()
