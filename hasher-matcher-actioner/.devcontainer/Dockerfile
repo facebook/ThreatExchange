@@ -1,8 +1,11 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.13
 
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -y install --no-install-recommends postgresql-client \
+  && apt-get -y install --no-install-recommends postgresql-client libjemalloc2 \
   && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Use jemalloc to avoid RSS growth from glibc heap fragmentation (see #1813)
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 ARG NODE_VERSION="none"
 RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
