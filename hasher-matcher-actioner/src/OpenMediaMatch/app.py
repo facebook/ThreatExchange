@@ -265,8 +265,14 @@ def create_app() -> OpenAPI:
             "200": {"description": "Service is alive"},
             "503": {"description": "Service is not ready"},
         },
-        summary="Health check",
-        description="Liveness/readiness check",
+        summary="Health check (deprecated)",
+        description=(
+            "Combined liveness/readiness check. Deprecated: prefer /livez for"
+            " liveness probes and /readyz for readiness probes. Pointing a"
+            " Kubernetes livenessProbe at this endpoint can cause"
+            " CrashLoopBackOff during cold start, since 503 is returned while"
+            " the index is still loading."
+        ),
     )
     def status():
         """
@@ -278,6 +284,43 @@ def create_app() -> OpenAPI:
             if matching.index_cache_is_stale():
                 return "INDEX-STALE", 503
         return "I-AM-ALIVE", 200
+
+    @app.get(
+        "/livez",
+        tags=[Tag(name="Core")],
+        responses={"200": {"description": "Service is alive"}},
+        summary="Liveness check",
+        description=(
+            "Kubernetes-style liveness probe. Returns 200 if the process can"
+            " serve HTTP. Does not check index state - failing this should"
+            " imply the pod needs to be restarted."
+        ),
+    )
+    def livez():
+        return "OK", 200
+
+    @app.get(
+        "/readyz",
+        tags=[Tag(name="Core")],
+        responses={
+            "200": {"description": "Service is ready to serve traffic"},
+            "503": {"description": "Service is not ready"},
+        },
+        summary="Readiness check",
+        description=(
+            "Kubernetes-style readiness probe. Returns 503 when a matcher pod"
+            " has not yet loaded its index, or when the cached index is"
+            " stale. Pods failing this should be removed from service"
+            " endpoints but not restarted."
+        ),
+    )
+    def readyz():
+        if app.config.get("ROLE_MATCHER", False):
+            if not matching.index_cache_is_ready():
+                return "INDEX-NOT-LOADED", 503
+            if matching.index_cache_is_stale():
+                return "INDEX-STALE", 503
+        return "READY", 200
 
     @app.get(
         "/site-map",

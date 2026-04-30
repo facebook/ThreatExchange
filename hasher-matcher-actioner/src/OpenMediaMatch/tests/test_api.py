@@ -72,6 +72,80 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     assert response.data == b"I-AM-ALIVE"
 
 
+def test_livez_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
+    """
+    /livez must never fail because of index state - that would cause
+    CrashLoopBackOff during cold start.
+    """
+    response = client.get("/livez")
+    assert response.status_code == 200
+    assert response.data == b"OK"
+
+    cache_val = matching._SignalIndexInMemoryCache(
+        PdqSignal,
+        PDQIndex2(),
+        SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        last_check_ts=0.0,
+        sec_old_before_stale=65,
+    )
+    monkeypatch.setattr(
+        matching, "_get_index_cache", lambda: {PdqSignal.get_name(): cache_val}
+    )
+
+    # Index not loaded - /livez still alive
+    assert not cache_val.is_ready
+    response = client.get("/livez")
+    assert response.status_code == 200
+    assert response.data == b"OK"
+
+    # Index stale - /livez still alive
+    cache_val.last_check_ts = 1
+    assert cache_val.is_stale
+    response = client.get("/livez")
+    assert response.status_code == 200
+    assert response.data == b"OK"
+
+
+def test_readyz_response(client: FlaskClient, monkeypatch: MonkeyPatch):
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    assert response.data == b"READY"
+
+    cache_val = matching._SignalIndexInMemoryCache(
+        PdqSignal,
+        PDQIndex2(),
+        SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        last_check_ts=0.0,
+        sec_old_before_stale=0,
+    )
+    monkeypatch.setattr(
+        matching, "_get_index_cache", lambda: {PdqSignal.get_name(): cache_val}
+    )
+
+    # Index not yet loaded
+    response = client.get("/readyz")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-NOT-LOADED"
+
+    # Loaded; staleness disabled by config
+    cache_val.last_check_ts = 1
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    assert response.data == b"READY"
+
+    # Loaded but stale
+    cache_val.sec_old_before_stale = 65
+    response = client.get("/readyz")
+    assert response.status_code == 503
+    assert response.data == b"INDEX-STALE"
+
+    # Loaded and fresh
+    cache_val.last_check_ts = time.time()
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    assert response.data == b"READY"
+
+
 def test_openapi_documentation_available(client: FlaskClient):
     response = client.get("/openapi/openapi.json")
     assert response.status_code == 200
