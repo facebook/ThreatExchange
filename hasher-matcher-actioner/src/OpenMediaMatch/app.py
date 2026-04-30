@@ -268,10 +268,11 @@ def create_app() -> OpenAPI:
         summary="Health check (deprecated)",
         description=(
             "Combined liveness/readiness check. Deprecated: prefer /livez for"
-            " liveness probes and /readyz for readiness probes. Pointing a"
-            " Kubernetes livenessProbe at this endpoint can cause"
-            " CrashLoopBackOff during cold start, since 503 is returned while"
-            " the index is still loading."
+            " liveness checks and /readyz for readiness checks. Health-check"
+            " clients that act on HTTP status codes alone (most load balancers"
+            " and orchestrators) cannot distinguish the failure modes this"
+            " endpoint reports, so using it as a liveness check causes restart"
+            " loops during cold start while the index is still loading."
         ),
     )
     def status():
@@ -291,9 +292,12 @@ def create_app() -> OpenAPI:
         responses={"200": {"description": "Service is alive"}},
         summary="Liveness check",
         description=(
-            "Kubernetes-style liveness probe. Returns 200 if the process can"
-            " serve HTTP. Does not check index state - failing this should"
-            " imply the pod needs to be restarted."
+            "Liveness check. Returns 200 if the process can serve HTTP. Does"
+            " not check index state - this is intentional, so that"
+            " health-check clients acting on status codes alone do not"
+            " restart the instance during cold start before the index has"
+            " loaded. Failing this should imply the process is wedged and"
+            " needs to be restarted."
         ),
     )
     def livez():
@@ -308,10 +312,13 @@ def create_app() -> OpenAPI:
         },
         summary="Readiness check",
         description=(
-            "Kubernetes-style readiness probe. Returns 503 when a matcher pod"
-            " has not yet loaded its index, or when the cached index is"
-            " stale. Pods failing this should be removed from service"
-            " endpoints but not restarted."
+            "Readiness check. Returns 503 when a matcher has not yet loaded"
+            " its index (INDEX-NOT-LOADED) or when the cached index is stale"
+            " (INDEX-STALE), and 200 READY otherwise. Instances failing this"
+            " should be removed from the load balancer's serving set but not"
+            " restarted - restarting will not refresh a stale cache and may"
+            " cascade if the underlying cause is shared infrastructure (e.g."
+            " the database)."
         ),
     )
     def readyz():

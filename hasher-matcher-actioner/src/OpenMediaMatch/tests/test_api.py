@@ -74,8 +74,10 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
 
 def test_livez_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
     """
-    /livez must never fail because of index state - that would cause
-    CrashLoopBackOff during cold start.
+    /livez must never fail because of index state - that would cause a
+    restart loop during cold start under any health-check client that
+    triggers restarts on non-2xx (k8s livenessProbe, equivalents on other
+    platforms).
     """
     response = client.get("/livez")
     assert response.status_code == 200
