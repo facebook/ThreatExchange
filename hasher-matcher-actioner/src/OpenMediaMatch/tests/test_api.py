@@ -72,6 +72,42 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     assert response.data == b"I-AM-ALIVE"
 
 
+def test_status_live_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
+    """
+    /status/live must never fail because of index state - that would cause
+    a restart loop during cold start under any health-check client that
+    triggers restarts on non-2xx (e.g. Kubernetes livenessProbe, and
+    equivalents on other orchestrators and load balancers).
+    """
+    response = client.get("/status/live")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    cache_val = matching._SignalIndexInMemoryCache(
+        PdqSignal,
+        PDQIndex2(),
+        SignalTypeIndexBuildCheckpoint(0, 0, 0),
+        last_check_ts=0.0,
+        sec_old_before_stale=65,
+    )
+    monkeypatch.setattr(
+        matching, "_get_index_cache", lambda: {PdqSignal.get_name(): cache_val}
+    )
+
+    # Index not loaded - /status/live still alive
+    assert not cache_val.is_ready
+    response = client.get("/status/live")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+    # Index stale - /status/live still alive
+    cache_val.last_check_ts = 1
+    assert cache_val.is_stale
+    response = client.get("/status/live")
+    assert response.status_code == 200
+    assert response.data == b"I-AM-ALIVE"
+
+
 def test_openapi_documentation_available(client: FlaskClient):
     response = client.get("/openapi/openapi.json")
     assert response.status_code == 200

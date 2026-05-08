@@ -266,7 +266,12 @@ def create_app() -> OpenAPI:
             "503": {"description": "Service is not ready"},
         },
         summary="Health check",
-        description="Liveness/readiness check",
+        description=(
+            "Returns 200 if the server is healthy and should serve traffic."
+            " If you need a separate check that the server is alive, check"
+            " for a non-empty return from this endpoint or use a 200 return"
+            " from /status/live."
+        ),
     )
     def status():
         """
@@ -277,6 +282,25 @@ def create_app() -> OpenAPI:
                 return "INDEX-NOT-LOADED", 503
             if matching.index_cache_is_stale():
                 return "INDEX-STALE", 503
+        return "I-AM-ALIVE", 200
+
+    @app.get(
+        "/status/live",
+        tags=[Tag(name="Core")],
+        responses={"200": {"description": "Service is alive"}},
+        summary="Liveness check",
+        description=(
+            "Liveness check. Returns 200 if the process can serve HTTP."
+            " Unlike /status, this endpoint intentionally does not check"
+            " index state, so health-check clients that act on HTTP status"
+            " codes alone (e.g. Kubernetes livenessProbe, and equivalents on"
+            " other orchestrators and load balancers) do not restart the"
+            " instance during cold start before the index has loaded."
+            " Failing this should imply the process is wedged and needs to"
+            " be restarted."
+        ),
+    )
+    def status_live():
         return "I-AM-ALIVE", 200
 
     @app.get(
