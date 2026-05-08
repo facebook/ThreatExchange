@@ -72,16 +72,16 @@ def test_status_response(client: FlaskClient, monkeypatch: MonkeyPatch):
     assert response.data == b"I-AM-ALIVE"
 
 
-def test_livez_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
+def test_status_live_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
     """
-    /livez must never fail because of index state - that would cause a
-    restart loop during cold start under any health-check client that
-    triggers restarts on non-2xx (k8s livenessProbe, equivalents on other
-    platforms).
+    /status/live must never fail because of index state - that would cause
+    a restart loop during cold start under any health-check client that
+    triggers restarts on non-2xx (e.g. Kubernetes livenessProbe, and
+    equivalents on other orchestrators and load balancers).
     """
-    response = client.get("/livez")
+    response = client.get("/status/live")
     assert response.status_code == 200
-    assert response.data == b"OK"
+    assert response.data == b"I-AM-ALIVE"
 
     cache_val = matching._SignalIndexInMemoryCache(
         PdqSignal,
@@ -94,58 +94,18 @@ def test_livez_always_alive(client: FlaskClient, monkeypatch: MonkeyPatch):
         matching, "_get_index_cache", lambda: {PdqSignal.get_name(): cache_val}
     )
 
-    # Index not loaded - /livez still alive
+    # Index not loaded - /status/live still alive
     assert not cache_val.is_ready
-    response = client.get("/livez")
+    response = client.get("/status/live")
     assert response.status_code == 200
-    assert response.data == b"OK"
+    assert response.data == b"I-AM-ALIVE"
 
-    # Index stale - /livez still alive
+    # Index stale - /status/live still alive
     cache_val.last_check_ts = 1
     assert cache_val.is_stale
-    response = client.get("/livez")
+    response = client.get("/status/live")
     assert response.status_code == 200
-    assert response.data == b"OK"
-
-
-def test_readyz_response(client: FlaskClient, monkeypatch: MonkeyPatch):
-    response = client.get("/readyz")
-    assert response.status_code == 200
-    assert response.data == b"READY"
-
-    cache_val = matching._SignalIndexInMemoryCache(
-        PdqSignal,
-        PDQIndex2(),
-        SignalTypeIndexBuildCheckpoint(0, 0, 0),
-        last_check_ts=0.0,
-        sec_old_before_stale=0,
-    )
-    monkeypatch.setattr(
-        matching, "_get_index_cache", lambda: {PdqSignal.get_name(): cache_val}
-    )
-
-    # Index not yet loaded
-    response = client.get("/readyz")
-    assert response.status_code == 503
-    assert response.data == b"INDEX-NOT-LOADED"
-
-    # Loaded; staleness disabled by config
-    cache_val.last_check_ts = 1
-    response = client.get("/readyz")
-    assert response.status_code == 200
-    assert response.data == b"READY"
-
-    # Loaded but stale
-    cache_val.sec_old_before_stale = 65
-    response = client.get("/readyz")
-    assert response.status_code == 503
-    assert response.data == b"INDEX-STALE"
-
-    # Loaded and fresh
-    cache_val.last_check_ts = time.time()
-    response = client.get("/readyz")
-    assert response.status_code == 200
-    assert response.data == b"READY"
+    assert response.data == b"I-AM-ALIVE"
 
 
 def test_openapi_documentation_available(client: FlaskClient):

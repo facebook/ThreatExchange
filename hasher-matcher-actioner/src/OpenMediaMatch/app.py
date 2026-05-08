@@ -265,14 +265,12 @@ def create_app() -> OpenAPI:
             "200": {"description": "Service is alive"},
             "503": {"description": "Service is not ready"},
         },
-        summary="Health check (deprecated)",
+        summary="Health check",
         description=(
-            "Combined liveness/readiness check. Deprecated: prefer /livez for"
-            " liveness checks and /readyz for readiness checks. Health-check"
-            " clients that act on HTTP status codes alone (most load balancers"
-            " and orchestrators) cannot distinguish the failure modes this"
-            " endpoint reports, so using it as a liveness check causes restart"
-            " loops during cold start while the index is still loading."
+            "Returns 200 if the server is healthy and should serve traffic."
+            " If you need a separate check that the server is alive, check"
+            " for a non-empty return from this endpoint or use a 200 return"
+            " from /status/live."
         ),
     )
     def status():
@@ -287,47 +285,23 @@ def create_app() -> OpenAPI:
         return "I-AM-ALIVE", 200
 
     @app.get(
-        "/livez",
+        "/status/live",
         tags=[Tag(name="Core")],
         responses={"200": {"description": "Service is alive"}},
         summary="Liveness check",
         description=(
-            "Liveness check. Returns 200 if the process can serve HTTP. Does"
-            " not check index state - this is intentional, so that"
-            " health-check clients acting on status codes alone do not"
-            " restart the instance during cold start before the index has"
-            " loaded. Failing this should imply the process is wedged and"
-            " needs to be restarted."
+            "Liveness check. Returns 200 if the process can serve HTTP."
+            " Unlike /status, this endpoint intentionally does not check"
+            " index state, so health-check clients that act on HTTP status"
+            " codes alone (e.g. Kubernetes livenessProbe, and equivalents on"
+            " other orchestrators and load balancers) do not restart the"
+            " instance during cold start before the index has loaded."
+            " Failing this should imply the process is wedged and needs to"
+            " be restarted."
         ),
     )
-    def livez():
-        return "OK", 200
-
-    @app.get(
-        "/readyz",
-        tags=[Tag(name="Core")],
-        responses={
-            "200": {"description": "Service is ready to serve traffic"},
-            "503": {"description": "Service is not ready"},
-        },
-        summary="Readiness check",
-        description=(
-            "Readiness check. Returns 503 when a matcher has not yet loaded"
-            " its index (INDEX-NOT-LOADED) or when the cached index is stale"
-            " (INDEX-STALE), and 200 READY otherwise. Instances failing this"
-            " should be removed from the load balancer's serving set but not"
-            " restarted - restarting will not refresh a stale cache and may"
-            " cascade if the underlying cause is shared infrastructure (e.g."
-            " the database)."
-        ),
-    )
-    def readyz():
-        if app.config.get("ROLE_MATCHER", False):
-            if not matching.index_cache_is_ready():
-                return "INDEX-NOT-LOADED", 503
-            if matching.index_cache_is_stale():
-                return "INDEX-STALE", 503
-        return "READY", 200
+    def status_live():
+        return "I-AM-ALIVE", 200
 
     @app.get(
         "/site-map",
