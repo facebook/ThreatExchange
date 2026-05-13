@@ -188,7 +188,9 @@ def test_load_signal_index_uses_read_engine(app: Flask) -> None:
     db_record = _create_index_record()
     read_engine = database.db.engines["read"]
 
-    with patch.object(read_engine, "raw_connection", wraps=read_engine.raw_connection) as mock_conn:
+    with patch.object(
+        read_engine, "raw_connection", wraps=read_engine.raw_connection
+    ) as mock_conn:
         db_record.load_signal_index()
         mock_conn.assert_called_once()
 
