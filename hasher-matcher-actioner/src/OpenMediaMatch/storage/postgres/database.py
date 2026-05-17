@@ -455,7 +455,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
 
     serialized_index_large_object_oid: Mapped[int | None] = mapped_column(OID)
 
-    def index_lobj_exists(self, session=None) -> bool:
+    def index_lobj_exists(self, session: t.Optional[Session] = None) -> bool:
         """
         Return true if the index lobj exists and load_signal_index should work.
 
