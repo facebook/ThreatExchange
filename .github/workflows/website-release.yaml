@@ -6,7 +6,11 @@ on:
       - main
     paths:
       - website/**
-      - .github/workflows/deploy-website.yaml
+      - hasher-matcher-actioner/src/**
+      - hasher-matcher-actioner/pyproject.toml
+      - hasher-matcher-actioner/scripts/dump_openapi.py
+      - hasher-matcher-actioner/scripts/openapi_dump_config.py
+      - .github/workflows/website-release.yaml
 
 # Sets base permissions of the GITHUB_TOKEN
 permissions:
@@ -17,10 +21,6 @@ permissions:
 concurrency:
   group: deploy-website
   cancel-in-progress: false
-
-defaults:
-  run:
-    working-directory: website
 
 jobs:
   build:
@@ -33,6 +33,23 @@ jobs:
         uses: actions/checkout@v6
         # with:
         #   fetch-depth: 0 # Not needed if lastUpdated is not enabled
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: hasher-matcher-actioner/pyproject.toml
+
+      - name: Install HMA
+        working-directory: hasher-matcher-actioner
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Dump HMA OpenAPI spec
+        working-directory: hasher-matcher-actioner
+        run: python scripts/dump_openapi.py ../website/content/public/hma/openapi.json
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -49,12 +66,14 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
+        working-directory: website
         run: pnpm install
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
 
       - name: Build with VitePress
+        working-directory: website
         run: pnpm build --base ${{ env.PAGES_PATH }}
 
       - name: Upload artifact
