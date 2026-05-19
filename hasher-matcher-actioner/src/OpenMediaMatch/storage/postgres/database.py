@@ -37,6 +37,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import OID
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
     DeclarativeBase,
     relationship,
@@ -548,6 +549,13 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         return self
 
     def load_signal_index(self) -> SignalTypeIndex[int]:
+        """Reads the serialized index from the read replica via large object API.
+
+        Safe against replica lag: commit_signal_index() commits the lobj via
+        raw_conn.commit() before the caller commits the row (with the new OID)
+        via the ORM session. WAL replays in order, so the replica cannot expose
+        the OID without already having the lobj.
+        """
         oid = self.serialized_index_large_object_oid
         assert oid is not None
         # If we were being fully proper, we would get the SignalType

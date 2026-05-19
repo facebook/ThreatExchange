@@ -189,9 +189,9 @@ def test_load_signal_index_uses_read_engine(app: Flask) -> None:
     read_engine = database.db.engines["read"]
     write_engine = database.db.engine
 
-    assert read_engine is not write_engine, (
-        "Test relies on separate read/write engine instances"
-    )
+    assert (
+        read_engine is not write_engine
+    ), "Test relies on separate read/write engine instances"
 
     with patch.object(
         read_engine, "raw_connection", wraps=read_engine.raw_connection
@@ -202,6 +202,7 @@ def test_load_signal_index_uses_read_engine(app: Flask) -> None:
 
     mock_read.assert_called_once()
     mock_write.assert_not_called()
+
 
 def test_index_lobj_exists_uses_read_session_by_default(app: Flask) -> None:
     db_record = _create_index_record()
