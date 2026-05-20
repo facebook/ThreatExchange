@@ -549,7 +549,8 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         return self
 
     def load_signal_index(self) -> SignalTypeIndex[int]:
-        """Reads the serialized index from the read replica via large object API.
+        """
+        Reads the serialized index from the read replica via large object API.
 
         Safe against replica lag: commit_signal_index() commits the lobj via
         raw_conn.commit() before the caller commits the row (with the new OID)
