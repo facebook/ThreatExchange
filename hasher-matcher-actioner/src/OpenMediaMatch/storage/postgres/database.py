@@ -552,10 +552,12 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         """
         Reads the serialized index from the read replica via large object API.
 
-        Safe against replica lag: commit_signal_index() commits the lobj via
-        raw_conn.commit() before the caller commits the row (with the new OID)
-        via the ORM session. WAL replays in order, so the replica cannot expose
-        the OID without already having the lobj.
+        When using read/write replicas, as long as we read this object
+        and its ID from the same db (including replicas), the lobj should be there, 
+        as the lobj is written before the record with the ID.
+        
+        However, it is still possible to get an error due to races with the
+        garbage collection process that deletes lobjs. 
         """
         oid = self.serialized_index_large_object_oid
         assert oid is not None
