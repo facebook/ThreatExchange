@@ -553,11 +553,11 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         Reads the serialized index from the read replica via large object API.
 
         When using read/write replicas, as long as we read this object
-        and its ID from the same db (including replicas), the lobj should be there, 
+        and its ID from the same db (including replicas), the lobj should be there,
         as the lobj is written before the record with the ID.
-        
+
         However, it is still possible to get an error due to races with the
-        garbage collection process that deletes lobjs. 
+        garbage collection process that deletes lobjs.
         """
         oid = self.serialized_index_large_object_oid
         assert oid is not None
