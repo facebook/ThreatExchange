@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import typing as t
+from unittest.mock import patch, MagicMock
 from flask import Flask
 from sqlalchemy import select, and_
 
@@ -162,3 +163,67 @@ def test_store_content(app: Flask) -> None:
         )
     ).scalar_one()
     assert PdqSignal.get_examples()[0] == hash1_val.signal_val
+
+
+def _create_index_record() -> database.SignalIndex:
+    """Helper to create and commit a SignalIndex record for testing."""
+    content = [("a", 1), ("b", 2)]
+    index = TrivialSignalTypeIndex.build(content)
+    record = database.SignalIndex(
+        signal_type="read_replica_test",
+        updated_to_ts=1,
+        updated_to_id=1,
+        signal_count=len(content),
+    ).commit_signal_index(index, SignalTypeIndexBuildCheckpoint.get_empty())
+    database.db.session.add(record)
+    database.db.session.commit()
+    return database.db.session.execute(
+        select(database.SignalIndex).where(
+            database.SignalIndex.signal_type == "read_replica_test"
+        )
+    ).scalar_one()
+
+
+def test_load_signal_index_uses_read_engine(app: Flask) -> None:
+    db_record = _create_index_record()
+    read_engine = database.db.engines["read"]
+    write_engine = database.db.engine
+
+    assert (
+        read_engine is not write_engine
+    ), "Test relies on separate read/write engine instances"
+
+    with patch.object(
+        read_engine, "raw_connection", wraps=read_engine.raw_connection
+    ) as mock_read, patch.object(
+        write_engine, "raw_connection", wraps=write_engine.raw_connection
+    ) as mock_write:
+        db_record.load_signal_index()
+
+    mock_read.assert_called_once()
+    mock_write.assert_not_called()
+
+
+def test_index_lobj_exists_uses_read_session_by_default(app: Flask) -> None:
+    db_record = _create_index_record()
+
+    with patch("OpenMediaMatch.storage.postgres.database.get_read_session") as mock_get:
+        mock_session = MagicMock()
+        mock_session.execute.return_value.scalar_one.return_value = 1
+        mock_get.return_value = mock_session
+
+        result = db_record.index_lobj_exists()
+
+        mock_get.assert_called_once()
+        assert result is True
+
+
+def test_index_lobj_exists_uses_provided_session(app: Flask) -> None:
+    db_record = _create_index_record()
+    mock_session = MagicMock()
+    mock_session.execute.return_value.scalar_one.return_value = 1
+
+    result = db_record.index_lobj_exists(session=mock_session)
+
+    mock_session.execute.assert_called_once()
+    assert result is True

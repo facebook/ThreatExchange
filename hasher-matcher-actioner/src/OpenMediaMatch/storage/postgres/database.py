@@ -37,6 +37,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import OID
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
     DeclarativeBase,
     relationship,
@@ -455,7 +456,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
 
     serialized_index_large_object_oid: Mapped[int | None] = mapped_column(OID)
 
-    def index_lobj_exists(self) -> bool:
+    def index_lobj_exists(self, session: t.Optional[Session] = None) -> bool:
         """
         Return true if the index lobj exists and load_signal_index should work.
 
@@ -463,8 +464,13 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         we've observed in github.com/facebook/ThreatExchange/issues/1673
         that some partial failure is possible. This can be used to
         detect that condition.
+
+        Uses the read replica by default. Pass a write session when
+        checking existence as part of a write operation (e.g. commit_signal_index).
         """
-        count = db.session.execute(
+        if session is None:
+            session = get_read_session()
+        count = session.execute(
             text(
                 "SELECT count(1) FROM pg_largeobject_metadata "
                 + f"WHERE oid = {self.serialized_index_large_object_oid};"
@@ -503,7 +509,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
                 duration_to_human_str(time.time() - store_start_time),
             )
             if self.serialized_index_large_object_oid is not None:
-                if self.index_lobj_exists():
+                if self.index_lobj_exists(session=get_write_session()):
                     old_obj = raw_conn.lobject(
                         self.serialized_index_large_object_oid, "n"
                     )
@@ -543,6 +549,16 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         return self
 
     def load_signal_index(self) -> SignalTypeIndex[int]:
+        """
+        Reads the serialized index from the read replica via large object API.
+
+        When using read/write replicas, as long as we read this object
+        and its ID from the same db (including replicas), the lobj should be there,
+        as the lobj is written before the record with the ID.
+
+        However, it is still possible to get an error due to races with the
+        garbage collection process that deletes lobjs.
+        """
         oid = self.serialized_index_large_object_oid
         assert oid is not None
         # If we were being fully proper, we would get the SignalType
@@ -551,7 +567,7 @@ class SignalIndex(db.Model):  # type: ignore[name-defined]
         # class no matter which interface we call it on.
         # I'm sorry future debugger finding this comment.
         load_start_time = time.time()
-        raw_conn = db.engine.raw_connection()
+        raw_conn = db.engines["read"].raw_connection()
         try:
             l_obj = raw_conn.lobject(oid, "rb")
 
