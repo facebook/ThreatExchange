@@ -368,12 +368,24 @@ class NCMECEnvironment(Enum):
     """
 
     Industry = "https://report.cybertip.org/hashsharing"
+    Industry_Exploitative = "https://report.cybertip.org/exploitative-hashsharing"
+    LawEnforcement = "https://lesp.ncmec.org/csam-hashsharing"
     NGO = "https://hashsharing.ncmec.org/npo"
     Exploitative = "https://hashsharing.ncmec.org/exploitative"
+    NGO_Generative_AI = "https://hashsharing.ncmec.org/generative-ai-csam"
+    NGO_Generative_AI_Exploitative = (
+        "https://hashsharing.ncmec.org/generative-ai-exploitative"
+    )
 
     test_Industry = "https://exttest.cybertip.org/hashsharing"
+    test_Industry_Exploitative = "https://exttest.cybertip.org/exploitative-hashsharing"
+    test_LawEnforcement = "https://betalesp.ncmec.org/csam-hashsharing"
     test_NGO = "https://hashsharing-test.ncmec.org/npo"
     test_Exploitative = "https://hashsharing-test.ncmec.org/exploitative"
+    test_NGO_Generative_AI = "https://hashsharing-test.ncmec.org/generative-ai-csam"
+    test_NGO_Generative_AI_Exploitative = (
+        "https://hashsharing-test.ncmec.org/generative-ai-exploitative"
+    )
 
 
 class NCMECHashAPI:
