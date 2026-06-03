@@ -101,7 +101,7 @@ class VPDQHashIndex:
             pass
 
     @staticmethod
-    def _finalize_faiss(faiss_index: faiss.Index) -> None:
+    def _finalize_faiss(faiss_index: t.Union[faiss.Index, faiss.IndexBinary]) -> None:
         try:
             reset_fn = getattr(faiss_index, "reset", None)
             if callable(reset_fn):

@@ -148,7 +148,7 @@ class HashCommand(command_base.Command):
                     f"does not apply to {self.content_type.get_name()}"
                 )
 
-            hashers = [self.signal_type]  # type: ignore  # can't detect intersection types
+            hashers = [self.signal_type]
 
         if not self.photo_preprocess:
             for file in self.files:
