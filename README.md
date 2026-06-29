@@ -49,6 +49,10 @@ To request access to ThreatExchange, please submit an application via [https://d
 
 We welcome contributions! See [CONTRIBUTING](https://github.com/facebook/ThreatExchange/blob/main/CONTRIBUTING.md) for details on how to get started, and our [Code of Conduct](https://github.com/facebook/ThreatExchange/blob/main/CODE_OF_CONDUCT.md).
 
+## Legal
+
+[Terms of Use](https://opensource.facebook.com/legal/terms) | [Privacy Policy](https://opensource.facebook.com/legal/privacy)
+
 ## License
 
 All projects in this repository are under the BSD license - see [./LICENSE](https://github.com/facebook/ThreatExchange/blob/main/LICENSE). However, there are some exceptions for files that were included for demonstration purposes, and their alternative licenses are noted at the top of the files themselves.
