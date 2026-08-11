@@ -37,9 +37,27 @@ class PDQIndex(SignalTypeIndex[IndexT]):
 
     def __init__(self, entries: t.Iterable[t.Tuple[str, IndexT]] = ()) -> None:
         super().__init__()
-        self.local_id_to_entry: t.List[t.Tuple[str, IndexT]] = []
+        # FAISS returns integer vector ids; this maps those ids to match metadata.
+        # Do not store the PDQ hex here — it is already held in the FAISS index.
+        self.local_id_to_entry: t.List[IndexT] = []
         self.index: PDQHashIndex = self._get_empty_index()
         self.add_all(entries=entries)
+
+    def __setstate__(self, state: t.Dict[str, t.Any]) -> None:
+        # Older indexes stored (pdq_hex, entry) tuples; matching only needs entry.
+        entries = state.get("local_id_to_entry")
+        if (
+            isinstance(entries, list)
+            and entries
+            and isinstance(entries[0], tuple)
+            and len(entries[0]) == 2
+            and isinstance(entries[0][0], str)
+        ):
+            state = {
+                **state,
+                "local_id_to_entry": [entry[1] for entry in entries],
+            }
+        self.__dict__.update(state)
 
     def __len__(self) -> int:
         return len(self.local_id_to_entry)
@@ -59,7 +77,7 @@ class PDQIndex(SignalTypeIndex[IndexT]):
             matches.append(
                 IndexMatchUntyped(
                     SignalSimilarityInfoWithIntDistance(int(distance)),
-                    self.local_id_to_entry[id][1],
+                    self.local_id_to_entry[id],
                 )
             )
         return matches
@@ -69,11 +87,13 @@ class PDQIndex(SignalTypeIndex[IndexT]):
 
     def add_all(self, entries: t.Iterable[t.Tuple[str, IndexT]]) -> None:
         start = len(self.local_id_to_entry)
-        self.local_id_to_entry.extend(entries)
-        if start != len(self.local_id_to_entry):
-            # This function signature is very silly
+        batch_signals: t.List[str] = []
+        for signal_str, entry in entries:
+            batch_signals.append(signal_str)
+            self.local_id_to_entry.append(entry)
+        if batch_signals:
             self.index.add(
-                (e[0] for e in self.local_id_to_entry[start:]),
+                batch_signals,
                 range(start, len(self.local_id_to_entry)),
             )
 

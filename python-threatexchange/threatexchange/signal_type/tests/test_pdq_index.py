@@ -120,9 +120,32 @@ def test_supports_pickling(index):
     assert len(reconstructed_index) == len(
         index
     ), "Index size mismatch after unpickling"
+    assert all(
+        not isinstance(entry, tuple) for entry in reconstructed_index.local_id_to_entry
+    ), "Sidecar should store metadata only, not (hash, metadata) tuples"
 
     query = test_entries[0][0]
     result = reconstructed_index.query(query)
+    assert_equal_pdq_index_match_results(
+        result,
+        [
+            PDQIndexMatch(SignalSimilarityInfoWithIntDistance(0), test_entries[1][1]),
+            PDQIndexMatch(SignalSimilarityInfoWithIntDistance(16), test_entries[0][1]),
+        ],
+    )
+
+
+def test_unpickle_legacy_hash_sidecar_entries(index):
+    """Indexes pickled before hash strings were dropped from the sidecar still work."""
+    legacy = PDQIndex()
+    legacy.index = index.index
+    legacy.local_id_to_entry = list(test_entries)
+
+    reconstructed = pickle.loads(pickle.dumps(legacy))
+    assert reconstructed.local_id_to_entry == [entry for _, entry in test_entries]
+
+    query = test_entries[0][0]
+    result = reconstructed.query(query)
     assert_equal_pdq_index_match_results(
         result,
         [
