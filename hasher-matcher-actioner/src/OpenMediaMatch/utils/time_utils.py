@@ -25,7 +25,7 @@ def duration_to_human_str(sec: float, *, terse: bool = False) -> str:
         ms_str = f"{ms:.1f}" if ms < 10 else f"{ms:.0f}"
         return f"{ms_str} {suffix}"
 
-    delta = relativedelta(microsecond=int(sec))
+    delta = relativedelta(seconds=int(sec))
 
     if delta.years > 0:
         return "More than a year"
