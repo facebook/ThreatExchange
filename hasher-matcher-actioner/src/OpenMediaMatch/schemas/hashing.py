@@ -8,7 +8,13 @@ from pydantic import BaseModel, ConfigDict, Field
 class HashRequest(BaseModel):
     """Request schema for hashing content from URL."""
 
-    url: str = Field(..., description="URL to the media content to hash")
+    url: str = Field(
+        ...,
+        description=(
+            "URL to the media content to hash. Supports http(s):// URLs and "
+            "s3://bucket/key URLs (the latter requires the optional 's3' extra)."
+        ),
+    )
     content_type: Optional[str] = Field(
         None, description="Content type (photo, video, etc.)"
     )
