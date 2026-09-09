@@ -4,6 +4,8 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from OpenMediaMatch.schemas.shared import OptionalMediaUrl
+
 
 class MatchWithDistance(BaseModel):
     """Schema for a match result with distance."""
@@ -36,7 +38,7 @@ class RawLookupResponse(BaseModel):
 class LookupRequest(BaseModel):
     """Request schema for content lookup."""
 
-    url: Optional[str] = Field(None, description="URL to hash and lookup")
+    url: OptionalMediaUrl = None
     content_type: Optional[str] = Field(None, description="Content type for URL")
     types: Optional[str] = Field(
         None,

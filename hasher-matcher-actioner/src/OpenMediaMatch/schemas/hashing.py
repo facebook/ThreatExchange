@@ -4,11 +4,13 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from OpenMediaMatch.schemas.shared import MediaUrl
+
 
 class HashRequest(BaseModel):
     """Request schema for hashing content from URL."""
 
-    url: str = Field(..., description="URL to the media content to hash")
+    url: MediaUrl
     content_type: Optional[str] = Field(
         None, description="Content type (photo, video, etc.)"
     )
