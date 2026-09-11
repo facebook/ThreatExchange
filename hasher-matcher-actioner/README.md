@@ -1,6 +1,6 @@
 # Hasher Matcher Actioner (HMA)
 
-_Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](./docs/history.md). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)_
+_Note: HMA has just completed a rewrite! It is now an entirely new architecture. You can [read our motivations below](../website/content/hma/history.md). If you need the HMA 1.0 code (Terraform, AWS, node), it lives forever with a copy of its wiki at [HMA_1.0_archive](https://github.com/facebook/ThreatExchange/tree/HMA_1.0_archive/hasher-matcher-actioner)_
 
 # Project Introduction
 
@@ -18,13 +18,13 @@ The name "hasher, matcher, actioner" refers to the technical process by which ne
 
 We have documentation on the following aspects of the HMA project:
 
-- [Architecture](./docs/architecture.md)
-- [Goals & Non-Goals](./docs/goals.md)
-- [Project History](./docs/history.md)
-- [User Interface](./docs/user-interface.md)
-- [API](./docs/api.md) (work in progress)
+- [Architecture](../website/content/hma/architecture.md)
+- [Goals & Non-Goals](../website/content/hma/goals.md)
+- [Project History](../website/content/hma/history.md)
+- [User Interface](../website/content/hma/user-interface.md)
+- [API](../website/content/hma/api.md) (work in progress)
 - [Releases](https://github.com/facebook/ThreatExchange/releases) — what's changed in each release
-- [Releasing](./docs/releasing.md) — how to cut a release and subscribe to notifications
+- [Releasing](../website/content/hma/releasing.md) — how to cut a release and subscribe to notifications
 
 ## Configurability
 
@@ -108,7 +108,7 @@ $ docker compose up
 This will spin up both a postgresql db as well as an instance of the app running all the configurations ready for testing.
 
 ### Demo UI and Walkthrough
-Please see [user-interface.md](docs/user-interface.md) for a walkthrough of the UI!
+Please see [user-interface.md](../website/content/hma/user-interface.md) for a walkthrough of the UI!
 
 # Contributors
 
