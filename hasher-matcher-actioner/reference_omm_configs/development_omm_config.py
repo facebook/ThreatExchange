@@ -73,6 +73,23 @@ STORAGE_IFACE_INSTANCE = DefaultOMMStore(
 # }
 # Note: When ALLOWED_HOSTNAMES is not set or empty, all hostnames are allowed
 
+# S3 (and S3-compatible) object storage support. Any endpoint that accepts a
+# `url` (e.g. GET /h/hash, banking content by URL) also accepts s3://bucket/key
+# URLs. Requires HMA installed with the optional 's3' extra (pip install
+# OpenMediaMatch[s3]). Credentials come from boto3's standard provider chain
+# (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars, instance/task role, etc).
+#
+# Point at an S3-compatible store (MinIO, DigitalOcean Spaces, etc):
+# S3_ENDPOINT_URL = "https://minio.example.com"
+# S3_REGION_NAME = "us-east-1"
+#
+# Optional allowlist - when set, only these buckets may be fetched:
+# ALLOWED_S3_BUCKETS = {
+#     'my-media-bucket',
+# }
+# Note: When ALLOWED_S3_BUCKETS is not set or empty, any bucket the credentials
+# can access is allowed.
+
 # We always want some logging by default, otherwise it's hard to tell whats happening inside the container:
 dictConfig(
     {
