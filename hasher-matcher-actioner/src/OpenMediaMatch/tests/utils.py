@@ -2,7 +2,6 @@
 
 import functools
 import http.server
-import os
 import shutil
 import tempfile
 import threading
@@ -73,8 +72,12 @@ def image_server() -> t.Iterator[str]:
 
 
 @pytest.fixture()
-def app() -> t.Iterator[Flask]:
-    os.environ.setdefault("OMM_CONFIG", "tests/omm_config.py")
+def app(monkeypatch: pytest.MonkeyPatch) -> t.Iterator[Flask]:
+    # Always use the test config, even if the shell has OMM_CONFIG pointed
+    # at a development config (e.g. the devcontainer). The development config
+    # enables the background index cache, which makes /status and lookups
+    # return 503 until the cache is populated - tests build indices inline.
+    monkeypatch.setenv("OMM_CONFIG", "tests/omm_config.py")
     app = create_app()
 
     with app.app_context():
