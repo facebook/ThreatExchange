@@ -10,8 +10,19 @@ import typing as t
 
 import dacite
 import requests
+from requests.exceptions import JSONDecodeError
 from urllib3.util.retry import Retry
 from threatexchange.exchanges.clients.utils.common import TimeoutHTTPAdapter
+
+# How far to advance start_timestamp when a FetchHashes response body is
+# malformed, so a single corrupt page cannot wedge fetching forever
+# (the checkpoint can only advance on a successful page). Skipped windows
+# can be re-fetched later once the server-side data is fixed.
+MALFORMED_PAGE_SKIP_SECONDS: int = 600
+# Bound how many corrupt windows one fetch_hashes_iter call will walk past,
+# so a fetch from DEFAULT_START_TIME cannot spin on skip-requests until
+# wall-clock "now".
+MALFORMED_PAGE_MAX_SKIPS: int = 12
 
 
 @enum.unique
@@ -187,6 +198,42 @@ class StopNCIIAPI:
             response.raise_for_status()
             return response.json()
 
+    def _get_fetch_hashes_json(self, **params) -> t.Optional[t.Any]:
+        """
+        GET the FetchHashes endpoint, tolerating a malformed response body.
+
+        The StopNCII API has been observed to return HTTP 200 with a corrupt
+        JSON body for specific windows; parsing such a page crashes
+        response.json() before any record-level handling can happen. Since
+        an unparseable page also cannot yield nextPageToken or
+        nextSetTimestamp, this returns None instead of raising, and the
+        caller decides how to make progress (see fetch_hashes_iter).
+
+        Retries once first: transient truncation heals on a second request,
+        persistent corruption does not.
+        """
+        for attempt in range(2):
+            try:
+                return self._get(StopNCIIEndpoint.FetchHashes, **params)
+            except JSONDecodeError as e:
+                extra = ""
+                doc = getattr(e, "doc", None)
+                pos = getattr(e, "pos", None)
+                if isinstance(doc, str) and isinstance(pos, int):
+                    start = max(0, pos - 100)
+                    end = min(len(doc), pos + 100)
+                    extra = " Nearby body: %r." % doc[start:end]
+                logging.error(
+                    "StopNCII FetchHashes returned a malformed JSON body "
+                    "(params: %s, attempt %d/2), err: %s.%s "
+                    "Please open an issue if you see this logging statement.",
+                    params,
+                    attempt + 1,
+                    e,
+                    extra,
+                )
+        return None
+
     def _post(self, endpoint: StopNCIIEndpoint, *, json=None) -> t.Any:
         """
         Perform an HTTP POST request, and return the JSON response payload.
@@ -206,13 +253,16 @@ class StopNCIIAPI:
         page_size: int = 800,
         start_timestamp: int = DEFAULT_START_TIME,
         next_page: str = "",
-    ) -> FetchHashesResponse:
+    ) -> t.Optional[FetchHashesResponse]:
         """
         Fetch a series of update records from the hash API.
 
         Records represent the current snapshot of all data, so if you see
         the same SignalType+Hash in a later iteration, it should completely
         replace the previously observed record.
+
+        Returns None if the response body could not be parsed after a
+        retry - see _get_fetch_hashes_json.
         """
         params: t.Dict[str, t.Any] = {
             "startTimestamp": start_timestamp,
@@ -221,7 +271,9 @@ class StopNCIIAPI:
         if next_page:
             params["nextPageToken"] = next_page
         logging.debug("StopNCII FetchHashes called: %s", params)
-        json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
+        json_val = self._get_fetch_hashes_json(**params)
+        if json_val is None:
+            return None
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
         # If there is a malformed record or a change that would prevent the deserialization
         # of a record, skip over it instead of crashing. Please open an issue if you see the logging
@@ -263,13 +315,50 @@ class StopNCIIAPI:
             for record in result.hashRecords
         }
 
+        If a page body is unparseable even after a retry, yields an empty
+        FetchHashesResponse whose nextSetTimestamp is advanced by
+        MALFORMED_PAGE_SKIP_SECONDS so the caller checkpoint can move past
+        the corrupt window instead of stalling forever.
         """
         has_more = True
         next_page = ""
+        # Last observed nextSetTimestamp (or the original start), used as the
+        # base when a page is unparseable and we have to jump the window.
+        skip_from = start_timestamp
+        skips = 0
         while has_more:
             result = self.fetch_hashes(
                 start_timestamp=start_timestamp, next_page=next_page
             )
+            if result is None:
+                skips += 1
+                skipped_to = skip_from + MALFORMED_PAGE_SKIP_SECONDS
+                now = int(time.time())
+                keep_going = skips < MALFORMED_PAGE_MAX_SKIPS and skipped_to < now
+                logging.error(
+                    "StopNCII FetchHashes skipping malformed page window "
+                    "[%s, %s); checkpoint will advance to %s. Records in "
+                    "this window will not be ingested unless re-fetched "
+                    "after the server-side data is fixed.",
+                    skip_from,
+                    skipped_to,
+                    skipped_to,
+                )
+                yield FetchHashesResponse(
+                    count=0,
+                    nextPageToken=None,
+                    nextSetTimestamp=skipped_to,
+                    hasMoreRecords=keep_going,
+                    hashRecords=[],
+                )
+                if not keep_going:
+                    return
+                start_timestamp = skipped_to
+                skip_from = skipped_to
+                next_page = ""
+                continue
+            skip_from = result.nextSetTimestamp
+            skips = 0
             has_more = result.hasMoreRecords
             next_page = result.nextPageToken or ""
             yield result

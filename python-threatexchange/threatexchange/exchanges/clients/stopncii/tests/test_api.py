@@ -2,7 +2,10 @@
 
 import pytest
 import typing as t
+from requests.exceptions import JSONDecodeError
 from threatexchange.exchanges.clients.stopncii.api import (
+    MALFORMED_PAGE_MAX_SKIPS,
+    MALFORMED_PAGE_SKIP_SECONDS,
     StopNCIIAPI,
     StopNCIICaseStatus,
     StopNCIICSPFeedbackValue,
@@ -289,3 +292,144 @@ def test_post_feedbacks(monkeypatch: pytest.MonkeyPatch):
     submit_feedback_api = StopNCIIAPI("", "")
     monkeypatch.setattr(submit_feedback_api, "_post", mock_submit_feedback_post_impl)
     submit_feedback_api.submit_feedbacks(mock_feedbacks())
+
+
+MALFORMED_JSON_DOC = '{"count": 1, "hashRecords": [' + ("x" * 50)
+MALFORMED_JSON_POS = len(MALFORMED_JSON_DOC) - 10
+
+
+def _malformed_json_error() -> JSONDecodeError:
+    return JSONDecodeError(
+        "Expecting ',' delimiter", MALFORMED_JSON_DOC, MALFORMED_JSON_POS
+    )
+
+
+def test_fetch_hashes_retries_transient_malformed_json(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = StopNCIIAPI("", "")
+    calls = {"n": 0}
+
+    def mock_get_transient(endpoint: str, **params):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _malformed_json_error()
+        return mock_get_impl(endpoint, **params)
+
+    monkeypatch.setattr(api, "_get", mock_get_transient)
+    result = api.fetch_hashes()
+    assert calls["n"] == 2
+    assert result is not None
+    assert result.count == 2
+    assert len(result.hashRecords) == 2
+
+
+def test_fetch_hashes_returns_none_after_persistent_malformed_json(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+):
+    api = StopNCIIAPI("", "")
+    calls = {"n": 0}
+
+    def mock_get_always_bad(endpoint: str, **params):
+        calls["n"] += 1
+        raise _malformed_json_error()
+
+    monkeypatch.setattr(api, "_get", mock_get_always_bad)
+    with caplog.at_level("ERROR"):
+        result = api.fetch_hashes()
+    assert result is None
+    assert calls["n"] == 2
+    assert "malformed JSON body" in caplog.text
+    assert "Nearby body:" in caplog.text
+
+
+def test_fetch_hashes_iter_skips_malformed_page_and_continues(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = StopNCIIAPI("", "")
+    start = 1_625_175_071
+    skipped_to = start + MALFORMED_PAGE_SKIP_SECONDS
+    seen_starts: t.List[int] = []
+
+    def mock_get_skip_then_ok(endpoint: str, **params):
+        assert endpoint == StopNCIIEndpoint.FetchHashes
+        ts = params["startTimestamp"]
+        seen_starts.append(ts)
+        assert "nextPageToken" not in params
+        if ts < skipped_to:
+            raise _malformed_json_error()
+        return {
+            "count": 1,
+            "nextSetTimestamp": skipped_to + 1,
+            "nextPageToken": PAGE_TOKEN[:-1] + "4",
+            "hasMoreRecords": False,
+            "hashRecords": [
+                {
+                    "lastModtimestamp": skipped_to + 1,
+                    "hashValue": "9def0b7dafa86a1c90f2abd78e79ceb25ec3d1a4b3d4bc7a4354baf7717ea038",
+                    "hashStatus": "Active",
+                    "caseNumbers": {"cc592711-7068-442f-b5d2-24d50d389751": "Active"},
+                    "signalType": "ImagePDQ",
+                },
+            ],
+        }
+
+    monkeypatch.setattr(api, "_get", mock_get_skip_then_ok)
+    pages = list(api.fetch_hashes_iter(start_timestamp=start))
+    # Two attempts on the corrupt window, then one successful fetch.
+    assert seen_starts == [start, start, skipped_to]
+    assert len(pages) == 2
+    assert pages[0].hashRecords == []
+    assert pages[0].count == 0
+    assert pages[0].nextSetTimestamp == skipped_to
+    assert pages[0].hasMoreRecords is True
+    assert pages[1].count == 1
+    assert len(pages[1].hashRecords) == 1
+    assert pages[1].hasMoreRecords is False
+
+
+def test_fetch_hashes_iter_drops_page_token_when_later_page_is_malformed(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = StopNCIIAPI("", "")
+    skipped_to = 1625175071 + MALFORMED_PAGE_SKIP_SECONDS
+
+    def mock_get(endpoint: str, **params):
+        assert endpoint == StopNCIIEndpoint.FetchHashes
+        if params.get("nextPageToken") == PAGE_TOKEN:
+            raise _malformed_json_error()
+        if params.get("startTimestamp", 10) >= skipped_to:
+            return {
+                "count": 0,
+                "nextSetTimestamp": skipped_to,
+                "nextPageToken": None,
+                "hasMoreRecords": False,
+                "hashRecords": [],
+            }
+        return mock_get_impl(endpoint, **params)
+
+    monkeypatch.setattr(api, "_get", mock_get)
+    pages = list(api.fetch_hashes_iter())
+    assert pages[0].count == 2
+    assert pages[0].hasMoreRecords is True
+    assert pages[1].hashRecords == []
+    assert pages[1].nextSetTimestamp == skipped_to
+    assert pages[-1].hasMoreRecords is False
+
+
+def test_fetch_hashes_iter_stops_after_max_malformed_skips(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    api = StopNCIIAPI("", "")
+
+    def mock_get_always_bad(endpoint: str, **params):
+        raise _malformed_json_error()
+
+    monkeypatch.setattr(api, "_get", mock_get_always_bad)
+    pages = list(api.fetch_hashes_iter(start_timestamp=10))
+    assert len(pages) == MALFORMED_PAGE_MAX_SKIPS
+    assert all(p.hashRecords == [] for p in pages)
+    assert pages[-1].hasMoreRecords is False
+    assert pages[-1].nextSetTimestamp == 10 + (
+        MALFORMED_PAGE_SKIP_SECONDS * MALFORMED_PAGE_MAX_SKIPS
+    )
