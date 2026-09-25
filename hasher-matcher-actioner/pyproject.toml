@@ -38,12 +38,17 @@ all = [
     "types-psycopg2",
     "types-python-dateutil",
     "gunicorn",
-    "flask_apscheduler"
+    "flask_apscheduler",
+    "boto3"
 ]
 
-test = [ "pytest" ]
+test = [ "pytest", "boto3" ]
 
 prod = [ "gunicorn" ]
+
+# Optional support for fetching media from S3-compatible object storage
+# (AWS S3, MinIO, DigitalOcean Spaces, etc). Install with OpenMediaMatch[s3].
+s3 = [ "boto3" ]
 
 [tool.mypy]
 warn_unused_configs = true
@@ -55,7 +60,7 @@ strict_optional = true
 py-modules = []
 
 [[tool.mypy.overrides]]
-module = "flask_apscheduler.*,importlib_metadata.*"
+module = "flask_apscheduler.*,importlib_metadata.*,boto3.*,botocore.*"
 ignore_missing_imports = true
 
 [project.urls]

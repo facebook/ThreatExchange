@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from OpenMediaMatch.schemas.shared import OptionalMediaUrl
+
 
 class BankConfig(BaseModel):
     """Schema for bank configuration."""
@@ -57,7 +59,7 @@ class BankedContentMetadata(BaseModel):
 class BankContentRequest(BaseModel):
     """Request schema for adding content to a bank."""
 
-    url: Optional[str] = Field(None, description="URL to content")
+    url: OptionalMediaUrl = None
     metadata: Optional[BankedContentMetadata] = Field(
         None, description="Content metadata"
     )

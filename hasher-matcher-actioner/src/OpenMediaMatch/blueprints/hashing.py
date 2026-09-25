@@ -92,12 +92,85 @@ def _check_content_length_stream_response(
     return response
 
 
+def _resolve_max_remote_file_size() -> int:
+    """
+    Resolve the configured maximum remote file size, coercing string values
+    (e.g. from environment variables) to an int.
+    """
+    max_file_size = (
+        current_app.config.get("MAX_REMOTE_FILE_SIZE") or DEFAULT_MAX_REMOTE_FILE_SIZE
+    )
+
+    # cast to integer if necessary (the value could have come from an environment variable)
+    if isinstance(max_file_size, str):
+        if not max_file_size.isdigit():
+            logger.error(
+                f"MAX_REMOTE_FILE_SIZE misconfigured, expected integer, received: {max_file_size}"
+            )
+            abort(500, "Service misconfigured, see logs for details")
+        max_file_size = int(max_file_size)
+
+    return max_file_size
+
+
+def _hash_chunks_to_signals(
+    chunks: t.Iterable[bytes],
+    signal_types: t.Mapping[str, t.Type[SignalType]],
+    max_file_size: int,
+) -> dict[str, str]:
+    """
+    Spool a byte stream to a temp file and hash it with each FileHasher signal
+    type. The size cap is re-checked while streaming so a source that
+    under-reports (or omits) its length still can't blow past the limit.
+
+    Shared by the ``http(s)://`` and ``s3://`` fetch paths.
+    """
+    ret: dict[str, str] = {}
+    # Some FileHashers care about the file suffix; a NamedTemporaryFile is close
+    # enough in practice for the signal types HMA ships with.
+    with tempfile.NamedTemporaryFile("wb") as tmp:
+        current_app.logger.debug("Writing to %s", tmp.name)
+        bytes_read = 0
+        with tmp.file as temp_file:  # ensures bytes are flushed before we hash
+            for chunk in chunks:
+                if not chunk:
+                    continue
+                bytes_read += len(chunk)
+                if bytes_read > max_file_size:
+                    abort(413, "Content too large")
+                temp_file.write(chunk)
+        path = Path(tmp.name)
+        for st in signal_types.values():
+            if issubclass(st, FileHasher):
+                ret[st.get_name()] = st.hash_from_file(path)
+    return ret
+
+
+def _resolve_signal_types(
+    source_content_type: str,
+    content_type_hint: t.Optional[str],
+    signal_type_names: t.Optional[str],
+) -> t.Mapping[str, t.Type[SignalType]]:
+    """
+    Turn the content type reported by the source (an HTTP header or S3 metadata),
+    plus the optional caller overrides, into the set of signal types to hash.
+    """
+    content_type = _parse_request_content_type(
+        source_content_type, override=content_type_hint
+    )
+    return _parse_request_signal_type(content_type, override=signal_type_names)
+
+
 @bp.get(
     "/hash",
     tags=[Tag(name="Hashing")],
     responses={"200": HashResponse, "400": ErrorResponse, "413": ErrorResponse},
     summary="Hash content from URL",
-    description="Fetch content from URL and return its hash values for all supported signal types",
+    description=(
+        "Fetch content from a URL and return its hash values for all supported "
+        "signal types. Supports http(s):// URLs, and s3://bucket/key URLs when "
+        "HMA is installed with the optional 's3' extra."
+    ),
 )
 def hash_media(query: HashRequest) -> dict[str, str]:
     """
@@ -105,6 +178,7 @@ def hash_media(query: HashRequest) -> dict[str, str]:
 
     Input:
         * url - path to the media to hash. Supports image or video.
+          Accepts http(s):// URLs and s3://bucket/key URLs.
 
     Output:
         * Mapping of signal types to hash values. Signal types are derived from the content type of the provided URL
@@ -130,6 +204,9 @@ def hash_url_content(
     """
     Utility function to hash content from a URL.
 
+    Supports ``http(s)://`` URLs as well as ``s3://bucket/key`` URLs when the
+    optional boto3 dependency is installed (see :func:`hash_s3_content`).
+
     Args:
         media_url: URL to the media content
         content_type_hint: Optional content type name to avoid request arg lookup
@@ -141,60 +218,137 @@ def hash_url_content(
     Raises:
         ValueError: If URL is invalid or content cannot be hashed
     """
+    if urlparse(media_url).scheme == "s3":
+        return hash_s3_content(
+            media_url,
+            content_type_hint=content_type_hint,
+            signal_type_names=signal_type_names,
+        )
+
     if not is_valid_url(media_url):
         abort(400, "Invalid or unsafe URL provided")
 
+    max_file_size = _resolve_max_remote_file_size()
+
     try:
-        # Get response with content length tracking
-        max_file_size = (
-            current_app.config.get("MAX_REMOTE_FILE_SIZE")
-            or DEFAULT_MAX_REMOTE_FILE_SIZE
-        )
-
-        # cast to integer if necessary (the value could have come from an environment variable)
-        if isinstance(max_file_size, str):
-            if not max_file_size.isdigit():
-                logger.error(
-                    f"MAX_REMOTE_FILE_SIZE misconfigured, expected integer, received: {max_file_size}"
-                )
-                abort(500, "Service misconfigured, see logs for details")
-
-            max_file_size = int(max_file_size)
-
         with _check_content_length_stream_response(
             media_url, max_file_size
         ) as download_resp:
             url_content_type = download_resp.headers["content-type"]
             current_app.logger.debug("%s is type %s", media_url, url_content_type)
-
-            content_type = _parse_request_content_type(
-                url_content_type, override=content_type_hint
+            signal_types = _resolve_signal_types(
+                url_content_type, content_type_hint, signal_type_names
             )
-            signal_types = _parse_request_signal_type(
-                content_type, override=signal_type_names
+            return _hash_chunks_to_signals(
+                download_resp.iter_content(chunk_size=8192),
+                signal_types,
+                max_file_size,
             )
-
-            ret: dict[str, str] = {}
-
-            # For images, we may need to copy the file suffix (.png, jpeg, etc) for it to work
-            with tempfile.NamedTemporaryFile("wb") as tmp:
-                current_app.logger.debug("Writing to %s", tmp.name)
-                bytes_read = 0
-                with tmp.file as temp_file:  # this ensures that bytes are flushed before hashing
-                    for chunk in download_resp.iter_content(chunk_size=8192):
-                        if chunk:
-                            bytes_read += len(chunk)
-                            # Check as we write the file to ensure we don't exceed the max content length
-                            if bytes_read > max_file_size:
-                                abort(413, "Content too large")
-                            temp_file.write(chunk)
-                path = Path(tmp.name)
-                for st in signal_types.values():
-                    if issubclass(st, FileHasher):
-                        ret[st.get_name()] = st.hash_from_file(path)
-            return ret
     except requests.exceptions.RequestException as e:
         abort(400, f"Failed to fetch URL: {str(e)}")
+
+
+def _s3_split_url(media_url: str) -> tuple[str, str]:
+    """
+    Split an ``s3://bucket/key`` URL into ``(bucket, key)``, aborting 400 if it
+    is not well-formed. Also enforces the optional ``ALLOWED_S3_BUCKETS``
+    allowlist (the S3 analogue of ``ALLOWED_HOSTNAMES``).
+    """
+    parsed = urlparse(media_url)
+    bucket = parsed.netloc
+    key = parsed.path.lstrip("/")  # S3 keys are never rooted with "/"
+    if parsed.scheme != "s3" or not bucket or not key:
+        abort(400, "Invalid S3 URL, expected s3://bucket/key")
+
+    allowed = current_app.config.get("ALLOWED_S3_BUCKETS")
+    if allowed and bucket not in allowed:
+        abort(400, f"S3 bucket '{bucket}' is not in the allowed list")
+
+    return bucket, key
+
+
+def _get_s3_client() -> t.Any:
+    """
+    Build a boto3 S3 client, aborting 500 if the optional ``boto3`` package is
+    not installed.
+
+    Credentials come from boto3's standard provider chain. ``S3_ENDPOINT_URL``
+    points at an S3-compatible store (MinIO, DigitalOcean Spaces, ...) and
+    ``S3_REGION_NAME`` sets the region.
+    """
+    try:
+        import boto3
+    except ImportError:
+        abort(
+            500,
+            "S3 support requires the 'boto3' package. "
+            "Install it with 'pip install OpenMediaMatch[s3]'.",
+        )
+
+    return boto3.client(
+        "s3",
+        endpoint_url=current_app.config.get("S3_ENDPOINT_URL") or None,
+        region_name=current_app.config.get("S3_REGION_NAME") or None,
+    )
+
+
+def _s3_call(fn: t.Callable[..., t.Any], media_url: str, /, **kwargs: t.Any) -> t.Any:
+    """
+    Invoke a boto3 S3 client call, mapping botocore failures onto HTTP errors:
+    403/404 pass through, other API errors are 400, transport failures are 502.
+    Response bodies never echo the raw provider message.
+    """
+    from botocore.exceptions import BotoCoreError, ClientError
+
+    try:
+        return fn(**kwargs)
+    except ClientError as e:
+        status = int(e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 400))
+        if status in (403, 404):
+            abort(status, f"Could not access {media_url}")
+        current_app.logger.warning("S3 error for %s: %s", media_url, e)
+        abort(400, "Failed to fetch S3 object")
+    except BotoCoreError as e:
+        current_app.logger.error("S3 transport error for %s: %s", media_url, e)
+        abort(502, "Failed to reach S3 storage")
+
+
+def hash_s3_content(
+    media_url: str,
+    *,
+    content_type_hint: t.Optional[str] = None,
+    signal_type_names: t.Optional[str] = None,
+) -> dict[str, str]:
+    """
+    Hash an object in S3-compatible storage, addressed by an ``s3://bucket/key``
+    URL. Reached from :func:`hash_url_content` for ``s3://`` URLs.
+
+    ``head_object`` supplies the content type and a size pre-check; the object
+    is then streamed via ``get_object`` and hashed by
+    :func:`_hash_chunks_to_signals`, which re-checks the size cap as it reads.
+    """
+    bucket, key = _s3_split_url(media_url)
+    max_file_size = _resolve_max_remote_file_size()
+    client = _get_s3_client()
+
+    head = _s3_call(client.head_object, media_url, Bucket=bucket, Key=key)
+
+    content_length = head.get("ContentLength")
+    if content_length is not None and content_length > max_file_size:
+        abort(413, "Content too large")
+
+    # The stored content type may be a generic "binary/octet-stream" if none was
+    # set at upload; the caller then has to pass content_type, as with http URLs.
+    s3_content_type = head.get("ContentType", "")
+    current_app.logger.debug("%s is type %s", media_url, s3_content_type)
+    signal_types = _resolve_signal_types(
+        s3_content_type, content_type_hint, signal_type_names
+    )
+
+    body = _s3_call(client.get_object, media_url, Bucket=bucket, Key=key)["Body"]
+    return _hash_chunks_to_signals(
+        body.iter_chunks(chunk_size=8192), signal_types, max_file_size
+    )
 
 
 @bp.post(
