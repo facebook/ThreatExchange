@@ -4,9 +4,12 @@
 Development only routes for easily testing functionality end-to-end, all running on a single host.
 """
 
+import gc
+import os
+
+from flask import jsonify, redirect, request, url_for
 from flask_openapi3 import APIBlueprint
 from flask_openapi3.models import Tag
-from flask import redirect, url_for
 from werkzeug.exceptions import HTTPException
 
 from OpenMediaMatch.utils.flask_utils import api_error_handler
@@ -91,3 +94,35 @@ def run_fetch():
 def factory_reset():
     reset_tables()
     return redirect(url_for("ui.home"))
+
+
+@bp.get(
+    "/pympler",
+    tags=[Tag(name="Development")],
+    summary="Heap summary (object-type histogram)",
+    description=(
+        "Returns top-N live Python object types by retained bytes. "
+        "Used by the memory-leak repro script to diff per-type growth over time. "
+        "Only registered when OMM_ENABLE_PYMPLER=1 (it imports and walks the full heap)."
+    ),
+)
+def pympler_summary():
+    if os.environ.get("OMM_ENABLE_PYMPLER") != "1":
+        return jsonify({"error": "pympler endpoint disabled"}), 404
+    from pympler import muppy, summary  # imported lazily
+
+    top = int(request.args.get("top", "50"))
+    gc.collect()
+    all_objs = muppy.get_objects()
+    rows = summary.summarize(all_objs)
+    rows.sort(key=lambda r: r[2], reverse=True)
+    return jsonify(
+        {
+            "gc_count": list(gc.get_count()),
+            "total_tracked_objects": len(all_objs),
+            "top": [
+                {"type": r[0], "count": r[1], "total_bytes": r[2]}
+                for r in rows[:top]
+            ],
+        }
+    )
