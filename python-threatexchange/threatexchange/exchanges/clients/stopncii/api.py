@@ -3,6 +3,7 @@
 """Simple implementation for the StopNCII REST API"""
 
 from dataclasses import dataclass, field
+import datetime
 import enum
 import logging
 import time
@@ -104,6 +105,41 @@ class StopNCIIEndpoint(enum.Enum):
     FetchHashes = "FetchHashes"
     SubmitHashes = "SubmitHashes"
     SubmitFeedback = "SubmitFeedback"
+
+
+class StopNCIIMalformedResponseError(Exception):
+    """
+    FetchHashes returned a success status, but a body that isn't valid JSON.
+
+    This has been observed to repeat for the same request until StopNCII
+    fixes the data on their side (see github.com/facebook/ThreatExchange/issues/2004),
+    so retrying the same request is not guaranteed to help. Because the page
+    can't be parsed, there is no nextPageToken or nextSetTimestamp to
+    continue from.
+    """
+
+    def __init__(
+        self,
+        start_timestamp: int,
+        next_page: str,
+        cause: requests.exceptions.JSONDecodeError,
+    ) -> None:
+        self.start_timestamp = start_timestamp
+        self.next_page = next_page
+        self.body_length = len(cause.doc)
+        self.error_position = cause.pos
+        start_time_str = datetime.datetime.fromtimestamp(
+            start_timestamp, tz=datetime.timezone.utc
+        ).isoformat()
+        super().__init__(
+            "StopNCII FetchHashes returned a malformed JSON body for "
+            f"startTimestamp={start_timestamp} ({start_time_str}), "
+            f"nextPageToken={next_page or '<none>'}: "
+            f"{cause.msg} at char {cause.pos} of {self.body_length}. "
+            "This is a problem with the StopNCII API response, not your "
+            "configuration - consider reporting it to StopNCII with the "
+            "details above."
+        )
 
 
 class StopNCIIAPI:
@@ -213,6 +249,9 @@ class StopNCIIAPI:
         Records represent the current snapshot of all data, so if you see
         the same SignalType+Hash in a later iteration, it should completely
         replace the previously observed record.
+
+        @raises StopNCIIMalformedResponseError if the response body still
+          can't be parsed after one retry
         """
         params: t.Dict[str, t.Any] = {
             "startTimestamp": start_timestamp,
@@ -221,7 +260,21 @@ class StopNCIIAPI:
         if next_page:
             params["nextPageToken"] = next_page
         logging.debug("StopNCII FetchHashes called: %s", params)
-        json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
+        try:
+            json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
+        except requests.exceptions.JSONDecodeError as e:
+            # A truncated body may be transient, so retry once. If the
+            # data itself is corrupt, the retry will fail the same way.
+            logging.warning(
+                "StopNCII FetchHashes returned a malformed JSON body, retrying: %s",
+                e,
+            )
+            try:
+                json_val = self._get(StopNCIIEndpoint.FetchHashes, **params)
+            except requests.exceptions.JSONDecodeError as e:
+                raise StopNCIIMalformedResponseError(
+                    start_timestamp, next_page, e
+                ) from e
         logging.debug("StopNCII FetchHashes returns: %s", json_val)
         # If there is a malformed record or a change that would prevent the deserialization
         # of a record, skip over it instead of crashing. Please open an issue if you see the logging
@@ -267,6 +320,8 @@ class StopNCIIAPI:
             for record in result.hashRecords
         }
 
+        @raises StopNCIIMalformedResponseError (see fetch_hashes), after
+          yielding every page before the malformed one
         """
         has_more = True
         next_page = ""
