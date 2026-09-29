@@ -14,7 +14,7 @@ interface DescriptorFormatter {
 class JSONDescriptorFormatter implements DescriptorFormatter {
   @Override
   // See also
-  // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+  // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
   public String format(ThreatDescriptor threatDescriptor, boolean includeIndicatorInOutput) {
     SimpleJSONWriter w = new SimpleJSONWriter();
     w.add("id", threatDescriptor.id);

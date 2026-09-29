@@ -15,7 +15,7 @@ Please see CONTRIBUTING in the repo root for more general guidelines on how to c
 
 # Releasing a New Version
 
-See [docs/releasing.md](./docs/releasing.md) for the full release process, including how to update the changelog and what happens automatically after merging.
+See [releasing.md](../website/content/hma/releasing.md) for the full release process, including how to update the changelog and what happens automatically after merging.
 
 
 # Developer onboarding and environment setup

@@ -1,4 +1,4 @@
-FROM python:3.11-bullseye
+FROM python:3.11-bookworm
 
 WORKDIR /usr/src/threatexchange
 COPY . .

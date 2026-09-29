@@ -40,7 +40,7 @@ threatexchange@meta.com
 HTTP query:
 
 ```
-curl -s 'https://graph.facebook.com/v4.0/threat_tags/'\
+curl -s 'https://graph.facebook.com/v26.0/threat_tags/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&text=pwny&limit=10'
 ```
@@ -75,7 +75,7 @@ This does a prefix-match so select and retain the ID for the exact match `pwny`.
 HTTP query:
 
 ```
-curl -s 'https://graph.facebook.com/v4.0/1283621968426798/tagged_objects/'\
+curl -s 'https://graph.facebook.com/v26.0/1283621968426798/tagged_objects/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&limit=100'
 ```
@@ -102,7 +102,7 @@ JSON response:
       "before": "REDACTED",
       "after": "REDACTED"
     },
-   "next": "https://graph.facebook.com/v6.0/2733125556794397/tagged_objects?access_token=REDACTED&limit=1000&after=..."
+   "next": "https://graph.facebook.com/v26.0/2733125556794397/tagged_objects?access_token=REDACTED&limit=1000&after=..."
   }
 }
 ```
@@ -116,7 +116,7 @@ Here we collect the IDs from the above single-page JSON response and get details
 HTTP query:
 
 ```
-curl -s 'https://graph.facebook.com/v4.0/'\
+curl -s 'https://graph.facebook.com/v26.0/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&ids=%5B2556006484495859,2356527701137016%5D'\
 '&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
@@ -177,7 +177,7 @@ HTTP query for post:
 
 ```
 curl -s -X POST \
-'https://graph.facebook.com/v4.0/threat_descriptors/'\
+'https://graph.facebook.com/v26.0/threat_descriptors/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&type=HASH_SHA1'\
 '&description=API+testing'\
@@ -199,7 +199,7 @@ HTTP query for read-back:
 
 ```
 curl -s \
-'https://graph.facebook.com/v4.0/'\
+'https://graph.facebook.com/v26.0/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&ids=%5B3047058802049882%5D'\
 '&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
@@ -251,7 +251,7 @@ HTTP query:
 
 ```
 curl -s -X POST \
-'https://graph.facebook.com/v4.0/3047058802049882/'\
+'https://graph.facebook.com/v26.0/3047058802049882/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&description=Updating+description'
 ```
@@ -266,7 +266,7 @@ HTTP query for read-back:
 
 ```
 curl -s \
-'https://graph.facebook.com/v4.0/'\
+'https://graph.facebook.com/v26.0/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&ids=%5B3047058802049882%5D'\
 '&fields=raw_indicator,type,added_on,last_updated,confidence,owner,privacy_type,review_status,status,severity,share_level,tags,description'
@@ -310,7 +310,7 @@ React to another app's descriptor:
 
 ```
 curl -s -X POST \
-'https://graph.facebook.com/v6.0/2589692907727086/'\
+'https://graph.facebook.com/v26.0/2589692907727086/'\
 "?access_token=$TX_ACCESS_TOKEN"\
 '&reactions=HELPFUL,SAW_THIS_TOO' \
 | jq .

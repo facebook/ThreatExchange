@@ -7,7 +7,7 @@ package com.facebook.threatexchange;
 import java.net.URL;
 
 class Constants {
-  public static final String DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0";
+  public static final String DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v26.0";
 
   // Only used for file-extensions
   public static final String INDICATOR_TYPE_PHOTODNA = "HASH_PHOTODNA";

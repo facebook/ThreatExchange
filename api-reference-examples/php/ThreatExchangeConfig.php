@@ -19,7 +19,7 @@ if (!defined('__ROOT__')) {
  */
 class ThreatExchangeConfig {
 
-  const FACEBOOK_SERVER = 'https://graph.facebook.com/v2.4';
+  const FACEBOOK_SERVER = 'https://graph.facebook.com/v26.0';
 
   private static $appID = 0;
   private static $appSecret = null;

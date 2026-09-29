@@ -15,7 +15,7 @@ require 'date'
 module ThreatExchange
 module TENet
 
-DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
+DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v26.0"
 THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR";
 
 # This is just a keystroke-saver / error-avoider for passing around
@@ -203,7 +203,7 @@ def TENet.processDescriptorIDsByTagID(
     #       "before": "XYZIU...NjQ0h3Unh3",
     #       "after": "XYZIUk...FXNzVNd1Jn"
     #     },
-    #     "next": "https://graph.facebook.com/v3.1/9999338387644295/tagged_objects?access_token=..."
+    #     "next": "https://graph.facebook.com/v26.0/9999338387644295/tagged_objects?access_token=..."
     #   }
     # }
 
@@ -278,7 +278,7 @@ def TENet.getInfoForIDs(
   end
 
   # See also
-  # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+  # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
   # for available fields
 
   startURL = @@TE_BASE_URL +

@@ -147,7 +147,7 @@ public class Net {
         //       "before": "XYZIU...NjQ0h3Unh3",
         //       "after": "XYZIUk...FXNzVNd1Jn"
         //     },
-        //     "next": "https://graph.facebook.com/v3.1/9999338387644295/tagged_objects?access_token=..."
+        //     "next": "https://graph.facebook.com/v26.0/9999338387644295/tagged_objects?access_token=..."
         //   }
         // }
 
@@ -249,7 +249,7 @@ public class Net {
     }
 
     // See also
-    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
     // for available fields
     String url = TE_BASE_URL
       + "/?access_token=" + APP_TOKEN
@@ -371,7 +371,7 @@ public class Net {
     boolean includeIndicatorInOutput
   ) {
     // See also
-    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+    // https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
     // for available fields
     String pageLimit = Integer.toString(pageSize);
     String startURL = TE_BASE_URL

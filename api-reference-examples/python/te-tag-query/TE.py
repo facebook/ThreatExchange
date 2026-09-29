@@ -24,7 +24,7 @@ import re
 
 class Net:
     THREAT_DESCRIPTOR = "THREAT_DESCRIPTOR"
-    DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v6.0"
+    DEFAULT_TE_BASE_URL = "https://graph.facebook.com/v26.0"
     TE_BASE_URL = DEFAULT_TE_BASE_URL
     APP_TOKEN = None
 
@@ -197,7 +197,7 @@ class Net:
             #       "before": "XYZIU...NjQ0h3Unh3",
             #       "after": "XYZIUk...FXNzVNd1Jn"
             #     },
-            #     "next": "https://graph.facebook.com/v3.1/9999338387644295/tagged_objects?access_token=..."
+            #     "next": "https://graph.facebook.com/v26.0/9999338387644295/tagged_objects?access_token=..."
             #   }
             # }
 
@@ -251,7 +251,7 @@ class Net:
                 raise Exception('Malformed descriptor ID "%s"' % id)
 
         # See also
-        # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/v6.0
+        # https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptor/
         # for available fields
 
         url = (

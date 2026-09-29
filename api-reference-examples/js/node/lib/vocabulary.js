@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 exports.v_ThreatExchange = {
     URL             : "https://graph.facebook.com/",
-    VERSION         : "v2.3/",
+    VERSION         : "v26.0/",
     ACCESS_TOKEN    : "access_token",
     DEFAULT_LIMIT   : 500,
     MAX_LIMIT       : 5000,

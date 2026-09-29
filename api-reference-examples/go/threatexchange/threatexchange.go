@@ -13,7 +13,7 @@ import (
 const (
 	// DefaultURL is the URL for the API endpoint
 	DefaultURL = "https://graph.facebook.com"
-	apiVersion = "v2.5"
+	apiVersion = "v26.0"
 )
 
 // Client interacts with the services provided by TE
