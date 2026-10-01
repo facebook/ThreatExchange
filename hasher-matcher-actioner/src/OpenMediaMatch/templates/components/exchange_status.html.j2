@@ -4,6 +4,7 @@
         <tr>
             <th scope="col">Bank Name</th>
             <th scope="col">API</th>
+            <th scope="col">Credentials</th>
             <th scope="col">Total Fetched</th>
             <th scope="col">Fetch Progress</th>
             <th scope="col">Last Fetch Status</th>
@@ -23,6 +24,22 @@
                 </div>
             </th>
             <td scope="row">{{dat['api']}}</td>
+            <td scope="row">
+                {% set cred = dat['credential_status'] %}
+                {% if not cred['supports_auth'] %}
+                <span class="text-muted">Not needed</span>
+                {% elif cred['source'] == 'exchange' %}
+                <span title="Credentials set on this exchange">🔑 Exchange</span>
+                {% elif cred['source'] == 'api' %}
+                <span title="Using the API-level default credentials">🔑 API default</span>
+                {% elif cred['source'] == 'environment' %}
+                <span title="Using credentials from an environment variable">🔑 Environment</span>
+                {% elif cred['source'] == 'file' %}
+                <span title="Using credentials from a file on the server">🔑 File</span>
+                {% else %}
+                <span class="text-danger" title="No credentials found for this exchange">🔒 Missing</span>
+                {% endif %}
+            </td>
             <td scope="row">{{dat['count']}}</td>
             <td class="align-middle">
                 <div class="progress">

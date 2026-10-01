@@ -4,6 +4,7 @@ import typing as t
 
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
+from threatexchange.exchanges import auth
 from threatexchange.exchanges.signal_exchange_api import (
     TSignalExchangeAPICls,
     TSignalExchangeAPI,
@@ -38,11 +39,13 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
     """
 
     banks: t.Dict[str, BankConfig]
+    exchange_credentials: t.Dict[str, auth.CredentialHelper]
 
     def __init__(self) -> None:
         self.banks = {
             b.name: b for b in (BankConfig("TEST_BANK", matching_enabled_ratio=1.0),)
         }
+        self.exchange_credentials = {}
 
     def is_ready(self) -> bool:
         return True
@@ -125,6 +128,22 @@ class MockedUnifiedStore(IFlaskUnifiedStore):
         return self.exchange_type_get_configs()[collab_config.name].api_cls.for_collab(
             collab_config
         )
+
+    def exchange_credentials_supported(self) -> bool:
+        return True
+
+    def exchange_get_credentials(self, name: str) -> t.Optional[auth.CredentialHelper]:
+        return self.exchange_credentials.get(name)
+
+    def exchange_set_credentials(
+        self, name: str, credentials: t.Optional[auth.CredentialHelper]
+    ) -> None:
+        if name not in self.exchanges_get():
+            raise KeyError(f"No such exchange '{name}'")
+        if credentials is None:
+            self.exchange_credentials.pop(name, None)
+        else:
+            self.exchange_credentials[name] = credentials
 
     def exchange_get_fetch_status(self, name: str) -> FetchStatus:
         return FetchStatus.get_default()

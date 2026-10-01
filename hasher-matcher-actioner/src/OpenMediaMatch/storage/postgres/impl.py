@@ -31,6 +31,7 @@ from threatexchange.exchanges.signal_exchange_api import (
 from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.utils import dataclass_json
 from threatexchange.exchanges.fetch_state import (
     FetchCheckpointBase,
     CollaborationConfigBase,
@@ -132,17 +133,7 @@ class DefaultOMMStore(IFlaskUnifiedStore):
     def exchange_api_config_update(self, cfg: SignalExchangeAPIConfig) -> None:
         api_cls = cfg.api_cls
         if cfg.credentials is not None:
-            if not issubclass(api_cls, auth.SignalExchangeWithAuth):
-                raise ValueError(
-                    f"Tried to set credentials for {api_cls.get_name()},"
-                    " but it doesn't take them"
-                )
-            if not isinstance(cfg.credentials, api_cls.get_credential_cls()):
-                raise ValueError(
-                    "Use the wrong credential class"
-                    f" {cfg.credentials.__class__.__name__} for"
-                    f" {api_cls.get_name()}"
-                )
+            _check_credentials_for_api(api_cls, cfg.credentials)
         sesh = get_write_session()
         config = sesh.execute(
             select(database.ExchangeAPIConfig).where(
@@ -292,19 +283,74 @@ class DefaultOMMStore(IFlaskUnifiedStore):
             select(database.ExchangeConfig).where(database.ExchangeConfig.name == name)
         ).scalar_one_or_none()
 
+    def exchange_credentials_supported(self) -> bool:
+        return True
+
+    def exchange_get_credentials(self, name: str) -> t.Optional[auth.CredentialHelper]:
+        row = (
+            get_read_session()
+            .execute(
+                select(
+                    database.ExchangeConfig.api_cls,
+                    database.ExchangeConfig.credentials_json,
+                ).where(database.ExchangeConfig.name == name)
+            )
+            .one_or_none()
+        )
+        if row is None:
+            return None
+        api_name, credentials_json = row
+        if not credentials_json:
+            return None
+        api_cls = self.exchange_types.get(api_name)
+        if api_cls is None or not issubclass(api_cls, auth.SignalExchangeWithAuth):
+            return None
+        return dataclass_json.dataclass_load_dict(
+            credentials_json, api_cls.get_credential_cls()
+        )
+
+    def exchange_set_credentials(
+        self, name: str, credentials: t.Optional[auth.CredentialHelper]
+    ) -> None:
+        sesh = get_write_session()
+        try:
+            cfg = self._exchange_get_cfg(name, session=sesh)
+            if cfg is None:
+                raise KeyError(f"No such exchange '{name}'")
+            if credentials is None:
+                cfg.credentials_json = None
+            else:
+                api_cls = self.exchange_types.get(cfg.api_cls)
+                if api_cls is None:
+                    raise ValueError(f"Exchange API '{cfg.api_cls}' is not installed")
+                _check_credentials_for_api(api_cls, credentials)
+                cfg.credentials_json = dataclass_json.dataclass_dump_dict(credentials)
+            sesh.commit()
+        except Exception:
+            # Leave the session usable, e.g. for the caller to clean up
+            sesh.rollback()
+            raise
+
     def exchange_get_client(
         self, collab_config: CollaborationConfigBase
     ) -> TSignalExchangeAPI:
-        cfg = self.exchange_apis_get_configs().get(collab_config.api)
-        assert cfg is not None, f"No such exchange API {collab_config.api}"
+        api_cls = self.exchange_types.get(collab_config.api)
+        assert api_cls is not None, f"No such exchange API {collab_config.api}"
 
-        creds = cfg.credentials
-        if creds is None:
-            return cfg.api_cls.for_collab(collab_config)
+        creds, src = self.exchange_get_resolved_credentials(collab_config)
+        if creds is None or not issubclass(api_cls, auth.SignalExchangeWithAuth):
+            # The API class discovers its own credentials (env, file)
+            return api_cls.for_collab(collab_config)
 
-        # Why did I make this interface so dumb?
-        with creds.set_default(creds, "db"):
-            return cfg.api_cls.for_collab(collab_config)
+        if not creds._are_valid():
+            raise auth.SignalExchangeAPIInvalidAuthException(
+                api_cls, f"Invalid credentials from {src} config"
+            )
+        # Credentials are passed explicitly rather than via the process-global
+        # CredentialHelper.set_default(), so concurrent clients for exchanges
+        # of the same API type can't pick up each other's credentials.
+        auth_api_cls = t.cast(t.Type[auth.SignalExchangeWithAuth], api_cls)
+        return t.cast(TSignalExchangeAPI, auth_api_cls.for_collab(collab_config, creds))
 
     def exchange_get_fetch_status(self, name: str) -> FetchStatus:
         collab_config = self._exchange_get_cfg(name)
@@ -712,6 +758,22 @@ class DefaultOMMStore(IFlaskUnifiedStore):
         init_read_replica(app)
         migrate.init_app(app, database.db)
         flask_utils.add_cli_commands(app)
+
+
+def _check_credentials_for_api(
+    api_cls: TSignalExchangeAPICls, credentials: auth.CredentialHelper
+) -> None:
+    if not issubclass(api_cls, auth.SignalExchangeWithAuth):
+        raise ValueError(
+            f"Tried to set credentials for {api_cls.get_name()},"
+            " but it doesn't take them"
+        )
+    if not isinstance(credentials, api_cls.get_credential_cls()):
+        raise ValueError(
+            "Use the wrong credential class"
+            f" {credentials.__class__.__name__} for"
+            f" {api_cls.get_name()}"
+        )
 
 
 def _sync_bankable_content(

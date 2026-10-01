@@ -283,6 +283,13 @@ class ExchangeConfig(db.Model):  # type: ignore[name-defined]
     # CollaborationConfig.
     typed_config: Mapped[t.Dict[str, t.Any]] = mapped_column(JSON)
 
+    # Credentials used only for this exchange, serialized from the API's
+    # CredentialHelper dataclass. Takes precedence over ExchangeAPIConfig.
+    # Deferred so that listing exchanges doesn't load secrets.
+    credentials_json: Mapped[t.Optional[t.Dict[str, t.Any]]] = mapped_column(
+        JSON(none_as_null=True), default=None, nullable=True, deferred=True
+    )
+
     fetch_status: Mapped[t.Optional["ExchangeFetchStatus"]] = relationship(
         "ExchangeFetchStatus",
         back_populates="collab",

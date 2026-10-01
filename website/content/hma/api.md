@@ -30,6 +30,7 @@ The full list of paths available to the caller can be found at `GET /site-map`. 
   "/c/banks",
   "/c/content_type",
   "/c/exchange/<string:exchange_name>",
+  "/c/exchange/<string:exchange_name>/credentials",
   "/c/exchange/<string:exchange_name>/status",
   "/c/exchanges",
   "/c/exchanges/api/<string:api_name>",
@@ -58,6 +59,15 @@ Which exchanges (SignalExchangeAPI) are supported by the instance of HMA are con
     - Configuration name in `CAPS_AND_UNDERSCORE` (must not be the same as an existing bank name)
     - Exchange type
     - Exchange-specific arguments (depends on SignalExchangeAPI)
+    - Optional `credential_json`: credentials used only by this exchange (see below)
+- Set Exchange Credentials: `POST /c/exchange/<exchange_name>/credentials`
+  - Inputs:
+    - `{"credential_json": {...}}` matching the API's `credentials_schema` from `GET /c/exchanges/api/<api_name>/schema`. `null` or `{}` clears them.
+  - Output: credential status (see below). Credential values are never returned.
+  - Credentials are resolved in this order: the exchange's own credentials, then the API-level credentials set with `POST /c/exchanges/api/<api_name>`, then the API's environment variable or file.
+  - Upgrading moves any existing API-level credentials onto every existing exchange of that API, and clears the API-level copy, so new exchanges don't inherit them. API-level credentials with no exchanges of that API are kept as the default.
+- Get Exchange Credential Status: `GET /c/exchange/<exchange_name>/credentials`
+  - Output: `{"supports_auth": bool, "has_credentials": bool, "source": "exchange" | "api" | "environment" | "file" | null}`
 - List all configs
   - Output:
     - List of all config names
@@ -66,6 +76,7 @@ Which exchanges (SignalExchangeAPI) are supported by the instance of HMA are con
     - Configuration name
   - Output: JSON serialization of configuration
     - Includes exchange type
+    - Includes `credential_status` (same shape as Get Exchange Credential Status)
 - Get Exchange Fetch Status
   - Inputs
     - Configuration name
