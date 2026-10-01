@@ -1,7 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 """
-Tests for `threatexchange query`, against a fake of the Graph API's
+Tests for `threatexchange api fb_threatexchange query`, against a fake of the Graph API's
 /threat_descriptors edge that applies the documented filters.
 
 The fake is only as accurate as our reading of Meta's documentation. These
@@ -21,7 +21,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from threatexchange.cli.exceptions import CommandError
-from threatexchange.cli.query_cmd import QueryCommand
+from threatexchange.cli.api_fb_threatexchange_cmd import (
+    FBThreatExchangeQueryCommand,
+)
 from threatexchange.cli.tests.e2e_test_helper import (
     E2ETestSystemExit,
     ThreatExchangeCLIE2eHelper,
@@ -177,7 +179,7 @@ class _FakeGraph:
 def graph(monkeypatch: pytest.MonkeyPatch) -> t.Iterator[_FakeGraph]:
     fake = _FakeGraph()
     monkeypatch.setattr(
-        QueryCommand,
+        FBThreatExchangeQueryCommand,
         "get_te_api",
         lambda self: ThreatExchangeAPI("123|token", endpoint_override=fake.base_url),
     )
@@ -192,7 +194,7 @@ def _rows(output: str) -> t.List[t.Dict[str, str]]:
 def _query(
     te_cli: ThreatExchangeCLIE2eHelper, *args: str  # noqa: F811
 ) -> t.List[t.Dict[str, str]]:
-    return _rows(te_cli.cli_call("query", *args))
+    return _rows(te_cli.cli_call("api", "fb_threatexchange", "query", *args))
 
 
 def _indicators(rows: t.List[t.Dict[str, str]]) -> t.List[str]:
@@ -338,14 +340,25 @@ def test_collab_resolves_to_privacy_group(te_cli, graph):  # noqa: F811
 
 
 def test_unknown_collab(te_cli, graph):  # noqa: F811
-    te_cli.assert_cli_usage_error(("query", "-c", "Nope"), "No such collab")
+    te_cli.assert_cli_usage_error(
+        ("api", "fb_threatexchange", "query", "-c", "Nope"), "No such collab"
+    )
     assert graph.queries == []
 
 
 def test_jsonl_and_output_file(te_cli, graph, tmp_path: pathlib.Path):  # noqa: F811
     out = tmp_path / "out.jsonl"
     stdout = te_cli.cli_call(
-        "query", "--format", "jsonl", "--tags", "csam", "photo", "-o", str(out)
+        "api",
+        "fb_threatexchange",
+        "query",
+        "--format",
+        "jsonl",
+        "--tags",
+        "csam",
+        "photo",
+        "-o",
+        str(out),
     )
     assert stdout == ""
     lines = [json.loads(line) for line in out.read_text().splitlines()]
@@ -363,12 +376,12 @@ def test_jsonl_and_output_file(te_cli, graph, tmp_path: pathlib.Path):  # noqa: 
 
 def test_api_errors_show_the_reason(te_cli, graph):  # noqa: F811
     with pytest.raises(CommandError, match="error 100: Invalid StatusType BOGUS") as e:
-        te_cli.cli_call("query", "--status", "bogus")
+        te_cli.cli_call("api", "fb_threatexchange", "query", "--status", "bogus")
     assert e.value.returncode == 3
 
 
 def test_list_columns(te_cli, graph):  # noqa: F811
-    out = te_cli.cli_call("query", "--list-columns")
+    out = te_cli.cli_call("api", "fb_threatexchange", "query", "--list-columns")
     assert "owner_id" in out and "raw_indicator" in out
     assert graph.queries == []
 
@@ -387,6 +400,6 @@ def test_list_columns(te_cli, graph):  # noqa: F811
 )
 def test_bad_arguments(te_cli, graph, args):  # noqa: F811
     with pytest.raises((CommandError, E2ETestSystemExit)) as e:
-        te_cli.cli_call("query", *args)
+        te_cli.cli_call("api", "fb_threatexchange", "query", *args)
     assert e.value.returncode == 2
     assert graph.queries == []

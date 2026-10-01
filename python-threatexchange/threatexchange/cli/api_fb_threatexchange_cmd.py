@@ -91,7 +91,7 @@ def _columns(s: str) -> t.List[str]:
     return cols
 
 
-class QueryCommand(command_base.Command):
+class FBThreatExchangeQueryCommand(command_base.Command):
     """
     Search Meta's ThreatExchange API and write the results as CSV.
 
@@ -109,17 +109,21 @@ class QueryCommand(command_base.Command):
 
     ```
     # Everything in a configured collaboration tagged 'csam', as a CSV
-    $ threatexchange query -c 'My Collab' --tags csam -o csam.csv
+    $ threatexchange api fb_threatexchange query -c 'My Collab' --tags csam -o csam.csv
 
     # PDQ hashes that a specific member marked malicious, since the start of the year
-    $ threatexchange query --privacy-group 1234 --type HASH_PDQ \\
+    $ threatexchange api fb_threatexchange query --privacy-group 1234 --type HASH_PDQ \\
         --status MALICIOUS --owner 5678 --since 2026-01-01 \\
         --columns indicator,tags,added_on
 
     # See the columns available
-    $ threatexchange query --list-columns
+    $ threatexchange api fb_threatexchange query --list-columns
     ```
     """
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "query"
 
     @classmethod
     def init_argparse(cls, settings: CLISettings, ap: argparse.ArgumentParser) -> None:
@@ -296,7 +300,7 @@ class QueryCommand(command_base.Command):
             if not isinstance(collab, FBThreatExchangeCollabConfig):
                 raise CommandError.user(
                     f"Collab '{name}' is a {collab.api} collab. "
-                    "`query` only works with fb_threatexchange"
+                    "this command only works with fb_threatexchange"
                 )
             groups.append(collab.privacy_group)
         return list(dict.fromkeys(groups))  # Dedupe, keep order
@@ -383,3 +387,13 @@ def _describe_http_error(e: requests.HTTPError) -> str:
         return f"ThreatExchange API error {error.get('code')}: {error.get('message')}"
     except (ValueError, KeyError, TypeError, AttributeError):
         return f"ThreatExchange API request failed: {e}"
+
+
+class ApiFBThreatExchangeCommand(command_base.CommandWithSubcommands):
+    """Interact directly with Meta's ThreatExchange API"""
+
+    _SUBCOMMANDS = [FBThreatExchangeQueryCommand]
+
+    @classmethod
+    def get_name(cls) -> str:
+        return FBThreatExchangeSignalExchangeAPI.get_name()
