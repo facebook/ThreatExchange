@@ -1,0 +1,103 @@
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/impl.py
+  s_818a85ac8715f2::t_625034e4431f07 289-290,292-315,333,337-338,340-343,345-353
+  s_818a85ac8715f2::t_d0ff91247e5f8f 286-288
+  s_818a85ac8715f2::t_724176f001cedb 136
+  s_818a85ac8715f2::t_bca9aea1342095 291
+  s_818a85ac8715f2::t_b427edf0968601 34
+  s_818a85ac8715f2::t_eebc9d83cbe3a4 316-332
+  s_818a85ac8715f2::t_885c1dfb8fec7a 763-778
+hasher-matcher-actioner/src/OpenMediaMatch/storage/mocked.py
+  s_818a85ac8715f2::t_b67cd926cffb44 132-134
+  s_818a85ac8715f2::t_ad666f33146031 7
+  s_818a85ac8715f2::t_385d6b25b63f50 42,48
+  s_818a85ac8715f2::t_8394acf6fe425d 135-147
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/ui.py
+  s_818a85ac8715f2::t_6d178266856a6e 13
+  s_818a85ac8715f2::t_5cd926c3cdc656 101
+hasher-matcher-actioner/src/OpenMediaMatch/storage/interface.py
+  s_818a85ac8715f2::t_7ea7baafd3aadb 16-17,24-27
+  s_818a85ac8715f2::t_87008a50c98c88 76-79
+  s_818a85ac8715f2::t_904cfc34d4a74c 80-120
+  s_818a85ac8715f2::t_be237a4ccb43b2 28
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/curation.py
+  s_818a85ac8715f2::t_f8bb4cc3b2eb9c 21,24
+  s_818a85ac8715f2::t_fbf85dff9c50e5 719,722-724,726-777,780-786
+  s_818a85ac8715f2::t_fffeb0d4072dc9 712-716
+  s_818a85ac8715f2::t_14f0e874f614a8 532-534
+  s_818a85ac8715f2::t_71ab7c652c79ba 651-657
+  s_818a85ac8715f2::t_55b41739ab8520 778-779
+  s_818a85ac8715f2::t_7a78dc038bb3a7 693-697
+  h_228f5682388812 586
+  s_818a85ac8715f2::t_e849c0aa0de7e4 39
+  s_818a85ac8715f2::t_a93dcd0a31e428 577,579-580,584-585,587-588,594-601,610,616
+  s_818a85ac8715f2::t_f213c5d3d89927 643,646,648-650,658,661
+  s_818a85ac8715f2::t_458a62a99e177e 644-645,659-660
+  s_818a85ac8715f2::t_56922460ea66b7 578,581-583
+hasher-matcher-actioner/src/OpenMediaMatch/templates/components/exchange_status.html.j2
+  s_818a85ac8715f2::t_f9388ad00852bb 7
+  s_818a85ac8715f2::t_14bb31aef45e0d 27-42
+hasher-matcher-actioner/src/OpenMediaMatch/app.py
+  s_818a85ac8715f2::t_7c49b33c618f8a 159-164
+hasher-matcher-actioner/src/OpenMediaMatch/migrations/versions/b7e4c2a9d1f0_add_exchange_credentials.py
+  s_818a85ac8715f2::t_e16d0d91feebde 1-2,8-12,15-24,26,28-31,57,59,108-109
+  s_818a85ac8715f2::t_b1b33b1a8d5d71 3-7,13-14,25,27,32-56,58,60-107
+hasher-matcher-actioner/src/OpenMediaMatch/static/js/create_exchange_modal.js
+  s_818a85ac8715f2::t_90b803f5513029 218-222,224,228
+  s_818a85ac8715f2::t_c334258e076283 63,65
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_exchange_credentials.py
+  s_818a85ac8715f2::t_9e85474fdbefea 84
+  s_818a85ac8715f2::t_95d1bc65c11e36 459-462,466-477,483-484,487,493-501,503-514,517,520-531,534-537,542-546,555
+  s_818a85ac8715f2::t_d6af6cd3a049fa 423-424
+  s_818a85ac8715f2::t_722384207df510 488-492
+  s_818a85ac8715f2::t_3a215f575c9e9e 249-252
+  s_818a85ac8715f2::t_680f9a1fb05d07 1-7,9-22,24-83,85-102,109-248,253-392,419-422,425-447,449-458,463-465,478-482,485-486,502,515-516,518-519,532-533,538-541,552-554,556-561
+  s_818a85ac8715f2::t_2a653b1ad66014 547-549
+  s_818a85ac8715f2::t_c74ec4d7f19ca8 448
+  s_818a85ac8715f2::t_d6b30cdcb93fc5 393-405
+  s_818a85ac8715f2::t_834ca6c7943ed3 103-108
+  s_818a85ac8715f2::t_c42e9b47595676 23
+  s_818a85ac8715f2::t_9ccf1cd4b5558b 550-551
+  s_818a85ac8715f2::t_1ad7a0254ea7e3 8
+  s_818a85ac8715f2::t_8c66d0be8265c5 406-418
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/database.py
+  s_818a85ac8715f2::t_5b9c9bafdb9721 286-292
+hasher-matcher-actioner/src/OpenMediaMatch/schemas/curation.py
+  s_818a85ac8715f2::t_799e7d3e1a4f7e 95-135,143-145
+  s_818a85ac8715f2::t_9aa62559171275 3
+  s_818a85ac8715f2::t_80dc58e924340c 146
+hasher-matcher-actioner/src/OpenMediaMatch/utils/exchange_credentials.py
+  s_818a85ac8715f2::t_3e831445228f7a 94
+  s_818a85ac8715f2::t_f70cb9ab44cbea 32,38-39
+  s_818a85ac8715f2::t_395dcce3c8f25d 1-31,33-37,40-51,53-75,78-80,82-93,95-137,151
+  s_818a85ac8715f2::t_39cc31a20ce90e 138-150
+  s_818a85ac8715f2::t_776c4979ffc50e 52
+  s_818a85ac8715f2::t_446dfdc6ab8026 76-77,81
+hasher-matcher-actioner/src/OpenMediaMatch/templates/components/create_exchange_modal.html.j2
+  s_818a85ac8715f2::t_cc6d785008a498 42
+website/content/hma/api.md
+  s_818a85ac8715f2::t_2a32afc81934cb 68
+  s_818a85ac8715f2::t_08f4dd7328f5c5 33
+  s_818a85ac8715f2::t_6d9ae2ea14f9d0 62-67,69-70
+  s_818a85ac8715f2::t_90e8db6fc3de65 79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ebc847034a13cbdaaee81fcde1dd1fc6ac06948",
+  "prompts": {},
+  "humans": {
+    "h_228f5682388812": {
+      "author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  },
+  "sessions": {
+    "s_818a85ac8715f2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "bd420754-3f3d-4ccd-81b2-52cdf578a94d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
