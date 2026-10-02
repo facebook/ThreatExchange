@@ -325,12 +325,14 @@ def test_bank_get_content_with_signals(client: FlaskClient, image_server: str):
         assert len(get_response.json["signals"]) > 0
 
 
-def test_bank_get_content_returns_stored_metadata(client: FlaskClient):
+def test_bank_get_content_returns_stored_metadata(
+    client: FlaskClient, image_server: str
+):
     """GET /bank/<name>/content/<id> returns user-supplied metadata stored via POST."""
     bank_name = "TEST_BANK_METADATA"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     metadata = {
         "content_id": "ext-id-123",
         "content_uri": "https://example.com/item/123",
@@ -355,12 +357,14 @@ def test_bank_get_content_returns_stored_metadata(client: FlaskClient):
     assert get_data["metadata"]["json"] == metadata["json"]
 
 
-def test_bank_get_content_include_metadata_false(client: FlaskClient):
+def test_bank_get_content_include_metadata_false(
+    client: FlaskClient, image_server: str
+):
     """GET with include_metadata=false omits metadata from response."""
     bank_name = "TEST_BANK_NO_METADATA"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
         json={
@@ -491,12 +495,14 @@ def test_bank_add_hash_with_note(client: FlaskClient):
     assert get_response.get_json()["note"] == "Hash from campaign ABC"
 
 
-def test_bank_get_content_without_metadata_omitted(client: FlaskClient):
+def test_bank_get_content_without_metadata_omitted(
+    client: FlaskClient, image_server: str
+):
     """Add content without metadata; GET does not include metadata key."""
     bank_name = "TEST_BANK_NO_META"
     create_bank(client, bank_name)
 
-    image_url = "https://github.com/facebook/ThreatExchange/blob/main/pdq/data/bridge-mods/aaa-orig.jpg?raw=true"
+    image_url = f"{image_server}/image1.jpg"
     add_response = client.post(
         f"/c/bank/{bank_name}/content?url={image_url}&content_type=photo",
     )
