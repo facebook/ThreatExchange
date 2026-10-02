@@ -10,6 +10,7 @@ from flask import request, redirect
 
 from OpenMediaMatch.blueprints import matching, curation, hashing
 from OpenMediaMatch.persistence import get_storage
+from OpenMediaMatch.utils import exchange_credentials
 from OpenMediaMatch.utils.time_utils import duration_to_human_str
 from OpenMediaMatch.schemas.ui import (
     BankFindContentRequest,
@@ -97,6 +98,7 @@ def _collab_info() -> dict[str, dict[str, t.Any]]:
         ret[name] = {
             "api": cfg.api,
             "bank": name.removeprefix("c-"),
+            "credential_status": exchange_credentials.credential_status(storage, cfg),
             "enabled": cfg.enabled,
             "count": fetch_status.fetched_items,
             "progress_style": progress_style,

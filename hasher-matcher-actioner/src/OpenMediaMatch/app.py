@@ -156,6 +156,12 @@ def create_app() -> OpenAPI:
         app.logger.info("Using single database for all operations")
 
     app.config.update(sqlalchemy_config)
+    # Bound parameters can include exchange credentials; keep them out of SQL
+    # logging (SQLALCHEMY_ENGINE_LOG_LEVEL) and database error messages
+    # unless a deployment explicitly opts back in.
+    app.config.setdefault("SQLALCHEMY_ENGINE_OPTIONS", {}).setdefault(
+        "hide_parameters", True
+    )
 
     logging_config = app.config.get("FLASK_LOGGING_CONFIG")
     if logging_config:

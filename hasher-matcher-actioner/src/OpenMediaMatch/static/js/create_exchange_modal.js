@@ -60,8 +60,9 @@
                 if (field.type === 'set_of_number') input.placeholder = 'e.g. 1, 2, 3';
             } else {
                 input = document.createElement('input');
-                input.type = 'text';
+                input.type = prefix === 'cred' ? 'password' : 'text';
                 input.className = 'form-control form-control-sm';
+                if (prefix === 'cred') input.autocomplete = 'off';
                 if (field.default != null) input.value = String(field.default);
             }
             return setSchemaInputAttrs(input, id, field, prefix);
@@ -214,40 +215,17 @@
             submitBtn.disabled = true;
 
             try {
+                const createBody = {
+                    api: api,
+                    bank: bank,
+                    api_json: api_json,
+                };
                 if (hasCredentialValues) {
-                    const credRes = await fetch(
-                        '/c/exchanges/api/' + encodeURIComponent(api),
-                        {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                credential_json: credential_json,
-                            }),
-                            headers: {
-                                Accept: 'application/json',
-                                'Content-Type': 'application/json',
-                            },
-                        }
-                    );
-                    if (!credRes.ok) {
-                        const err = await credRes.json().catch(function () {
-                            return {};
-                        });
-                        alert(
-                            'Failed to set credentials: ' +
-                                (err.message || credRes.statusText)
-                        );
-                        submitBtn.disabled = false;
-                        return;
-                    }
+                    createBody.credential_json = credential_json;
                 }
-
                 const createRes = await fetch('/c/exchanges', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        api: api,
-                        bank: bank,
-                        api_json: api_json,
-                    }),
+                    body: JSON.stringify(createBody),
                     headers: {
                         Accept: 'application/json',
                         'Content-Type': 'application/json',

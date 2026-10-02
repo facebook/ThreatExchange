@@ -1,6 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -92,12 +92,57 @@ class ExchangeCreateRequest(BaseModel):
     api_json: dict[str, Any] = Field(
         default_factory=dict, description="Exchange-specific configuration"
     )
+    credential_json: Optional[dict[str, Any]] = Field(
+        None,
+        description=(
+            "Optional credentials used only by this exchange, matching the "
+            "API's credentials_schema (see /c/exchanges/api/<api_name>/schema). "
+            "Rejected with 400 if the API does not support credentials."
+        ),
+    )
+
+
+class ExchangeCredentialStatus(BaseModel):
+    """Which credentials an exchange will use. Never includes secret values."""
+
+    supports_auth: bool = Field(
+        ..., description="Whether the exchange's API uses credentials"
+    )
+    has_credentials: bool = Field(
+        ..., description="Whether any credentials are available for this exchange"
+    )
+    source: Optional[Literal["exchange", "api", "environment", "file"]] = Field(
+        None,
+        description=(
+            "Where the credentials come from, in resolution order: 'exchange' "
+            "(set on this exchange), 'api' (API-level default from "
+            "/c/exchanges/api/<api_name>), 'environment' or 'file' (deployment "
+            "fallbacks). null if none are available."
+        ),
+    )
+
+
+class ExchangeCredentialsUpdateRequest(BaseModel):
+    """Request schema for setting credentials on a single exchange."""
+
+    credential_json: Optional[dict[str, Any]] = Field(
+        ...,
+        description=(
+            "Credentials matching the API's credentials_schema. "
+            "null or {} clears this exchange's credentials, so it falls back "
+            "to API-level or environment credentials."
+        ),
+    )
 
 
 class ExchangeConfig(BaseModel):
     """Schema for exchange configuration."""
 
     model_config = ConfigDict(extra="allow")
+
+    credential_status: Optional[ExchangeCredentialStatus] = Field(
+        None, description="Credential status for this exchange (no secret values)"
+    )
 
 
 class ExchangeUpdateRequest(BaseModel):

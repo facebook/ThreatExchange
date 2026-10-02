@@ -13,11 +13,18 @@ from dataclasses import dataclass
 import typing as t
 
 import flask
+from threatexchange.exchanges import auth
+from threatexchange.exchanges.collab_config import CollaborationConfigBase
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.storage.interfaces import (
     BankContentConfig as _BankContentConfig,
     IUnifiedStore as _IUnifiedStore,
 )
+
+# Where the credentials used for an exchange came from, in resolution order.
+# "environment" and "file" are the CredentialHelper fallbacks consulted by the
+# API class itself when no stored credentials are passed to for_collab().
+CredentialSource = t.Literal["exchange", "api", "environment", "file"]
 
 
 # TODO: Merge into pytx, and remove this version
@@ -65,6 +72,51 @@ class IFlaskUnifiedStore(
         config: t.Optional[BankContentConfig] = None,
     ) -> int:
         """Add content to a bank."""
+
+    def exchange_credentials_supported(self) -> bool:
+        """Whether exchange_set_credentials() is implemented by this store."""
+        return False
+
+    def exchange_get_credentials(self, name: str) -> t.Optional[auth.CredentialHelper]:
+        """
+        Get the credentials stored on a single exchange, if any.
+
+        Returns None if the exchange doesn't exist or has no credentials of its
+        own. Stores that don't support per-exchange credentials can keep this
+        default, and will only use API-level and environment credentials.
+        """
+        return None
+
+    def exchange_set_credentials(
+        self, name: str, credentials: t.Optional[auth.CredentialHelper]
+    ) -> None:
+        """
+        Set (or clear, if None) the credentials for a single exchange.
+
+        Throws KeyError if the exchange doesn't exist, and ValueError if the
+        credentials are the wrong type for the exchange's API.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} doesn't support per-exchange credentials"
+        )
+
+    def exchange_get_resolved_credentials(
+        self, collab: CollaborationConfigBase
+    ) -> t.Tuple[t.Optional[auth.CredentialHelper], t.Optional[CredentialSource]]:
+        """
+        The stored credentials that should be used for this exchange.
+
+        The exchange's own credentials win, then the per-API-type credentials.
+        If this returns (None, None), the API class falls back to its own
+        discovery (environment variables, files).
+        """
+        creds = self.exchange_get_credentials(collab.name)
+        if creds is not None:
+            return creds, "exchange"
+        api_cfg = self.exchange_apis_get_configs().get(collab.api)
+        if api_cfg is not None and api_cfg.credentials is not None:
+            return api_cfg.credentials, "api"
+        return None, None
 
     def init_flask(self, app: flask.Flask) -> None:
         """

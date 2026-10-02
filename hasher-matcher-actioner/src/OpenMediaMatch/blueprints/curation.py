@@ -18,9 +18,10 @@ from werkzeug.exceptions import HTTPException
 from threatexchange.utils import dataclass_json
 from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.exchanges import auth
+from threatexchange.exchanges.signal_exchange_api import TSignalExchangeAPICls
 
 from OpenMediaMatch import persistence
-from OpenMediaMatch.utils import flask_utils
+from OpenMediaMatch.utils import exchange_credentials, flask_utils
 from OpenMediaMatch.utils.exchange_schema import exchange_api_schema
 from threatexchange.storage.interfaces import (
     BankConfig as StoreBankConfig,
@@ -35,6 +36,7 @@ from OpenMediaMatch.schemas.curation import (
     BankUpdateRequest,
     BankedContentMetadata,
     ExchangeConfig,
+    ExchangeCredentialStatus,
     ExchangeUpdateRequest,
 )
 from OpenMediaMatch.schemas.shared import ErrorResponse, SuccessResponse
@@ -527,10 +529,9 @@ def exchange_api_config_get_or_update(api_name: str) -> dict[str, t.Any]:
             abort(400, "this endpoint expects a json object payload")
         cred_json = raw_json.get("credential_json")
         if cred_json is not None:
-            if not cred_json:
-                api_cfg.credentials = None
-            else:
-                api_cfg.set_credentials_from_json_dict(cred_json)
+            api_cfg.credentials = _parse_credential_json(
+                api_cfg.api_cls, cred_json, require_valid=False
+            )
 
         storage.exchange_api_config_update(api_cfg)
 
@@ -573,12 +574,31 @@ def exchange_api_schema_get(path: ExchangeApiPathParams):
     return jsonify(exchange_api_schema(api_cls))
 
 
+def _parse_credential_json(
+    api_cls: TSignalExchangeAPICls, raw: t.Any, *, require_valid: bool = True
+) -> t.Optional[auth.CredentialHelper]:
+    try:
+        return exchange_credentials.parse_credential_json(
+            api_cls, raw, require_valid=require_valid
+        )
+    except exchange_credentials.CredentialValidationError as e:
+        abort(400, str(e))
+    return None  # unreachable. satisfies type checker
+
+
 @bp.post(
     "/exchanges",
     tags=[Tag(name="Exchanges")],
     responses={"201": SuccessResponse, "400": ErrorResponse},
     summary="Create exchange",
-    description="Create a new signal exchange configuration for collaborative sharing",
+    description=(
+        "Create a new signal exchange configuration for collaborative sharing. "
+        "JSON body fields: `bank` (name of the new import bank, "
+        "/^[A-Z0-9_]+$/), `api` (exchange API type), `api_json` (optional "
+        "exchange-specific config), and `credential_json` (optional "
+        "credentials used only by this exchange, matching the API's "
+        "credentials_schema; 400 if the API does not use credentials)."
+    ),
 )
 def exchange_create():
     """
@@ -587,11 +607,13 @@ def exchange_create():
      * Configuration name in CAPS_AND_UNDERSCORE (must not be the same as an existing bank name)
      * Exchange type
      * Exchange-specific arguments (depends on SignalExchangeAPI)
+     * Optional credentials for this exchange only
     """
     data = request.get_json()
     bank = flask_utils.require_json_param("bank")
     api_json = data.get("api_json", {})
     api_type_name = data.get("api")
+    raw_credential_json = data.get("credential_json")
 
     if not re.match("^[A-Z0-9_]+$", bank):
         abort(400, "Field `bank` must match /^[A-Z0-9_]+$/")
@@ -618,7 +640,25 @@ def exchange_create():
     except Exception as e:
         abort(400, f"Failed to parse `api_json` - {str(e)}")
 
+    credentials = _parse_credential_json(api_type, raw_credential_json)
+    if credentials is not None and not storage.exchange_credentials_supported():
+        abort(501, "Storage does not support per-exchange credentials")
+
     storage.exchange_update(cfg, create=True)
+    if credentials is not None:
+        try:
+            storage.exchange_set_credentials(cfg.name, credentials)
+        except Exception as e:
+            # Only the type: database errors can embed bound (secret) parameters
+            logging.error(
+                "Failed to store credentials for exchange %s: %s",
+                cfg.name,
+                type(e).__name__,
+            )
+            storage.exchange_delete(cfg.name)
+            if isinstance(e, ValueError):
+                abort(400, "Credentials are not valid for this exchange's API")
+            abort(500, "Failed to store exchange credentials")
 
     return {"message": "Created successfully"}, 201
 
@@ -650,7 +690,11 @@ def exchange_list():
     tags=[Tag(name="Exchanges")],
     responses={"200": ExchangeConfig, "404": ErrorResponse},
     summary="Get exchange",
-    description="Get details of a specific exchange configuration",
+    description=(
+        "Get details of a specific exchange configuration, including "
+        "`credential_status` (whether it has credentials and their source; "
+        "never the values)"
+    ),
 )
 def exchange_show_by_name(path: ExchangePathParams):
     """
@@ -665,15 +709,81 @@ def exchange_show_by_name(path: ExchangePathParams):
       'api': 'fb_threatexchange',
       'enabled': 1,
       ...
+      'credential_status': {
+        'supports_auth': true,
+        'has_credentials': true,
+        'source': 'exchange'
+      }
     }
     """
+    collab = _get_collab(path.exchange_name)
     # Workaround for serializing enums and sets. The smarter way would be to
     # override the root level json serializer, but that's a future project
-    return Response(
-        response=dataclass_json.dataclass_dumps(_get_collab(path.exchange_name)),
-        status=200,
-        mimetype="application/json",
+    ret = json.loads(dataclass_json.dataclass_dumps(collab))
+    ret["credential_status"] = exchange_credentials.credential_status(
+        persistence.get_storage(), collab
     )
+    return jsonify(ret)
+
+
+@bp.get(
+    "/exchange/<string:exchange_name>/credentials",
+    tags=[Tag(name="Exchanges")],
+    responses={"200": ExchangeCredentialStatus, "404": ErrorResponse},
+    summary="Get exchange credential status",
+    description=(
+        "Whether this exchange has credentials, and whether they are its own "
+        "or a fallback (API-level, environment, file). Never returns values."
+    ),
+)
+def exchange_credentials_get(path: ExchangePathParams):
+    collab = _get_collab(path.exchange_name)
+    return jsonify(
+        exchange_credentials.credential_status(persistence.get_storage(), collab)
+    )
+
+
+@bp.post(
+    "/exchange/<string:exchange_name>/credentials",
+    tags=[Tag(name="Exchanges")],
+    responses={
+        "200": ExchangeCredentialStatus,
+        "400": ErrorResponse,
+        "404": ErrorResponse,
+    },
+    summary="Set exchange credentials",
+    description=(
+        "Set or clear the credentials used only by this exchange. JSON body: "
+        '{"credential_json": {...}} matching the API\'s credentials_schema '
+        "(see /c/exchanges/api/<api_name>/schema); null or {} clears them, so "
+        "the exchange falls back to API-level or environment credentials. "
+        "Returns the resulting credential status, never the values."
+    ),
+)
+def exchange_credentials_update(path: ExchangePathParams):
+    # Parsed by hand rather than with a pydantic body model, since pydantic
+    # validation errors echo the (secret) input back to the caller.
+    raw_json = request.get_json(silent=True)
+    if not isinstance(raw_json, dict) or "credential_json" not in raw_json:
+        abort(400, "this endpoint expects a json object with `credential_json`")
+    if set(raw_json) != {"credential_json"}:
+        abort(400, "unexpected fields; only `credential_json` is accepted")
+
+    storage = persistence.get_storage()
+    collab = _get_collab(path.exchange_name)
+    api_cls = storage.exchange_apis_get_installed().get(collab.api)
+    if api_cls is None:
+        abort(400, f"Exchange API '{collab.api}' is not installed")
+    credentials = _parse_credential_json(api_cls, raw_json["credential_json"])
+    if not storage.exchange_credentials_supported():
+        abort(501, "Storage does not support per-exchange credentials")
+    try:
+        storage.exchange_set_credentials(collab.name, credentials)
+    except KeyError:
+        abort(404, f"Exchange '{collab.name}' not found")
+    except ValueError:
+        abort(400, "Credentials are not valid for this exchange's API")
+    return jsonify(exchange_credentials.credential_status(storage, collab))
 
 
 @bp.get(
