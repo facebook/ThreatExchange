@@ -228,6 +228,10 @@ class StopNCIIAPI:
         # statement below.
         records: t.List[StopNCIIHashRecord] = []
         for record in json_val.get("hashRecords", []):
+            # Some responses serialize an empty caseNumbers dict as an empty
+            # list; normalize it so those records still parse.
+            if record.get("caseNumbers") == []:
+                record["caseNumbers"] = {}
             try:
                 records.append(
                     dacite.from_dict(
@@ -236,7 +240,7 @@ class StopNCIIAPI:
                         config=dacite.Config(cast=[enum.Enum, set]),
                     )
                 )
-            except ValueError as e:
+            except (ValueError, dacite.exceptions.DaciteError) as e:
                 logging.error(
                     "Convert response from JSON to Dataclass failed, err: %s, record: %s",
                     e,
