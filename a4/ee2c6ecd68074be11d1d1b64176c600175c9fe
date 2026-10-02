@@ -1,0 +1,21 @@
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_api_banks.py
+  s_1b65c7c6e74503::t_825fee607c5c75 498-500,505
+  s_1b65c7c6e74503::t_627d2dc54ac477 360-362,367
+  s_1b65c7c6e74503::t_31fd32392d4498 328-330,335
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a4ee2c6ecd68074be11d1d1b64176c600175c9fe",
+  "prompts": {},
+  "sessions": {
+    "s_1b65c7c6e74503": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "17b4d9b2-a6bf-45f1-b7ae-404273e8470c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}
