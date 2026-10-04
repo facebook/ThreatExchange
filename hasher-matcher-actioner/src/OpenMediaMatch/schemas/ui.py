@@ -4,6 +4,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from OpenMediaMatch.schemas.shared import MediaUrl, OptionalMediaUrl
+
 
 class CreateBankFormRequest(BaseModel):
     """Request schema for creating bank via UI form."""
@@ -22,7 +24,7 @@ class QueryFormRequest(BaseModel):
 class QueryUrlRequest(BaseModel):
     """Request schema for URL query."""
 
-    url: str = Field(..., description="URL to query")
+    url: MediaUrl
     content_type: str = Field(..., description="Content type")
     bypass_enabled_ratio: bool = Field(
         True, description="Whether to bypass enabled ratio"
@@ -50,7 +52,7 @@ class QueryResponse(BaseModel):
 class BankFindContentRequest(BaseModel):
     """Request schema for finding content in bank."""
 
-    url: Optional[str] = Field(None, description="URL to search")
+    url: OptionalMediaUrl = None
     content_type: Optional[str] = Field(None, description="Content type for URL")
     signal_type: Optional[str] = Field(None, description="Signal type for hash search")
     signal_value: Optional[str] = Field(
