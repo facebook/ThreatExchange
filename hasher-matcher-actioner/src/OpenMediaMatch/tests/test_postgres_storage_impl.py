@@ -255,6 +255,64 @@ class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
         return {}
 
 
+@dataclass
+class _TimestampCheckpoint(fetch_state.FetchCheckpointBase):
+    ts: int
+
+    def get_progress_timestamp(self) -> t.Optional[int]:
+        return self.ts
+
+
+class _FailsMidwayExchangeAPI(StaticSampleSignalExchangeAPI):
+    """Yields two deltas, then fails like an API returning a corrupt page"""
+
+    maker = _FakeUpdateMaker()
+    started_from: t.List[t.Optional[_TimestampCheckpoint]] = []
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "sample_fails_midway"
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[_TimestampCheckpoint]:  # type: ignore[override]
+        return _TimestampCheckpoint
+
+    def fetch_iter(self, _supported_signal_types, checkpoint):
+        self.started_from.append(checkpoint)
+        start = 0 if checkpoint is None else checkpoint.ts
+        for ts in (start + 1, start + 2):
+            yield fetch_state.FetchDelta(
+                self.maker.get_multi(5), _TimestampCheckpoint(ts)
+            )
+        raise RuntimeError("Simulated corrupt page")
+
+
+def test_fetch_failure_keeps_progress(storage: DefaultOMMStore):
+    patched_exchange_types = dict(storage.exchange_types)
+    patched_exchange_types[_FailsMidwayExchangeAPI.get_name()] = t.cast(
+        TSignalExchangeAPICls, _FailsMidwayExchangeAPI
+    )
+    storage.exchange_types = patched_exchange_types
+    cfg = make_collab(
+        storage, api=t.cast(TSignalExchangeAPICls, _FailsMidwayExchangeAPI)
+    )
+
+    fetch(storage)
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.last_fetch_succeeded is False
+    assert not status.up_to_date
+    # The deltas before the failure were saved, not thrown away
+    assert status.checkpoint_ts == 2
+    assert status.fetched_items == 10
+
+    # So the next fetch resumes from where the failure happened
+    fetch(storage)
+    assert _FailsMidwayExchangeAPI.started_from == [None, _TimestampCheckpoint(2)]
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.checkpoint_ts == 4
+    assert status.fetched_items == 20
+
+
 def test_exchange_type_confg(storage: DefaultOMMStore):
     # Configs should always exist for all configured types
     existing = storage.exchange_apis_get_configs()
