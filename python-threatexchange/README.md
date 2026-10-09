@@ -193,6 +193,19 @@ $ threatexchange config collab edit fb_threatexchange ...
 $ threatexchange fetch
 ```
 
+`fetch` keeps a full local copy, which can be large. To pull just a slice instead, `api fb_threatexchange query` sends the filters to ThreatExchange, so only matching descriptors are downloaded, and writes them as CSV (or `--format jsonl`). Nothing is stored locally.
+
+```
+# Everything in a collaboration tagged csam, as a CSV
+$ threatexchange api fb_threatexchange query -c 'Example Collaboration' --tags csam -o csam.csv
+
+# PDQ hashes from one member, marked malicious, since the start of the year
+$ threatexchange api fb_threatexchange query -g 1012185296055235 --type HASH_PDQ --status MALICIOUS \
+    --owner 1234567890 --since 2026-01-01 --columns indicator,tags,added_on
+
+$ threatexchange api fb_threatexchange query --help   # all the filters
+```
+
 #### NCMEC Hash API
 
 The [National Center for Exploited and Missing Children (NCMEC)](https://www.missingkids.org/) hosts a number of media hash exchanges related to Child Sexual Abuse Material (CSAM). If you have an account with NCMEC and credentials, you download and use hashes from that API.

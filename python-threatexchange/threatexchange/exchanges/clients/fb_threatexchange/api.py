@@ -307,6 +307,65 @@ class ThreatExchangeAPI:
         url = f"{self._base_url}/{privacy_group}/threat_updates/"
         return _CursoredResponse(self, url, params, decode_fn=decode_fn)
 
+    def search_threat_descriptors(
+        self,
+        *,
+        privacy_groups: t.Iterable[int] = (),
+        text: t.Optional[str] = None,
+        strict_text: t.Optional[bool] = None,
+        tags: t.Iterable[str] = (),
+        tags_are_anded: t.Optional[bool] = None,
+        status: t.Optional[str] = None,
+        owners: t.Iterable[int] = (),
+        type: t.Optional[str] = None,
+        since: t.Optional[int] = None,
+        until: t.Optional[int] = None,
+        min_confidence: t.Optional[int] = None,
+        max_confidence: t.Optional[int] = None,
+        review_status: t.Optional[str] = None,
+        share_level: t.Optional[str] = None,
+        sort_by: t.Optional[str] = None,
+        include_expired: t.Optional[bool] = None,
+        page_size: t.Optional[int] = None,
+        fields: t.Iterable[str] = ("id", "raw_indicator", "type", "status", "tags"),
+    ) -> _CursoredResponse:
+        """
+        Search ThreatDescriptors, with the filtering done by the server.
+
+        Arguments left unset are not sent. Unlike get_threat_updates(), this is
+        a query rather than a sync: it has no checkpoint, and deletions are not
+        reported, so use it to pull a slice of the data, not to mirror it.
+
+        https://developers.facebook.com/docs/threat-exchange/reference/apis/threat-descriptors/
+        """
+
+        def as_bool(b: t.Optional[bool]) -> t.Optional[str]:
+            return None if b is None else str(b).lower()  # requests sends "True"
+
+        params: t.Dict[str, t.Any] = {
+            "access_token": self.api_token,
+            "privacy_groups": ",".join(str(pg) for pg in privacy_groups),
+            "text": text,
+            "strict_text": as_bool(strict_text),
+            "tags": ",".join(tags),
+            "tags_are_anded": as_bool(tags_are_anded),
+            "status": status,
+            "owner": ",".join(str(o) for o in owners),
+            "type": type,
+            "since": since,
+            "until": until,
+            "min_confidence": min_confidence,
+            "max_confidence": max_confidence,
+            "review_status": review_status,
+            "share_level": share_level,
+            "sort_by": sort_by,
+            "include_expired": as_bool(include_expired),
+            "limit": page_size,
+            "fields": ",".join(fields),
+        }
+        params = {k: v for k, v in params.items() if v not in (None, "")}
+        return _CursoredResponse(self, f"{self._base_url}/threat_descriptors", params)
+
     def get_privacy_group(self, id: int) -> ThreatPrivacyGroup:
         """
         Returns a non-paginated list of all privacy groups the current app is a
