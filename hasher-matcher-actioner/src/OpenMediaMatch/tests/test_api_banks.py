@@ -357,6 +357,27 @@ def test_bank_get_content_returns_stored_metadata(
     assert get_data["metadata"]["json"] == metadata["json"]
 
 
+def test_bank_content_endpoints_scoped_to_bank(client: FlaskClient, image_server: str):
+    """Content in one bank can't be read, updated, or deleted via another bank's URL."""
+    create_bank(client, "OWNER_BANK")
+    create_bank(client, "OTHER_BANK")
+    add_hash_to_bank(client, "OWNER_BANK", f"{image_server}/image1.jpg")
+    content_id = 1
+
+    wrong = f"/c/bank/OTHER_BANK/content/{content_id}"
+    assert client.get(wrong).status_code == 404
+    assert client.put(wrong, json={"note": "hijacked"}).status_code == 404
+    delete_response = client.delete(wrong)
+    assert delete_response.status_code == 200
+    assert delete_response.json == {"deleted": 0}
+
+    get_response = client.get(f"/c/bank/OWNER_BANK/content/{content_id}")
+    assert get_response.status_code == 200
+    get_data = get_response.get_json()
+    assert get_data is not None
+    assert "note" not in get_data
+
+
 def test_bank_get_content_include_metadata_false(
     client: FlaskClient, image_server: str
 ):

@@ -236,6 +236,20 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
     build_and_assert_ok()
 
 
+def test_bank_remove_content_scoped_to_bank(storage: DefaultOMMStore):
+    for name in ("BANK_A", "BANK_B"):
+        storage.bank_update(BankConfig(name, matching_enabled_ratio=1.0), create=True)
+    content_id = storage.bank_add_content(
+        "BANK_A", {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
+    )
+
+    assert storage.bank_remove_content("BANK_B", content_id) == 0
+    assert len(storage.bank_content_get([content_id])) == 1
+
+    assert storage.bank_remove_content("BANK_A", content_id) == 1
+    assert storage.bank_content_get([content_id]) == []
+
+
 class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
     """Returns all the sample data, but can't convert to any types"""
 
