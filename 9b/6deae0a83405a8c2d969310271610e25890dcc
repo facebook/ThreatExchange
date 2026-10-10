@@ -1,0 +1,91 @@
+hasher-matcher-actioner/src/OpenMediaMatch/utils/flask_utils.py
+  s_1282a0e5553524::t_c3cbc818fc5893 12,18-27
+  s_1282a0e5553524::t_69136299482342 28-29
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_postgres_storage_impl.py
+  s_1282a0e5553524::t_d1d548db88d386 239-276
+  s_1282a0e5553524::t_e7fcc89324b49a 8
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/database.py
+  s_1282a0e5553524::t_c4ce040888c722 491-497,507,510,512-515,517-531,536-541,544
+  s_1282a0e5553524::t_ac5a82326b52d3 619-623
+  s_1282a0e5553524::t_fef70662e24717 478-479,483-484
+  s_1282a0e5553524::t_1ecd66facac486 503-504,506,508-509
+  s_1282a0e5553524::t_a5dcbbb1dabb74 476
+  s_1282a0e5553524::t_99f5df43101c60 628-643,645-649
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_api.py
+  s_1282a0e5553524::t_2f70b5a5a75b1c 121-139
+  s_1282a0e5553524::t_e46f112da12192 23
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_api_banks.py
+  s_1282a0e5553524::t_266c7d2aaf3296 374
+  s_1282a0e5553524::t_70350d395a109d 360-373,375-389,393-394
+  s_1282a0e5553524::t_bafd9b266df9f5 390-392
+hasher-matcher-actioner/src/OpenMediaMatch/app.py
+  s_1282a0e5553524::t_730799ef13c289 39
+  s_1282a0e5553524::t_8ee56f03d4c8a4 238
+  s_1282a0e5553524::t_299f8a9979f162 160-161
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/hashing.py
+  s_1282a0e5553524::t_9a431c830120d8 39-41,48-50,55,58,61-62,64,66,74,85-128,136
+  s_1282a0e5553524::t_bf8c29d975fa18 230,237-238,251-252
+  s_1282a0e5553524::t_bb496c8cc8c65e 8-9,11,15
+hasher-matcher-actioner/src/OpenMediaMatch/templates/pages/exchanges.html.j2
+  s_1282a0e5553524::t_57e40b14efc64e 5
+hasher-matcher-actioner/reference_omm_configs/development_omm_config.py
+  s_1282a0e5553524::t_e90abe8d329518 35-36
+  s_1282a0e5553524::t_fa727c9c9fa108 77-78
+hasher-matcher-actioner/src/OpenMediaMatch/static/js/match-form.js
+  s_1282a0e5553524::t_ccaa3c2acfd098 343
+  s_1282a0e5553524::t_7b48727ffc5314 180
+  s_1282a0e5553524::t_4b75b6321dd572 254,259,262-266,272
+  s_1282a0e5553524::t_92199e39a693fe 197,199
+  s_1282a0e5553524::t_5868072702235e 204,207
+  s_1282a0e5553524::t_1707275e4d5963 237-238
+  s_1282a0e5553524::t_70701d5c1217a6 190
+hasher-matcher-actioner/src/OpenMediaMatch/static/js/main.js
+  s_1282a0e5553524::t_ec2b7ad3d3b003 3-27
+hasher-matcher-actioner/src/OpenMediaMatch/templates/pages/home.html.j2
+  s_1282a0e5553524::t_30381e6d50f05e 2
+hasher-matcher-actioner/src/OpenMediaMatch/static/js/bank-management.js
+  s_1282a0e5553524::t_395d2b7a34caaa 483
+  s_1282a0e5553524::t_3079f82a9630b0 455-456
+  s_1282a0e5553524::t_6c2b3c6448cc0e 441,445
+  s_1282a0e5553524::t_1f35f4e273e49b 474
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/curation.py
+  s_1282a0e5553524::t_87147822009e36 10
+  s_1282a0e5553524::t_f484783fe4c3b8 444
+  s_1282a0e5553524::t_31752c79c03626 199,202-208
+  s_1282a0e5553524::t_828aadf2243141 233-242
+  s_1282a0e5553524::t_2ad8d21d09faf1 259
+  s_1282a0e5553524::t_8930983c709f9a 1026-1027,1031,1033
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_hashing.py
+  s_1282a0e5553524::t_d060d74b6b2e11 256-261
+  s_1282a0e5553524::t_e80849e7e3b58e 236-241
+  s_1282a0e5553524::t_e05d0532c7ecd3 14-28,39
+  s_1282a0e5553524::t_68e56446c8490a 88
+  s_1282a0e5553524::t_037d2cc4d4a328 142-198,203-208
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/impl.py
+  s_1282a0e5553524::t_74a452c7515d9c 811-815
+  s_1282a0e5553524::t_13039ec763fee1 686-690,692-694
+  s_1282a0e5553524::t_cbfda07bdc1486 226,229-232
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/ui.py
+  s_1282a0e5553524::t_c7715c2b20e75b 133
+  s_1282a0e5553524::t_62a9dbb74b4192 174
+hasher-matcher-actioner/scripts/openapi_dump_config.py
+  s_1282a0e5553524::t_b563080dd79b42 22
+hasher-matcher-actioner/src/OpenMediaMatch/tests/omm_config.py
+  s_1282a0e5553524::t_918f1b1510f642 25-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9b6deae0a83405a8c2d969310271610e25890dcc",
+  "prompts": {},
+  "sessions": {
+    "s_1282a0e5553524": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5c59f1d5-d7a6-49e1-93c6-8b194c466e14",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
