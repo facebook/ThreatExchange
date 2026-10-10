@@ -1,0 +1,27 @@
+hasher-matcher-actioner/src/OpenMediaMatch/blueprints/curation.py
+  s_1282a0e5553524::t_828aadf2243141 226-233
+  s_1282a0e5553524::t_fdf70cc1bb0e83 234-235
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_api_banks.py
+  s_1282a0e5553524::t_bafd9b266df9f5 376-378
+  s_1282a0e5553524::t_70350d395a109d 361-375,379-380
+  s_1282a0e5553524::t_266c7d2aaf3296 360
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/impl.py
+  s_1282a0e5553524::t_13039ec763fee1 681-685,687-689
+  s_1282a0e5553524::t_74a452c7515d9c 806-810
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf85f38d83b3c42ca97e8c1f3557552595647254",
+  "prompts": {},
+  "sessions": {
+    "s_1282a0e5553524": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5c59f1d5-d7a6-49e1-93c6-8b194c466e14",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
