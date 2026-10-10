@@ -76,15 +76,24 @@ def fetch(
     collab: CollaborationConfigBase,
 ):
     """Wrapper for exception recording"""
+    if not collab.enabled:
+        logger.info("%s[%s] Skipping - disabled", collab.name, collab.api)
+        return
     start = time.time()
     try:
         collab_store.exchange_start_fetch(collab.name)
         _fetch(collab_store, signal_type_cfgs, collab)
     except Exception:
         logger.exception("%s[%s] Failed to fetch!", collab.name, collab.api)
-        collab_store.exchange_complete_fetch(
-            collab.name, is_up_to_date=False, exception=True
-        )
+        # Must not raise, or every exchange after this one is skipped this run
+        try:
+            collab_store.exchange_complete_fetch(
+                collab.name, is_up_to_date=False, exception=True
+            )
+        except Exception:
+            logger.exception(
+                "%s[%s] Failed to record fetch failure", collab.name, collab.api
+            )
     finally:
         logger.info(
             "%s[%s] Completed - %s",
@@ -112,9 +121,6 @@ def _fetch(
     log = lambda msg, *args, level=logger.info: level(
         "%s[%s] " + msg, collab.name, collab.api, *args
     )
-    if not collab.enabled:
-        log("Skipping - disabled")
-        return
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
     api_client = collab_store.exchange_get_client(collab)

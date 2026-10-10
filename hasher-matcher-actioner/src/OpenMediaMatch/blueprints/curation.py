@@ -791,27 +791,35 @@ def exchange_credentials_update(path: ExchangePathParams):
     tags=[Tag(name="Exchanges")],
     responses={"200": {"description": "Fetch status"}, "404": ErrorResponse},
     summary="Get exchange fetch status",
-    description="Get last fetch time, checkpoint time, and success status for an exchange",
+    description="Get fetch progress, last fetch result, and whether the exchange is enabled",
 )
 def exchange_get_fetch_status(path: ExchangePathParams):
     """
     Inputs:
       * Configuration name
     Return:
-      * Time of last fetch kicked off in unix time (or 0 if unset)
-      * Time of checkpoint in unix time (or 0 if unset)
-      * Whether the last run resulted in an error
+      * enabled: whether the exchange is fetched at all; the other fields
+        keep the last recorded values while it is disabled
+      * checkpoint_ts: progress timestamp of the stored checkpoint, or null
+      * running_fetch_start_ts: when the in-progress fetch started, or null
+      * last_fetch_complete_ts: when the last fetch finished, or null
+      * last_fetch_succeeded: whether the last fetch finished without error
+      * up_to_date: whether the last fetch reached the end of available data
+      * fetched_items: number of items fetched
 
     {
-        last_fetch_time: 1692397383,
-        checkpoint_time: 169239700,
-        success: true
+        "enabled": true,
+        "checkpoint_ts": 1692397000,
+        "running_fetch_start_ts": null,
+        "last_fetch_complete_ts": 1692397383,
+        "last_fetch_succeeded": true,
+        "up_to_date": true,
+        "fetched_items": 0
     }
     """
-    status = persistence.get_storage().exchange_get_fetch_status(
-        _get_collab(path.exchange_name).name
-    )
-    return jsonify(dataclasses.asdict(status))
+    collab = _get_collab(path.exchange_name)
+    status = persistence.get_storage().exchange_get_fetch_status(collab.name)
+    return jsonify({**dataclasses.asdict(status), "enabled": collab.enabled})
 
 
 @bp.put(
