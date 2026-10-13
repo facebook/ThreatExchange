@@ -289,3 +289,91 @@ def test_post_feedbacks(monkeypatch: pytest.MonkeyPatch):
     submit_feedback_api = StopNCIIAPI("", "")
     monkeypatch.setattr(submit_feedback_api, "_post", mock_submit_feedback_post_impl)
     submit_feedback_api.submit_feedbacks(mock_feedbacks())
+
+
+def mock_get_impl_empty_case_numbers(endpoint: str, **json):
+    assert endpoint == StopNCIIEndpoint.FetchHashes
+
+    return {
+        "count": 2,
+        "nextSetTimestamp": 1790762454,
+        "nextPageToken": None,
+        "hasMoreRecords": False,
+        "hashRecords": [
+            {
+                "lastModtimestamp": 1790762400,
+                "hashValue": "empty-list-case-numbers",
+                "hashStatus": "Received",
+                "caseNumbers": [],
+                "signalType": "ImagePDQ",
+            },
+            {
+                "lastModtimestamp": 1790762401,
+                "hashValue": "regular-record",
+                "hashStatus": "Received",
+                "caseNumbers": {"27664732-76e1-4a17-8099-455798e67022": "Received"},
+                "signalType": "ImagePDQ",
+            },
+        ],
+    }
+
+
+def test_mocked_get_hashes_with_empty_case_numbers(monkeypatch: pytest.MonkeyPatch):
+    empty_list_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(empty_list_api, "_get", mock_get_impl_empty_case_numbers)
+    result = empty_list_api.fetch_hashes()
+
+    assert result.count == 2
+    # the record with caseNumbers: [] must parse, not crash the fetch
+    assert len(result.hashRecords) == 2
+    assert result.hashRecords[0].caseNumbers == {}
+    assert result.hashRecords[0].hashValue == "empty-list-case-numbers"
+    assert result.hashRecords[1].caseNumbers == {
+        "27664732-76e1-4a17-8099-455798e67022": StopNCIICaseStatus.Received
+    }
+
+
+def mock_get_impl_malformed_case_numbers(endpoint: str, **json):
+    assert endpoint == StopNCIIEndpoint.FetchHashes
+
+    return {
+        "count": 1,
+        "nextSetTimestamp": 1790762454,
+        "nextPageToken": None,
+        "hasMoreRecords": False,
+        "hashRecords": [
+            {
+                "lastModtimestamp": 1790762400,
+                "hashValue": "non-empty-list-case-numbers",
+                "hashStatus": "Received",
+                "caseNumbers": ["not-a-mapping"],
+                "signalType": "Text",
+            }
+        ],
+    }
+
+
+def test_mocked_get_hashes_skips_malformed_case_numbers(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    malformed_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(malformed_api, "_get", mock_get_impl_malformed_case_numbers)
+    result = malformed_api.fetch_hashes()
+
+    # a genuinely malformed record is skipped instead of raising through fetch_hashes
+    assert result.count == 1
+    assert len(result.hashRecords) == 0
+
+
+def test_mocked_get_hashes_iter_with_empty_case_numbers(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    empty_list_api = StopNCIIAPI("", "")
+    monkeypatch.setattr(empty_list_api, "_get", mock_get_impl_empty_case_numbers)
+
+    records = [
+        record
+        for result in empty_list_api.fetch_hashes_iter()
+        for record in result.hashRecords
+    ]
+    assert len(records) == 2
