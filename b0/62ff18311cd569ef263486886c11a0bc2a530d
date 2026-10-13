@@ -1,0 +1,24 @@
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_fetcher.py
+  s_1d2b0bb0adc91d::t_118f52a8cfbf53 73-75
+  s_1d2b0bb0adc91d::t_a06d95623f1083 3,7,19,35-58,81-94
+hasher-matcher-actioner/src/OpenMediaMatch/background_tasks/fetcher.py
+  s_1d2b0bb0adc91d::t_6f80cc6d561beb 6
+  s_1d2b0bb0adc91d::t_3f56a598077099 64-72
+  s_1d2b0bb0adc91d::t_6a83a4821c8629 95-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b062ff18311cd569ef263486886c11a0bc2a530d",
+  "prompts": {},
+  "sessions": {
+    "s_1d2b0bb0adc91d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c32e8e73-f091-47e6-804b-0e7f05be80ec",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
