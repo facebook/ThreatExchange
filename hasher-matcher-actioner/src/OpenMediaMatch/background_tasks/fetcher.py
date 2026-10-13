@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import datetime
 import logging
+import random
 import threading
 import time
 import typing as t
@@ -60,9 +61,15 @@ def _fetch_all_impl(
     """Actual fetch logic; called by fetch_all while holding _fetch_lock."""
     logger.info("Running the %s background task", fetch_all.__name__)
     start = time.time()
-    collabs = collab_store.exchanges_get()
-    for c in collabs.values():
-        fetch(collab_store, signal_type_cfgs, c)
+    collabs = list(collab_store.exchanges_get().values())
+    # Shuffled so a slow exchange doesn't delay the same exchanges every run
+    random.shuffle(collabs)
+    for c in collabs:
+        try:
+            fetch(collab_store, signal_type_cfgs, c)
+        except Exception:
+            # Must not raise, or every exchange after this one is skipped this run
+            logger.exception("%s[%s] Unhandled error during fetch", c.name, c.api)
     logger.info(
         "Completed %s background task, took %s",
         fetch_all.__name__,
@@ -76,6 +83,9 @@ def fetch(
     collab: CollaborationConfigBase,
 ):
     """Wrapper for exception recording"""
+    if not collab.enabled:
+        logger.info("%s[%s] Skipping - disabled", collab.name, collab.api)
+        return
     start = time.time()
     try:
         collab_store.exchange_start_fetch(collab.name)
@@ -112,9 +122,6 @@ def _fetch(
     log = lambda msg, *args, level=logger.info: level(
         "%s[%s] " + msg, collab.name, collab.api, *args
     )
-    if not collab.enabled:
-        log("Skipping - disabled")
-        return
     log("Fetching signals for %s from %s", collab.name, collab.api)
 
     api_client = collab_store.exchange_get_client(collab)

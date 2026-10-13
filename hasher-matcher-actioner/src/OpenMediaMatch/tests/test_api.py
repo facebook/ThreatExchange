@@ -341,3 +341,10 @@ def test_exchange_get_fetch_status(app: Flask, client: FlaskClient):
     assert "last_fetch_succeeded" in data
     assert "up_to_date" in data
     assert "fetched_items" in data
+    assert data["enabled"] is True
+
+    put_resp = client.put("/c/exchange/BAR_EXCHANGE", json={"enabled": False})
+    assert put_resp.status_code == 200
+    data = client.get("/c/exchange/BAR_EXCHANGE/status").get_json()
+    assert data is not None
+    assert data["enabled"] is False
