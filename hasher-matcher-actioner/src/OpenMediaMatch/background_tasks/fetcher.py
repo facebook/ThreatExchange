@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 import datetime
 import logging
+import random
 import threading
 import time
 import typing as t
@@ -60,9 +61,15 @@ def _fetch_all_impl(
     """Actual fetch logic; called by fetch_all while holding _fetch_lock."""
     logger.info("Running the %s background task", fetch_all.__name__)
     start = time.time()
-    collabs = collab_store.exchanges_get()
-    for c in collabs.values():
-        fetch(collab_store, signal_type_cfgs, c)
+    collabs = list(collab_store.exchanges_get().values())
+    # Shuffled so a slow exchange doesn't delay the same exchanges every run
+    random.shuffle(collabs)
+    for c in collabs:
+        try:
+            fetch(collab_store, signal_type_cfgs, c)
+        except Exception:
+            # Must not raise, or every exchange after this one is skipped this run
+            logger.exception("%s[%s] Unhandled error during fetch", c.name, c.api)
     logger.info(
         "Completed %s background task, took %s",
         fetch_all.__name__,
@@ -85,15 +92,9 @@ def fetch(
         _fetch(collab_store, signal_type_cfgs, collab)
     except Exception:
         logger.exception("%s[%s] Failed to fetch!", collab.name, collab.api)
-        # Must not raise, or every exchange after this one is skipped this run
-        try:
-            collab_store.exchange_complete_fetch(
-                collab.name, is_up_to_date=False, exception=True
-            )
-        except Exception:
-            logger.exception(
-                "%s[%s] Failed to record fetch failure", collab.name, collab.api
-            )
+        collab_store.exchange_complete_fetch(
+            collab.name, is_up_to_date=False, exception=True
+        )
     finally:
         logger.info(
             "%s[%s] Completed - %s",
