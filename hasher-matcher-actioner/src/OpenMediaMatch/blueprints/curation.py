@@ -223,6 +223,16 @@ def _validate_bank_add_note() -> t.Optional[str]:
     return _validate_note(note)
 
 
+def _get_bank_content_or_404(
+    bank: StoreBankConfig, content_id: int
+) -> BankContentConfig:
+    contents = persistence.get_storage().bank_content_get([content_id])
+    # Content in other banks gets the same 404 so IDs can't be probed across banks
+    if not contents or contents[0].bank.name != bank.name:
+        abort(404, f"content '{content_id}' not found")
+    return contents[0]
+
+
 @bp.get(
     "/bank/<bank_name>/content/<int:content_id>",
     tags=[Tag(name="Bank Content")],
@@ -239,10 +249,7 @@ def bank_get_content(path: BankContentPathParams):
         abort(404, f"bank '{bank_name}' not found")
     include_signals = request.args.get("include_signals", "false").lower() == "true"
     include_metadata = request.args.get("include_metadata", "true").lower() == "true"
-    content = storage.bank_content_get([content_id])
-    if not content:
-        abort(404, f"content '{content_id}' not found")
-    content_config = content[0]
+    content_config = _get_bank_content_or_404(bank, content_id)
 
     bank_schema = BankConfig(
         name=content_config.bank.name,
@@ -427,10 +434,7 @@ def bank_update_content(path: BankContentPathParams):
     bank = storage.get_bank(bank_name)
     if not bank:
         abort(404, f"bank '{bank_name}' not found")
-    contents = storage.bank_content_get([content_id])
-    if not contents:
-        abort(404, f"content '{content_id}' not found")
-    content = contents[0]
+    content = _get_bank_content_or_404(bank, content_id)
     data = request.get_json()
 
     try:

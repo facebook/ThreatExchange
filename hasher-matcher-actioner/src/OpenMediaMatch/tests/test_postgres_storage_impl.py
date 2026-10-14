@@ -27,7 +27,11 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.storage.interfaces import BankConfig, SignalExchangeAPIConfig
 from OpenMediaMatch.storage.interface import BankContentConfig
 from OpenMediaMatch.storage.postgres import database
-from OpenMediaMatch.storage.postgres.impl import DefaultOMMStore
+from OpenMediaMatch.storage.postgres.impl import (
+    DefaultOMMStore,
+    _BulkDbOpExchangeDataHelper,
+    _sync_bankable_content,
+)
 
 
 @pytest.fixture()
@@ -234,6 +238,106 @@ def test_recover_from_index_unlink_partial_failure(storage: DefaultOMMStore):
 
     # We should be able to recover by rebuilding
     build_and_assert_ok()
+
+
+def test_bank_remove_content_scoped_to_bank(storage: DefaultOMMStore):
+    for name in ("BANK_A", "BANK_B"):
+        storage.bank_update(BankConfig(name, matching_enabled_ratio=1.0), create=True)
+    content_id = storage.bank_add_content(
+        "BANK_A", {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
+    )
+
+    assert storage.bank_remove_content("BANK_B", content_id) == 0
+    assert len(storage.bank_content_get([content_id])) == 1
+
+    assert storage.bank_remove_content("BANK_A", content_id) == 1
+    assert storage.bank_content_get([content_id]) == []
+
+
+def test_exchange_sync_removals_keep_other_content(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """
+    Removing exchange content only removes that content: not other items from
+    the same exchange, and not content in other banks.
+    """
+    local_signal = f"{99999:032x}"
+    storage.bank_update(BankConfig("LOCAL", matching_enabled_ratio=1.0), create=True)
+    local_id = storage.bank_add_content("LOCAL", {VideoMD5Signal: local_signal})
+
+    cfg = make_collab(storage)
+    checkpoint = StaticSampleSignalExchangeAPI.get_checkpoint_cls()()
+    maker = _FakeUpdateMaker()
+    storage.exchange_commit_fetch(cfg, None, maker.get_multi(3), checkpoint)
+
+    def assert_content():
+        signals = {s.signal_val for s in storage.bank_yield_content(VideoMD5Signal)}
+        assert signals == maker.signals | {local_signal}
+        assert len(storage.bank_content_get([local_id])) == 1
+
+    assert_content()
+
+    # Upstream deletes an item
+    removed = {maker.delete(0): None}
+    storage.exchange_commit_fetch(cfg, checkpoint, removed, checkpoint)
+    assert_content()
+
+    # Upstream updates an item to something we can no longer convert to signals
+    monkeypatch.setattr(
+        StaticSampleSignalExchangeAPI,
+        "naive_convert_to_signal_type",
+        classmethod(lambda cls, *args, **kwargs: {}),
+    )
+    unconvertible = {maker.delete(1): fetch_state.FetchedSignalMetadata()}
+    storage.exchange_commit_fetch(cfg, checkpoint, unconvertible, checkpoint)
+    monkeypatch.undo()
+    assert_content()
+
+
+def test_sync_bankable_content_deletes_only_listed_content(
+    storage: DefaultOMMStore,
+) -> None:
+    """
+    Regression: this delete used to run without a WHERE clause, removing every
+    BankContent row in every bank.
+    """
+    storage.bank_update(BankConfig("LOCAL", matching_enabled_ratio=1.0), create=True)
+    local_id = storage.bank_add_content(
+        "LOCAL", {VideoMD5Signal: VideoMD5Signal.get_examples()[0]}
+    )
+    cfg = make_collab(storage)
+    fetch(storage)
+
+    sesh = database.db.session
+    imported = (
+        sesh.execute(
+            select(database.BankContent).where(
+                database.BankContent.imported_from_id.is_not(None)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(imported) > 1
+    target, *others = imported
+    assert target.imported_from_id is not None
+
+    op = _BulkDbOpExchangeDataHelper(
+        exchange_data_id=target.imported_from_id,
+        bank_content_id=target.id,
+        existing_signals=[],
+        update_as_signals={},
+    )
+    _sync_bankable_content({target.imported_from_id: op}, target.bank_id)
+    sesh.commit()
+
+    remaining = {
+        bc.id
+        for bc in storage.bank_content_get(
+            [local_id, target.id] + [o.id for o in others]
+        )
+    }
+    assert remaining == {local_id} | {o.id for o in others}
 
 
 class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):

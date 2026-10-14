@@ -678,8 +678,15 @@ class DefaultOMMStore(IFlaskUnifiedStore):
     def bank_remove_content(self, bank_name: str, content_id: int) -> int:
         # TODO: throw an exception if deleting imported content
         sesh = get_write_session()
+        bank_id = (
+            select(database.Bank.id)
+            .where(database.Bank.name == bank_name)
+            .scalar_subquery()
+        )
         result = sesh.execute(
-            delete(database.BankContent).where(database.BankContent.id == content_id)
+            delete(database.BankContent)
+            .where(database.BankContent.id == content_id)
+            .where(database.BankContent.bank_id == bank_id)
         )
         sesh.commit()
         return result.rowcount
@@ -796,7 +803,11 @@ def _sync_bankable_content(
         if op.bank_content_id is not None:
             bc_id_to_delete.append(op.bank_content_id)
     if bc_id_to_delete:
-        sesh.execute(delete(database.BankContent), {"id": id for id in bc_id_to_delete})
+        sesh.execute(
+            delete(database.BankContent).where(
+                database.BankContent.id.in_(bc_id_to_delete)
+            )
+        )
     to_create = [op for op in ops.values() if op.bank_content_id is None]
     if not to_create:
         return
