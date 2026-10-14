@@ -1,0 +1,21 @@
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_postgres_storage_impl.py
+  s_1282a0e5553524::t_b173a01292fbb9 257-334,339-342
+  s_1282a0e5553524::t_f03fe36e129568 30-34
+  s_1282a0e5553524::t_af8c8f4abfc893 335-338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fcb472274512d9b14e5271ba64e73a0f5669bbe",
+  "prompts": {},
+  "sessions": {
+    "s_1282a0e5553524": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5c59f1d5-d7a6-49e1-93c6-8b194c466e14",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
