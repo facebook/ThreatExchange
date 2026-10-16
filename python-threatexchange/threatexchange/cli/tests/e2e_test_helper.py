@@ -41,8 +41,9 @@ class ThreatExchangeCLIE2eHelper:
             args.extend(self.COMMON_CALL_ARGS)
         args.extend(given_args)
         print("Calling: $ threatexchange", " ".join(args), file=sys.stderr)
-        with patch("sys.stdout", new=StringIO(newline=None)) as fake_out, patch(
-            "sys.argv", new=["threatexchange"] + args
+        with (
+            patch("sys.stdout", new=StringIO(newline=None)) as fake_out,
+            patch("sys.argv", new=["threatexchange"] + args),
         ):
             try:
                 inner_main(args, state_dir=self._state_dir)

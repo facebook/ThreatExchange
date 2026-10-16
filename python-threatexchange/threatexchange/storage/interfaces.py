@@ -229,7 +229,7 @@ class SignalExchangeAPIConfig:
         self.credentials = dataclass_json.dataclass_load_dict(d, cred_cls)
 
 
-@dataclass(kw_only=True)
+@dataclass
 class FetchStatus:
     checkpoint_ts: t.Optional[int]
 

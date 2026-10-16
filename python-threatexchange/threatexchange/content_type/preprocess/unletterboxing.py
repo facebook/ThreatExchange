@@ -6,6 +6,19 @@ import typing as t
 from PIL import Image
 
 
+def _flattened_pixels(image: Image.Image) -> t.Sequence[t.Any]:
+    """
+    Pixel values of the image as a flat sequence.
+
+    `get_flattened_data` needs Pillow>=12.1, which requires Python>=3.10;
+    older Pillows only have `getdata` (deprecated in 12.1).
+    """
+    img: t.Any = image
+    if hasattr(img, "get_flattened_data"):
+        return img.get_flattened_data()
+    return img.getdata()
+
+
 def is_pixel_black(pixel: tuple, black_threshold: int):
     """
     Check if each color channel in the pixel is below the threshold
@@ -22,7 +35,7 @@ def detect_top_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for y in range(height):
-        row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
+        row_pixels = list(_flattened_pixels(image.crop((0, y, width, y + 1))))
         if all(
             is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
             for pixel in row_pixels
@@ -40,7 +53,7 @@ def detect_bottom_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for y in range(height - 1, -1, -1):
-        row_pixels = list(image.crop((0, y, width, y + 1)).get_flattened_data())
+        row_pixels = list(_flattened_pixels(image.crop((0, y, width, y + 1))))
         if all(
             is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
             for pixel in row_pixels
@@ -58,7 +71,7 @@ def detect_left_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for x in range(width):
-        col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
+        col_pixels = list(_flattened_pixels(image.crop((x, 0, x + 1, height))))
         if all(
             is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
             for pixel in col_pixels
@@ -76,7 +89,7 @@ def detect_right_border(image: Image.Image, black_threshold: int = 0) -> int:
     """
     width, height = image.size
     for x in range(width - 1, -1, -1):
-        col_pixels = list(image.crop((x, 0, x + 1, height)).get_flattened_data())
+        col_pixels = list(_flattened_pixels(image.crop((x, 0, x + 1, height))))
         if all(
             is_pixel_black(t.cast(t.Tuple[t.Any, ...], pixel), black_threshold)
             for pixel in col_pixels
