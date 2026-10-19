@@ -1,0 +1,94 @@
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/impl.py
+  s_181cdafd04d270::t_0595f88ae1a54d 7,14
+  s_181cdafd04d270::t_6119df075c937d 215-217,219-233,235-245,249-251
+  s_181cdafd04d270::t_cff78fbb3dc0bb 793-794
+  s_181cdafd04d270::t_4e19f6a97bb9a1 872
+  s_181cdafd04d270::t_d86abb8c2c0acc 1019-1020
+  s_181cdafd04d270::t_6acc057b8fde78 294-298,301-313
+  s_181cdafd04d270::t_bde12043484ec9 265,267-269,278
+  s_181cdafd04d270::t_99b18dd0ae313e 234
+  s_181cdafd04d270::t_c47474837c6909 866-871,873-895
+  s_181cdafd04d270::t_d89ed913e1cf15 920-933
+  s_181cdafd04d270::t_e93febb7cc689a 368
+  s_181cdafd04d270::t_c46bfa058bb5fc 246-248
+  s_181cdafd04d270::t_ce18f007ce06b9 959
+  s_181cdafd04d270::t_47863b34efb0bc 62
+  s_181cdafd04d270::t_e707a03a9f4b54 631
+  s_181cdafd04d270::t_5aa523afd8ffb7 712
+  s_181cdafd04d270::t_7135b846aa56ec 9
+  s_181cdafd04d270::t_2a4926ca9dfa7d 63-64
+  s_181cdafd04d270::t_0ff940db096299 218
+  s_181cdafd04d270::t_10270414711925 257-264,266,270-277,292-293,314-326
+  s_181cdafd04d270::t_8a628a44fb33e5 327
+hasher-matcher-actioner/src/OpenMediaMatch/storage/postgres/database.py
+  s_181cdafd04d270::t_16f5da0bfc4b61 467
+  s_181cdafd04d270::t_01389e51c1b0e8 468-470
+  s_181cdafd04d270::t_c576c88a5d8d85 465-466
+hasher-matcher-actioner/src/OpenMediaMatch/migrations/versions/c3f8a1d2e9b4_add_signal_index_last_full_build_ts.py
+  s_181cdafd04d270::t_e40314b49d8dc3 1,23-32,35
+  s_181cdafd04d270::t_f2edf681182d51 2-22,33-34,36
+hasher-matcher-actioner/src/OpenMediaMatch/app.py
+  s_181cdafd04d270::t_e28812aa1a515e 355-360,364-367
+hasher-matcher-actioner/src/OpenMediaMatch/storage/interface.py
+  s_181cdafd04d270::t_7c3dabe209e9f2 168,170-175,182-187
+  s_181cdafd04d270::t_452541765951fa 129-131,133,136-151,153,156-162
+  s_181cdafd04d270::t_a93a0efe5b8f74 29-31
+  s_181cdafd04d270::t_1b459f8875c9a2 12,14,20
+  s_181cdafd04d270::t_7a91bcc8240130 190-196,198,200-205
+  s_181cdafd04d270::t_17087b7a866e0d 24,26
+  s_181cdafd04d270::t_a464771c8a51fe 132,134-135
+  s_181cdafd04d270::t_03db989012d53a 152,154-155
+  s_181cdafd04d270::t_cbe57ec577b2e3 163-167,169,176-181,188-189
+  s_181cdafd04d270::t_2bf36bc591f280 197,199
+hasher-matcher-actioner/src/OpenMediaMatch/tests/test_build_index.py
+  s_181cdafd04d270::t_2c9e1aeb3d4e15 203,209-264
+  s_181cdafd04d270::t_2493f9c44c393d 35-37
+  s_181cdafd04d270::t_e030cc25183967 30-32
+  s_181cdafd04d270::t_82e333ca3553a4 380-447
+  s_181cdafd04d270::t_43ae5c2c64a6be 348,352-377
+  s_181cdafd04d270::t_1a427546e275c8 1-3,5-10,14-29,33-34,38-98,102-103,105-107,120-121,138,141-145,148-150,153-155,157-158,160-162,164-165,171,177,199,291-338,340-342,344-347,350-351,378-379,448-451
+  s_181cdafd04d270::t_ceb8818d82210f 339,343,349
+  s_181cdafd04d270::t_37f5aac912fa0c 11-13
+  s_181cdafd04d270::t_7216f5afe4fb63 99-101,104,108-119
+  s_181cdafd04d270::t_7ddf737408d240 122-137,139-140,146-147,151-152,156,159,163,166-170,172-176,178-198,200-202,204-208,265-290
+  s_181cdafd04d270::t_c83dd03bd2ff2d 4
+hasher-matcher-actioner/reference_omm_configs/development_omm_config.py
+  s_181cdafd04d270::t_0d6c06f27dbfc3 50-56
+hasher-matcher-actioner/src/OpenMediaMatch/background_tasks/build_index.py
+  s_181cdafd04d270::t_d2174100148193 45-46
+  s_181cdafd04d270::t_d7cbd4fab59478 4,9,14,27-28,30,32-42,47,49-50,52-54,61,64,72,86,89-90,111-112,123,188-190,193,195-196,204-206,210,212-222,224,227-229,233-235,239-241,244,248-251,253-273
+  s_181cdafd04d270::t_896e6b27388c1a 128-129,133,135,143-158,160-161,163,165-172,174-180,187
+  s_181cdafd04d270::t_1bd3d3193751ec 252
+  s_181cdafd04d270::t_5129f806f99f0f 173,182-184
+  s_181cdafd04d270::t_3ff0320b7276d1 29,31
+  s_181cdafd04d270::t_908f08f89154be 194,200-203
+  s_181cdafd04d270::t_8724ed1c476b96 93-109
+  s_181cdafd04d270::t_5dd445c8f1e829 230-232
+  s_181cdafd04d270::t_b0d5b3009e9b44 181,185-186,191-192,207-209,211
+  s_181cdafd04d270::t_8d44f3ea0b15ef 130,132
+  s_181cdafd04d270::t_3d702e5381a28b 223,225-226
+  s_181cdafd04d270::t_01591ca1caeb66 91
+  s_181cdafd04d270::t_fabb23192c7ae1 3
+  s_181cdafd04d270::t_8b9e0ba87b2131 114-117,122,131,136-138
+  s_181cdafd04d270::t_5b5706e70cdfc7 142
+  s_181cdafd04d270::t_4867b7f675c610 43-44
+  s_181cdafd04d270::t_ce70452773f97a 197-199
+  s_181cdafd04d270::t_ee6139ef80f0b1 236-238,242-243,245-247
+  s_181cdafd04d270::t_1a0aaf94897fe4 113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec1713fdde57ef91ad346b0f1f3a3d4598444e69",
+  "prompts": {},
+  "sessions": {
+    "s_181cdafd04d270": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "fefd1dc0-cc12-4c54-9894-25bb34fcfe82",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Juan Mrad <juansmrad@gmail.com>"
+    }
+  }
+}
