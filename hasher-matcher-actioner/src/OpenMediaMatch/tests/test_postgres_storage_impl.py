@@ -5,7 +5,7 @@ import typing as t
 
 import pytest
 from flask import Flask
-from sqlalchemy import select
+from sqlalchemy import event, select
 
 from OpenMediaMatch.tests.utils import app
 from OpenMediaMatch.persistence import get_storage
@@ -26,7 +26,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 from threatexchange.storage.interfaces import BankConfig, SignalExchangeAPIConfig
 from OpenMediaMatch.storage.interface import BankContentConfig
-from OpenMediaMatch.storage.postgres import database
+from OpenMediaMatch.storage.postgres import database, impl
 from OpenMediaMatch.storage.postgres.impl import (
     DefaultOMMStore,
     _BulkDbOpExchangeDataHelper,
@@ -338,6 +338,130 @@ def test_sync_bankable_content_deletes_only_listed_content(
         )
     }
     assert remaining == {local_id} | {o.id for o in others}
+
+
+def test_sync_content_signal_bulk_deletes_only_stale_signals(
+    app: Flask, storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    storage.bank_update(BankConfig("LOCAL", matching_enabled_ratio=1.0), create=True)
+    md5_vals = [f"{i:032x}" for i in range(5)]
+    pdq_val = PdqSignal.get_examples()[0]
+    removed_id, changed_id, kept_id, untouched_id = (
+        storage.bank_add_content("LOCAL", {VideoMD5Signal: v}) for v in md5_vals[:4]
+    )
+    multi_type_id = storage.bank_add_content(
+        "LOCAL", {VideoMD5Signal: md5_vals[4], PdqSignal: pdq_val}
+    )
+
+    sesh = database.db.session
+    contents = {
+        bc.id: bc for bc in sesh.execute(select(database.BankContent)).scalars().all()
+    }
+    meta = fetch_state.FetchedSignalMetadata()
+    changed_val = f"{100:032x}"
+    updates: dict[int, dict[type[SignalType], dict[str, t.Any]]] = {
+        removed_id: {},
+        changed_id: {VideoMD5Signal: {changed_val: meta}},
+        kept_id: {VideoMD5Signal: {md5_vals[2]: meta}},
+        multi_type_id: {PdqSignal: {pdq_val: meta}},
+    }
+    ops = {
+        content_id: _BulkDbOpExchangeDataHelper(
+            exchange_data_id=None,
+            bank_content_id=content_id,
+            existing_signals=list(contents[content_id].signals),
+            update_as_signals=update,
+        )
+        for content_id, update in updates.items()
+    }
+
+    delete_statements: list[str] = []
+
+    def record_deletes(conn, cursor, statement, *args) -> None:
+        if statement.lstrip().upper().startswith("DELETE FROM CONTENT_SIGNAL"):
+            delete_statements.append(statement)
+
+    monkeypatch.setitem(app.config, "CONTENT_SIGNAL_DELETE_CHUNK_SIZE", 2)
+    event.listen(database.db.engine, "before_cursor_execute", record_deletes)
+    try:
+        impl._sync_content_signal(ops)
+        sesh.commit()
+    finally:
+        event.remove(database.db.engine, "before_cursor_execute", record_deletes)
+
+    # 3 stale signals (removed, changed, multi_type's md5) in chunks of 2
+    assert len(delete_statements) == 2
+    assert storage.bank_content_get_signals(
+        [removed_id, changed_id, kept_id, untouched_id, multi_type_id]
+    ) == {
+        removed_id: {},
+        changed_id: {VideoMD5Signal.get_name(): changed_val},
+        kept_id: {VideoMD5Signal.get_name(): md5_vals[2]},
+        untouched_id: {VideoMD5Signal.get_name(): md5_vals[3]},
+        multi_type_id: {PdqSignal.get_name(): pdq_val},
+    }
+
+
+@pytest.mark.parametrize(
+    "configured, expected",
+    [
+        (None, impl.DEFAULT_CONTENT_SIGNAL_DELETE_CHUNK_SIZE),
+        (1, 1),
+        ("250", 250),
+        (impl.MAX_CONTENT_SIGNAL_DELETE_CHUNK_SIZE,) * 2,
+    ],
+)
+def test_content_signal_delete_chunk_size(configured: t.Any, expected: int) -> None:
+    config = (
+        {} if configured is None else {"CONTENT_SIGNAL_DELETE_CHUNK_SIZE": configured}
+    )
+    assert impl._content_signal_delete_chunk_size(config) == expected
+
+
+@pytest.mark.parametrize(
+    "configured",
+    [0, -1, impl.MAX_CONTENT_SIGNAL_DELETE_CHUNK_SIZE + 1, "abc", "1.5", 1.5, True],
+)
+def test_content_signal_delete_chunk_size_rejects_invalid(configured: t.Any) -> None:
+    with pytest.raises(ValueError, match="CONTENT_SIGNAL_DELETE_CHUNK_SIZE"):
+        impl._content_signal_delete_chunk_size(
+            {"CONTENT_SIGNAL_DELETE_CHUNK_SIZE": configured}
+        )
+
+
+def test_exchange_fetch_removes_signal_types_dropped_upstream(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cfg = make_collab(storage)
+    checkpoint = StaticSampleSignalExchangeAPI.get_checkpoint_cls()()
+    md5_val = f"{1:032x}"
+    pdq_val = PdqSignal.get_examples()[0]
+    meta = fetch_state.FetchedSignalMetadata()
+    converted: dict[type[SignalType], dict[str, t.Any]] = {
+        VideoMD5Signal: {md5_val: meta},
+        PdqSignal: {pdq_val: meta},
+    }
+    monkeypatch.setattr(
+        StaticSampleSignalExchangeAPI,
+        "naive_convert_to_signal_type",
+        classmethod(lambda cls, *args, **kwargs: converted),
+    )
+    key = (VideoMD5Signal.get_name(), md5_val)
+    storage.exchange_commit_fetch(cfg, None, {key: meta}, checkpoint)
+
+    def signals() -> set[tuple[str, str]]:
+        return {
+            (s.signal_type_name, s.signal_val) for s in storage.bank_yield_content()
+        }
+
+    assert signals() == {
+        (VideoMD5Signal.get_name(), md5_val),
+        (PdqSignal.get_name(), pdq_val),
+    }
+
+    del converted[VideoMD5Signal]
+    storage.exchange_commit_fetch(cfg, checkpoint, {key: meta}, checkpoint)
+    assert signals() == {(PdqSignal.get_name(), pdq_val)}
 
 
 class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):

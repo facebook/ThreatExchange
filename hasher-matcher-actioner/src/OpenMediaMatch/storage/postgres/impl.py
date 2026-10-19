@@ -13,7 +13,7 @@ import typing as t
 import flask
 import flask_migrate
 
-from sqlalchemy import select, delete, func, Select, insert, update
+from sqlalchemy import select, delete, func, Select, insert, update, tuple_
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.expression import ClauseElement, Executable
 from sqlalchemy.ext.compiler import compiles
@@ -55,6 +55,11 @@ from OpenMediaMatch.storage.postgres.database import (
     get_write_session,
     init_read_replica,
 )
+
+DEFAULT_CONTENT_SIGNAL_DELETE_CHUNK_SIZE = 1000
+# Postgres allows at most 65535 bind parameters per statement, and each
+# deleted row binds two (content_id, signal_type).
+MAX_CONTENT_SIGNAL_DELETE_CHUNK_SIZE = 65535 // 2
 
 
 class DefaultOMMStore(IFlaskUnifiedStore):
@@ -760,6 +765,8 @@ class DefaultOMMStore(IFlaskUnifiedStore):
                 yield row._tuple()[0].as_iteration_item()
 
     def init_flask(self, app: flask.Flask) -> None:
+        # Fail at startup rather than on the first fetch that deletes signals
+        _content_signal_delete_chunk_size(app.config)
         migrate = flask_migrate.Migrate()
         database.db.init_app(app)
         init_read_replica(app)
@@ -825,6 +832,26 @@ def _sync_bankable_content(
     sesh.flush()
 
 
+def _content_signal_delete_chunk_size(config: t.Mapping[str, t.Any]) -> int:
+    raw = config.get(
+        "CONTENT_SIGNAL_DELETE_CHUNK_SIZE", DEFAULT_CONTENT_SIGNAL_DELETE_CHUNK_SIZE
+    )
+    # Env overrides (OMM_ prefix) may arrive as strings
+    if isinstance(raw, str) and raw.strip().isdigit():
+        raw = int(raw)
+    if isinstance(raw, bool) or not isinstance(raw, int):
+        raise ValueError(
+            f"CONTENT_SIGNAL_DELETE_CHUNK_SIZE must be an integer, got {raw!r}"
+        )
+    size = raw
+    if not 1 <= size <= MAX_CONTENT_SIGNAL_DELETE_CHUNK_SIZE:
+        raise ValueError(
+            "CONTENT_SIGNAL_DELETE_CHUNK_SIZE must be between 1 and "
+            f"{MAX_CONTENT_SIGNAL_DELETE_CHUNK_SIZE}, got {size}"
+        )
+    return size
+
+
 def _sync_content_signal(
     ops: dict[int, "_BulkDbOpExchangeDataHelper"],
 ) -> None:
@@ -833,7 +860,7 @@ def _sync_content_signal(
     """
     sesh = get_write_session()
     to_add: list[dict[str, t.Any]] = []
-    to_delete: list[database.ContentSignal] = []
+    to_delete: list[tuple[int, str]] = []
     for op in ops.values():
         unseen_signals_in_db_for_fetch_key = {
             (signal.signal_type, signal.signal_val): signal
@@ -862,11 +889,15 @@ def _sync_content_signal(
         # At this point, we've popped all the ones that are still in the record
         # Any left are ones that have been removed from the API copy
         for cs in unseen_signals_in_db_for_fetch_key.values():
-            to_delete.append(cs)
+            to_delete.append((cs.content_id, cs.signal_type))
 
-    # Noo! No bulk delete at the moment, sequential it is
-    for cs in to_delete:
-        sesh.delete(cs)
+    # Must run before the insert: a changed value for the same signal type
+    # is a delete + insert on the same primary key.
+    pk = tuple_(database.ContentSignal.content_id, database.ContentSignal.signal_type)
+    chunk_size = _content_signal_delete_chunk_size(flask.current_app.config)
+    for i in range(0, len(to_delete), chunk_size):
+        chunk = to_delete[i : i + chunk_size]
+        sesh.execute(delete(database.ContentSignal).where(pk.in_(chunk)))
     if to_add:
         sesh.execute(insert(database.ContentSignal), to_add)
 
