@@ -48,6 +48,8 @@ TASK_INDEXER_INTERVAL_SECONDS = 60
 TASK_INDEX_CACHE_INTERVAL_SECONDS = 30
 INDEX_CACHE_MAX_STALE_SEC = 65  # You can disable this by setting it to 0
 MAX_REMOTE_FILE_SIZE = 100 * 1024 * 1024  # 100MB max file size
+# Rows per DELETE when a fetch removes signals (1 to 32767, default 1000)
+CONTENT_SIGNAL_DELETE_CHUNK_SIZE = 1000
 
 # Core functionality configuration
 STORAGE_IFACE_INSTANCE = DefaultOMMStore(
