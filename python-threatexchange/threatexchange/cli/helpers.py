@@ -38,7 +38,7 @@ class FlexFilesInputAction(argparse.Action):
     All producing the same result.
     """
 
-    def __call__(self, _parser, namespace, values, _option_string=None):
+    def __call__(self, _parser, namespace, values, _option_string=None) -> None:
         args: t.List[str] = list(values)
         if not args:
             raise argparse.ArgumentError(self, "this argument is required")
@@ -48,10 +48,10 @@ class FlexFilesInputAction(argparse.Action):
         ret = []
         for i, filename in enumerate(args):
             if filename.strip() == "-":
-                with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
-                    logging.debug("Writing stdin to %s", tmp.name)
-                    shutil.copyfileobj(sys.stdin.buffer, tmp)
-                filename = tmp.name
+                with tempfile.NamedTemporaryFile("wb", delete=False) as bytes_tmp:
+                    logging.debug("Writing stdin to %s", bytes_tmp.name)
+                    shutil.copyfileobj(sys.stdin.buffer, bytes_tmp)  # type: ignore
+                filename = bytes_tmp.name
             elif filename.strip() == "--":
                 # We could also just open this as a series of streams and seek() them
                 with tempfile.NamedTemporaryFile("w", delete=False) as tmp:
@@ -63,10 +63,10 @@ class FlexFilesInputAction(argparse.Action):
             elif filename.startswith(("http://", "https://")):
                 resp = requests.get(filename, allow_redirects=True)
                 resp.raise_for_status()
-                with tempfile.NamedTemporaryFile("wb", delete=False) as tmp:
-                    logging.debug("Writing -- to %s", tmp.name)
-                    tmp.write(resp.content)
-                filename = pathlib.Path(tmp.name)
+                with tempfile.NamedTemporaryFile("wb", delete=False) as bytes_tmp:
+                    logging.debug("Writing -- to %s", bytes_tmp.name)
+                    bytes_tmp.write(resp.content)
+                filename = bytes_tmp.name
             path = pathlib.Path(filename)
             if not path.is_file():
                 raise argparse.ArgumentError(self, f"no such file {path}")

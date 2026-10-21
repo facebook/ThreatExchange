@@ -253,39 +253,6 @@ class SignalExchangeAPI(
         """
         raise NotImplementedError
 
-    # TODO - Restore in a future version
-    # def report_seen(
-    #     self,
-    #     collab: TCollabConfig,
-    #     s_type: SignalType,
-    #     signal: str,
-    #     metadata: state.TFetchedSignalMetadata,
-    # ) -> None:
-    #     """
-    #     Report that you observed this signal.
-
-    #     This is an optional API, and places that use it should catch
-    #     the NotImplementError.
-    #     """
-    #     raise NotImplementedError
-
-    def report_opinion(
-        self,
-        s_type: t.Type[SignalType],
-        signal: str,
-        opinion: state.SignalOpinion,
-    ) -> None:
-        """
-        Weigh in on a signal for this collaboration.
-
-        Most implementations will want a full replacement specialization, but this
-        allows a common interface for all uploads for the simplest usecases.
-
-        This is an optional API, and places that use it should catch
-        the NotImplementError.
-        """
-        raise NotImplementedError
-
 
 # Convenience for avoiding mypy strict errors
 AnySignalExchangeAPI = SignalExchangeAPI[t.Any, t.Any, t.Any, t.Any, t.Any]

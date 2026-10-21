@@ -4,16 +4,16 @@ from argparse import ArgumentParser, ArgumentTypeError
 import argparse
 import pathlib
 import typing as t
-from threatexchange.cli.helpers import FlexFilesInputAction
-from threatexchange.exchanges.fetch_state import SignalOpinion, SignalOpinionCategory
-
-
-from threatexchange.signal_type.signal_base import MatchesStr, SignalType, TextHasher
 
 from threatexchange import common
 from threatexchange.cli.cli_config import CLISettings
+from threatexchange.cli.exceptions import CommandError
+from threatexchange.cli.helpers import FlexFilesInputAction
+from threatexchange.exchanges.fetch_state import SignalOpinion, SignalOpinionCategory
 from threatexchange.content_type.content_base import ContentType
+from threatexchange.exchanges import write_api_mixins
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
+from threatexchange.signal_type.signal_base import SignalType
 from threatexchange.cli import command_base
 
 
@@ -129,12 +129,15 @@ class LabelCommand(command_base.Command):
         # signal_types = self.only_signals or settings.get_signal_types_for_content(
         #     self.content_type
         # )
+        if not isinstance(api, write_api_mixins.ExchangeWithUpload):
+            raise CommandError.user(f"api {api.get_name()} doesn't suppport uploading")
 
         if self.as_hash is not None:
             for f in self.files:
                 signal_type = self.as_hash
                 hash_val = signal_type.validate_signal_str(f.read_text())
-                api.report_opinion(
+                api.submit_opinion(
+                    self.collab,
                     signal_type,
                     hash_val,
                     SignalOpinion(
