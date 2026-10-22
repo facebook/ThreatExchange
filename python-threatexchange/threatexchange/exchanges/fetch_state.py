@@ -41,6 +41,16 @@ class FetchCheckpointBase:
         """If the checkpoint can, give the time it corresponds to"""
         return None
 
+    def get_incomplete_ranges(self) -> t.Sequence[t.Tuple[int, int]]:
+        """
+        [start, end) time ranges before the progress timestamp not fetched yet.
+
+        For example, ranges skipped because the API returned bad data, which
+        will be retried later. While there are any, the fetched data is
+        incomplete, even if the fetch has caught up.
+        """
+        return ()
+
 
 class NoCheckpointing(FetchCheckpointBase):
     """

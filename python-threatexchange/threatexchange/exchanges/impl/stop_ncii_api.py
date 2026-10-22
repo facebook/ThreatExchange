@@ -62,6 +62,9 @@ class StopNCIICheckpoint(
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.update_time
 
+    def get_incomplete_ranges(self) -> t.Sequence[t.Tuple[int, int]]:
+        return [(w.start, w.end) for w in self.skipped_windows]
+
     @classmethod
     def from_stopncii_fetch(
         cls,

@@ -28,7 +28,7 @@ follow the same interface.
 """
 
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 import typing as t
 from threatexchange.content_type.content_base import ContentType
@@ -240,6 +240,9 @@ class FetchStatus:
     up_to_date: bool
 
     fetched_items: int
+
+    # See FetchCheckpointBase.get_incomplete_ranges()
+    incomplete_ranges: t.List[t.Tuple[int, int]] = field(default_factory=list)
 
     @property
     def fetch_in_progress(self) -> bool:

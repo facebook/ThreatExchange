@@ -171,6 +171,7 @@ def test_fetch_skips_malformed_window_then_fetches_it_once_fixed(
     assert len(checkpoint.skipped_windows) == 1
     window = checkpoint.skipped_windows[0]
     assert all(window.start <= int(h, 16) < window.end for _, h in missing)
+    assert checkpoint.get_incomplete_ranges() == [(window.start, window.end)]
 
     # StopNCII keeps serving malformed pages: still recorded, nothing lost
     keys_2, checkpoint = fetch_all(feed, monkeypatch, checkpoint)
@@ -182,6 +183,7 @@ def test_fetch_skips_malformed_window_then_fetches_it_once_fixed(
     keys_3, checkpoint = fetch_all(feed, monkeypatch, checkpoint)
     assert missing <= keys_3
     assert checkpoint.skipped_windows == []
+    assert checkpoint.get_incomplete_ranges() == []
     assert keys | keys_3 == feed.expected_keys()
 
 
