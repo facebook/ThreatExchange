@@ -204,13 +204,21 @@ def _fetch(
                 "Fetch failed, committing progress up to the failure...",
                 level=logger.warning,
             )
-            collab_store.exchange_commit_fetch(
-                collab,
-                starting_checkpoint,
-                pending_merge.updates,
-                pending_merge.checkpoint,
-            )
-        raise
+            try:
+                collab_store.exchange_commit_fetch(
+                    collab,
+                    starting_checkpoint,
+                    pending_merge.updates,
+                    pending_merge.checkpoint,
+                )
+            except Exception:
+                # Don't let this replace the fetch error, which is the one
+                # recorded and logged as the cause of the failed fetch
+                log(
+                    "Failed to commit progress after the fetch failed",
+                    level=logger.exception,
+                )
+        raise  # The original fetch error
 
     if pending_merge is not None:
         log("Committing progress...")

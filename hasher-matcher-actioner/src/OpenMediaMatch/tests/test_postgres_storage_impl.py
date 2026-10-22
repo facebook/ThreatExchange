@@ -287,15 +287,26 @@ class _FailsMidwayExchangeAPI(StaticSampleSignalExchangeAPI):
         raise RuntimeError("Simulated corrupt page")
 
 
-def test_fetch_failure_keeps_progress(storage: DefaultOMMStore):
+def make_fails_midway_collab(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+) -> CollaborationConfigBase:
+    # Fresh state, since it's on the class and would carry over between tests
+    monkeypatch.setattr(_FailsMidwayExchangeAPI, "maker", _FakeUpdateMaker())
+    monkeypatch.setattr(_FailsMidwayExchangeAPI, "started_from", [])
     patched_exchange_types = dict(storage.exchange_types)
     patched_exchange_types[_FailsMidwayExchangeAPI.get_name()] = t.cast(
         TSignalExchangeAPICls, _FailsMidwayExchangeAPI
     )
     storage.exchange_types = patched_exchange_types
-    cfg = make_collab(
+    return make_collab(
         storage, api=t.cast(TSignalExchangeAPICls, _FailsMidwayExchangeAPI)
     )
+
+
+def test_fetch_failure_keeps_progress(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+):
+    cfg = make_fails_midway_collab(storage, monkeypatch)
 
     fetch(storage)
     status = storage.exchange_get_fetch_status(cfg.name)
@@ -311,6 +322,36 @@ def test_fetch_failure_keeps_progress(storage: DefaultOMMStore):
     status = storage.exchange_get_fetch_status(cfg.name)
     assert status.checkpoint_ts == 4
     assert status.fetched_items == 20
+
+
+def test_fetch_failure_reports_fetch_error_if_commit_also_fails(
+    storage: DefaultOMMStore,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    cfg = make_fails_midway_collab(storage, monkeypatch)
+
+    def commit_fails(*args, **kwargs):
+        raise ConnectionError("Simulated database failure")
+
+    monkeypatch.setattr(storage, "exchange_commit_fetch", commit_fails)
+    fetch(storage)
+
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.last_fetch_succeeded is False
+    assert status.checkpoint_ts is None
+    # The commit failure is logged...
+    commit_failure = next(
+        r for r in caplog.records if "Failed to commit progress" in r.getMessage()
+    )
+    assert commit_failure.exc_info is not None
+    assert isinstance(commit_failure.exc_info[1], ConnectionError)
+    # ...but the fetch error is still what's reported as the cause
+    fetch_failure = next(
+        r for r in caplog.records if "Failed to fetch!" in r.getMessage()
+    )
+    assert fetch_failure.exc_info is not None
+    assert isinstance(fetch_failure.exc_info[1], RuntimeError)
 
 
 def test_exchange_type_confg(storage: DefaultOMMStore):
