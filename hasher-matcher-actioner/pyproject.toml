@@ -21,6 +21,7 @@ dependencies = [
     "flask_migrate",
     "psycopg2",
     "requests",
+    "certifi>=2026.10.18",
     "threatexchange>=1.2.16",
     "flask_apscheduler",
     "python-dateutil",
