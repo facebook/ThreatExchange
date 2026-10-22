@@ -359,6 +359,108 @@ class _UnknownSampleExchangeAPI(StaticSampleSignalExchangeAPI):
         return {}
 
 
+@dataclass
+class _TimestampCheckpoint(fetch_state.FetchCheckpointBase):
+    ts: int
+
+    def get_progress_timestamp(self) -> t.Optional[int]:
+        return self.ts
+
+
+class _FailsMidwayExchangeAPI(StaticSampleSignalExchangeAPI):
+    """Yields two deltas, then fails like an API returning a corrupt page"""
+
+    maker = _FakeUpdateMaker()
+    started_from: t.List[t.Optional[_TimestampCheckpoint]] = []
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "sample_fails_midway"
+
+    @staticmethod
+    def get_checkpoint_cls() -> t.Type[_TimestampCheckpoint]:  # type: ignore[override]
+        return _TimestampCheckpoint
+
+    def fetch_iter(self, _supported_signal_types, checkpoint):
+        self.started_from.append(checkpoint)
+        start = 0 if checkpoint is None else checkpoint.ts
+        for ts in (start + 1, start + 2):
+            yield fetch_state.FetchDelta(
+                self.maker.get_multi(5), _TimestampCheckpoint(ts)
+            )
+        raise RuntimeError("Simulated corrupt page")
+
+
+def make_fails_midway_collab(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+) -> CollaborationConfigBase:
+    # Fresh state, since it's on the class and would carry over between tests
+    monkeypatch.setattr(_FailsMidwayExchangeAPI, "maker", _FakeUpdateMaker())
+    monkeypatch.setattr(_FailsMidwayExchangeAPI, "started_from", [])
+    patched_exchange_types = dict(storage.exchange_types)
+    patched_exchange_types[_FailsMidwayExchangeAPI.get_name()] = t.cast(
+        TSignalExchangeAPICls, _FailsMidwayExchangeAPI
+    )
+    storage.exchange_types = patched_exchange_types
+    return make_collab(
+        storage, api=t.cast(TSignalExchangeAPICls, _FailsMidwayExchangeAPI)
+    )
+
+
+def test_fetch_failure_keeps_progress(
+    storage: DefaultOMMStore, monkeypatch: pytest.MonkeyPatch
+):
+    cfg = make_fails_midway_collab(storage, monkeypatch)
+
+    fetch(storage)
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.last_fetch_succeeded is False
+    assert not status.up_to_date
+    # The deltas before the failure were saved, not thrown away
+    assert status.checkpoint_ts == 2
+    assert status.fetched_items == 10
+
+    # So the next fetch resumes from where the failure happened
+    fetch(storage)
+    assert _FailsMidwayExchangeAPI.started_from == [None, _TimestampCheckpoint(2)]
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.checkpoint_ts == 4
+    assert status.fetched_items == 20
+
+
+def test_fetch_failure_reports_fetch_error_if_commit_also_fails(
+    storage: DefaultOMMStore,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+):
+    cfg = make_fails_midway_collab(storage, monkeypatch)
+    # Alembic's fileConfig() disables existing loggers, including the
+    # fetcher's, if a migration test ran earlier in the session
+    monkeypatch.setattr(fetcher.logger, "disabled", False)
+
+    def commit_fails(*args, **kwargs):
+        raise ConnectionError("Simulated database failure")
+
+    monkeypatch.setattr(storage, "exchange_commit_fetch", commit_fails)
+    fetch(storage)
+
+    status = storage.exchange_get_fetch_status(cfg.name)
+    assert status.last_fetch_succeeded is False
+    assert status.checkpoint_ts is None
+    # The commit failure is logged...
+    commit_failure = next(
+        r for r in caplog.records if "Failed to commit progress" in r.getMessage()
+    )
+    assert commit_failure.exc_info is not None
+    assert isinstance(commit_failure.exc_info[1], ConnectionError)
+    # ...but the fetch error is still what's reported as the cause
+    fetch_failure = next(
+        r for r in caplog.records if "Failed to fetch!" in r.getMessage()
+    )
+    assert fetch_failure.exc_info is not None
+    assert isinstance(fetch_failure.exc_info[1], RuntimeError)
+
+
 def test_exchange_type_confg(storage: DefaultOMMStore):
     # Configs should always exist for all configured types
     existing = storage.exchange_apis_get_configs()

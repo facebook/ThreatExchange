@@ -161,45 +161,71 @@ def _fetch(
     pending_merge: t.Optional[FetchDeltaTyped] = None
 
     delta: FetchDeltaTyped
-    for delta in api_client.fetch_iter(signal_types, checkpoint):
-        assert delta.checkpoint is not None  # Infinite loop protection
-        progress_time = delta.checkpoint.get_progress_timestamp()
-        log(
-            "fetch_iter() with %d new records%s",
-            len(delta.updates),
-            ("" if progress_time is None else f" @ {_timeformat(progress_time)}"),
-            level=logger.debug,
-        )
-        pending_merge = _merge_delta(pending_merge, delta)
-        next_checkpoint = delta.checkpoint
-
-        if checkpoint is not None:
-            prev_time = checkpoint.get_progress_timestamp()
-            if prev_time is not None and progress_time is not None:
-                assert prev_time <= progress_time, (
-                    "checkpoint time rewound? ",
-                    "This can indicate a serious ",
-                    "problem with the API and checkpointing",
-                )
-        checkpoint = next_checkpoint  # Only used for the rewind check
-
-        if _should_commit(pending_merge, last_db_commit):
-            log("Committing progress...")
-            collab_store.exchange_commit_fetch(
-                collab,
-                starting_checkpoint,
-                pending_merge.updates,
-                pending_merge.checkpoint,
+    try:
+        for delta in api_client.fetch_iter(signal_types, checkpoint):
+            assert delta.checkpoint is not None  # Infinite loop protection
+            progress_time = delta.checkpoint.get_progress_timestamp()
+            log(
+                "fetch_iter() with %d new records%s",
+                len(delta.updates),
+                ("" if progress_time is None else f" @ {_timeformat(progress_time)}"),
+                level=logger.debug,
             )
-            starting_checkpoint = pending_merge.checkpoint
-            pending_merge = None
-            last_db_commit = time.time()
-        if _hit_single_config_limit(fetch_start):
-            log("Hit limit for one config fetch")
-            break
-    else:
-        up_to_date = True
-        log("Fetched all data! Up to date!")
+            next_checkpoint = delta.checkpoint
+
+            if checkpoint is not None:
+                prev_time = checkpoint.get_progress_timestamp()
+                if prev_time is not None and progress_time is not None:
+                    assert prev_time <= progress_time, (
+                        "checkpoint time rewound? ",
+                        "This can indicate a serious ",
+                        "problem with the API and checkpointing",
+                    )
+            checkpoint = next_checkpoint  # Only used for the rewind check
+            # Only merge after validating, so pending_merge is always safe to commit
+            pending_merge = _merge_delta(pending_merge, delta)
+
+            if _should_commit(pending_merge, last_db_commit):
+                log("Committing progress...")
+                # Cleared first, so a failed commit isn't retried below
+                to_commit, pending_merge = pending_merge, None
+                collab_store.exchange_commit_fetch(
+                    collab,
+                    starting_checkpoint,
+                    to_commit.updates,
+                    to_commit.checkpoint,
+                )
+                starting_checkpoint = to_commit.checkpoint
+                last_db_commit = time.time()
+            if _hit_single_config_limit(fetch_start):
+                log("Hit limit for one config fetch")
+                break
+        else:
+            up_to_date = True
+            log("Fetched all data! Up to date!")
+    except Exception:
+        # Keep the progress we made before the failure, otherwise the next
+        # fetch has to redownload it (and may fail at the same spot again).
+        if pending_merge is not None:
+            log(
+                "Fetch failed, committing progress up to the failure...",
+                level=logger.warning,
+            )
+            try:
+                collab_store.exchange_commit_fetch(
+                    collab,
+                    starting_checkpoint,
+                    pending_merge.updates,
+                    pending_merge.checkpoint,
+                )
+            except Exception:
+                # Don't let this replace the fetch error, which is the one
+                # recorded and logged as the cause of the failed fetch
+                log(
+                    "Failed to commit progress after the fetch failed",
+                    level=logger.exception,
+                )
+        raise  # The original fetch error
 
     if pending_merge is not None:
         log("Committing progress...")
