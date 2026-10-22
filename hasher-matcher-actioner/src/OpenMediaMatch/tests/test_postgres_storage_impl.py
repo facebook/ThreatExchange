@@ -330,6 +330,9 @@ def test_fetch_failure_reports_fetch_error_if_commit_also_fails(
     caplog: pytest.LogCaptureFixture,
 ):
     cfg = make_fails_midway_collab(storage, monkeypatch)
+    # Alembic's fileConfig() disables existing loggers, including the
+    # fetcher's, if a migration test ran earlier in the session
+    monkeypatch.setattr(fetcher.logger, "disabled", False)
 
     def commit_fails(*args, **kwargs):
         raise ConnectionError("Simulated database failure")
