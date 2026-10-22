@@ -1,6 +1,7 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import pytest
+import requests
 import typing as t
 from threatexchange.exchanges.clients.stopncii.api import (
     StopNCIIAPI,
@@ -10,6 +11,7 @@ from threatexchange.exchanges.clients.stopncii.api import (
     StopNCIIHashRecord,
     StopNCIISignalType,
     StopNCIICSPFeedback,
+    StopNCIIMalformedResponseError,
 )
 
 PAGE_TOKEN = (
@@ -377,3 +379,67 @@ def test_mocked_get_hashes_iter_with_empty_case_numbers(
         for record in result.hashRecords
     ]
     assert len(records) == 2
+
+
+def raise_malformed_json() -> t.NoReturn:
+    """Raise what requests raises for an HTTP 200 with a corrupt body"""
+    response = requests.Response()
+    response.status_code = 200
+    response._content = b'{"count": 1, "hashRecords": [{"hashValue": "ab" "cd"}'
+    response.json()
+    raise AssertionError("Expected a JSONDecodeError")
+
+
+def test_fetch_hashes_retries_malformed_json_once(monkeypatch: pytest.MonkeyPatch):
+    api = StopNCIIAPI("", "")
+    calls = []
+
+    def get_bad_then_good(endpoint: str, **params):
+        calls.append(params)
+        if len(calls) == 1:
+            raise_malformed_json()
+        return mock_get_impl(endpoint, **params)
+
+    monkeypatch.setattr(api, "_get", get_bad_then_good)
+    result = api.fetch_hashes()
+    assert len(calls) == 2
+    assert len(result.hashRecords) == 2
+
+
+def test_fetch_hashes_persistent_malformed_json(monkeypatch: pytest.MonkeyPatch):
+    api = StopNCIIAPI("", "")
+    calls = []
+
+    def get_always_bad(endpoint: str, **params):
+        calls.append(params)
+        raise_malformed_json()
+
+    monkeypatch.setattr(api, "_get", get_always_bad)
+    with pytest.raises(StopNCIIMalformedResponseError) as exc_info:
+        api.fetch_hashes(start_timestamp=1625175071, next_page=PAGE_TOKEN)
+    assert len(calls) == 2
+    err = exc_info.value
+    assert err.start_timestamp == 1625175071
+    assert err.next_page == PAGE_TOKEN
+    assert err.error_position == 48
+    assert err.body_length == 53
+    assert "2021-07-01T21:31:11+00:00" in str(err)
+    assert isinstance(err.__cause__, requests.exceptions.JSONDecodeError)
+
+
+def test_fetch_hashes_iter_raises_after_good_pages(monkeypatch: pytest.MonkeyPatch):
+    api = StopNCIIAPI("", "")
+
+    def get_second_page_bad(endpoint: str, **params):
+        if params.get("nextPageToken") == PAGE_TOKEN:
+            raise_malformed_json()
+        return mock_get_impl(endpoint, **params)
+
+    monkeypatch.setattr(api, "_get", get_second_page_bad)
+    it = api.fetch_hashes_iter()
+    first = next(it)
+    assert len(first.hashRecords) == 2
+    with pytest.raises(StopNCIIMalformedResponseError) as exc_info:
+        next(it)
+    assert exc_info.value.start_timestamp == StopNCIIAPI.DEFAULT_START_TIME
+    assert exc_info.value.next_page == PAGE_TOKEN
