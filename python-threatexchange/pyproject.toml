@@ -22,6 +22,7 @@ requires-python = ">=3.8"
 dependencies = [
     "weighted-levenshtein",
     "requests",
+    "certifi>=2026.10.18",
     "urllib3",  # For allow_methods
     "python-dateutil",
     "types-python-dateutil",
@@ -74,4 +75,4 @@ allow-direct-references = true
 [tool.black]
 line-length = 88
 target-version = ["py38"]
-include = '\.pyi?$' 
+include = '\.pyi?$'
