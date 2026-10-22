@@ -59,6 +59,15 @@ using black through your IDE settings.
 
 When in doubt, follow the style of the file you are editing, and if starting new files, be consistent within.
 
+## Supported Python versions
+We only support Python versions that have not reached end of life (see the [Python devguide](https://devguide.python.org/versions/)); as of October 2026 that is **3.11 and newer**. Python 3.9 and 3.10 are end of life and unsupported.
+
+When a Python version reaches end of life (every October), bump all of these together:
+- `requires-python` and the `Programming Language :: Python` classifiers in `pyproject.toml`
+- `target-version` under `[tool.black]` in `pyproject.toml`
+- the `python-version` matrix in `.github/workflows/python-threatexchange-ci.yaml`
+- the minimum version stated in the README
+
 ## python typing and `mypy`
 We are aiming for full strict coverage via PEP484 typing annotations. However, this is a work in progress. We use [mypy](https://mypy.readthedocs.io/en/stable/index.html) to do typechecking.
 

@@ -188,14 +188,19 @@ def _handle_api_creds(config: CLiConfig) -> t.Iterator[None]:
     if config.tat_credentials:
         tat_creds = TATCredentials(*config.tat_credentials)
 
-    with FBThreatExchangeCredentials.set_default(
-        te_creds, cfg_cmd(FBThreatExchangeSignalExchangeAPI, "--api-token")
-    ), NCMECCredentials.set_default(
-        ncmec_creds, cfg_cmd(NCMECSignalExchangeAPI, "--user --pass")
-    ), StopNCIICredentials.set_default(
-        stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
-    ), TATCredentials.set_default(
-        tat_creds, cfg_cmd(TATSignalExchangeAPI, "--user --pass")
+    with (
+        FBThreatExchangeCredentials.set_default(
+            te_creds, cfg_cmd(FBThreatExchangeSignalExchangeAPI, "--api-token")
+        ),
+        NCMECCredentials.set_default(
+            ncmec_creds, cfg_cmd(NCMECSignalExchangeAPI, "--user --pass")
+        ),
+        StopNCIICredentials.set_default(
+            stop_ncii_creds, cfg_cmd(StopNCIISignalExchangeAPI, "<TBD>")  # TODO
+        ),
+        TATCredentials.set_default(
+            tat_creds, cfg_cmd(TATSignalExchangeAPI, "--user --pass")
+        ),
     ):
         try:
             yield
