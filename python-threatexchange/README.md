@@ -10,10 +10,18 @@ To get similar functionality in a deployable service, check out hasher-matcher-a
 
 ## Installation
 
+python-threatexchange requires Python 3.11 or newer (older versions are end of life; see [CONTRIBUTING](CONTRIBUTING.md#supported-python-versions)). Note that the Python that ships with macOS is older than this; install a newer one, e.g. with [`uv`](https://docs.astral.sh/uv/).
+
 If you don't have `pip`, learn how to install it [here](https://pip.pypa.io/en/stable/installation/).
 
 ```bash
 $ python3 -m pip install threatexchange --upgrade
+```
+
+Or, with `uv`, which can fetch a suitable Python for you:
+
+```bash
+$ uv tool install --python 3.11 threatexchange
 ```
 
 ### Docker File
