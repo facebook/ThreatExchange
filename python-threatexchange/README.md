@@ -129,7 +129,7 @@ While the CLI was designed for use with signal exchanges. The normal flow is rou
 $ threatexchange --help  # The help should give a decent overview of functionalities
 
 # Step 1: We can skip this step if using the sample data
-$ threatexchange collab edit ...
+$ threatexchange config collab edit ...
 
 # Step 2: This will save progress, and we'll want to rerun it to get new data periodically
 $ threatexchange fetch
@@ -180,7 +180,7 @@ If you have access to [Meta's ThreatExchange](https://developers.facebook.com/pr
 
 ```
 # Step 1 - configure the default credentials
-$ threatexchange config api fb_threat_exchange --access-token '<TOKEN>'
+$ threatexchange config api fb_threatexchange --api-token '<TOKEN>'
 # Step 1 Alternative 1 - TX_ACCESS_TOKEN Environment variable
 $ TX_ACCESS_TOKEN='<TOKEN>'
 $ export TX_ACCESS_TOKEN
@@ -188,12 +188,12 @@ $ export TX_ACCESS_TOKEN
 # Step 1 Alternative 2 - ~/.txtoken file
 $ touch ~/.txtoken
 $ chmod 600 ~/.txtoken
-$ echo '<TOKEN>' > ~/.txtoken file
+$ echo '<TOKEN>' > ~/.txtoken
 
 # Step 2 - import configuration
-$ threatexchange config api fb_threat_exchange -L
+$ threatexchange config api fb_threatexchange -L
 1012185296055235 'Example Collaboration' ...
-$ threatexchange config api fb_threat_exchange -I 1012185296055235
+$ threatexchange config api fb_threatexchange -I 1012185296055235
 
 # Step 2 Alternative - manually configure via
 $ threatexchange config collab edit fb_threatexchange ...
@@ -222,12 +222,12 @@ The [National Center for Exploited and Missing Children (NCMEC)](https://www.mis
 # Step 1 - configure the default credentials
 $ threatexchange config api ncmec --credentials '<USER>' '<PASSWORD>'
 # Step 1 Alternative 1 - TX_NCMEC_CREDENTIALS Environment variable
-$ TX_NCMEC_CREDENTIALS='<TOKEN>'
+$ TX_NCMEC_CREDENTIALS='<USER>:<PASSWORD>'
 $ export TX_NCMEC_CREDENTIALS
 
 # Step 2 - set up config
 # Example: NGO database only using esp=1
-$ threatexchange config collab edit ncmec --create 'NCMEC NGO' --environment=NGO --only-esp
+$ threatexchange config collab edit ncmec --create 'NCMEC NGO' --environment=NGO --only-esp-ids 1
 
 $ threatexchange fetch
 ```
@@ -237,7 +237,7 @@ $ threatexchange fetch
 [StopNCII.org](https://stopncii.org/) allows people to upload hashes of intimate imagery/videos when someone is threatening to share them. If you are a partner with credentials, you can download and use hashes from that API.
 
 ```
-# Step 1 - TX_ACCESS_TOKEN Environment variable - comma separated
+# Step 1 - TX_STOPNCII_KEYS Environment variable - comma separated
 $ TX_STOPNCII_KEYS='<FUNCTION_KEY>,<SUBSCRIPTION_KEY>'
 $ export TX_STOPNCII_KEYS
 

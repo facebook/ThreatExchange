@@ -25,6 +25,7 @@ requires-python = ">=3.11"
 dependencies = [
     "weighted-levenshtein",
     "requests",
+    "certifi>=2026.10.18",
     "urllib3",  # For allow_methods
     "python-dateutil",
     "types-python-dateutil",
