@@ -41,9 +41,9 @@ void fillFloatRGB(
     const uint8_t* pG = pGrow;
     const uint8_t* pB = pBrow;
     for (int j = 0; j < numCols; j++) {
-      pFloatR[i * numCols + j] = (float)*pR;
-      pFloatG[i * numCols + j] = (float)*pG;
-      pFloatB[i * numCols + j] = (float)*pB;
+      pFloatR[(size_t)i * numCols + j] = (float)*pR;
+      pFloatG[(size_t)i * numCols + j] = (float)*pG;
+      pFloatB[(size_t)i * numCols + j] = (float)*pB;
       pR += colStride;
       pG += colStride;
       pB += colStride;
@@ -69,9 +69,9 @@ void fillFloatRGBFromGrey(
   for (int i = 0; i < numRows; i++) {
     const uint8_t* p = prow;
     for (int j = 0; j < numCols; j++) {
-      pFloatR[i * numCols + j] = (float)*p;
-      pFloatG[i * numCols + j] = (float)*p;
-      pFloatB[i * numCols + j] = (float)*p;
+      pFloatR[(size_t)i * numCols + j] = (float)*p;
+      pFloatG[(size_t)i * numCols + j] = (float)*p;
+      pFloatB[(size_t)i * numCols + j] = (float)*p;
       p += colStride;
     }
     prow += rowStride;
@@ -100,7 +100,7 @@ void fillFloatLumaFromRGB(
     for (int j = 0; j < numCols; j++) {
       float yval = luma_from_R_coeff * (*pR) + luma_from_G_coeff * (*pG) +
           luma_from_B_coeff * (*pB);
-      luma[i * numCols + j] = yval;
+      luma[(size_t)i * numCols + j] = yval;
       pR += colStride;
       pG += colStride;
       pB += colStride;
@@ -125,7 +125,7 @@ void fillFloatLumaFromGrey(
   for (int i = 0; i < numRows; i++) {
     const uint8_t* p = prow;
     for (int j = 0; j < numCols; j++) {
-      luma[i * numCols + j] = (float)(*p);
+      luma[(size_t)i * numCols + j] = (float)(*p);
       p += colStride;
     }
     prow += rowStride;
@@ -147,7 +147,7 @@ void decimateFloat(
     int ini = (int)(((outi + 0.5) * inNumRows) / outNumRows);
     for (int outj = 0; outj < outNumCols; outj++) {
       int inj = (int)(((outj + 0.5) * inNumCols) / outNumCols);
-      out[outi * outNumCols + outj] = in[ini * inNumCols + inj];
+      out[(size_t)outi * outNumCols + outj] = in[(size_t)ini * inNumCols + inj];
     }
   }
 }
@@ -200,8 +200,8 @@ void scaleFloatRGB(
   if (newNumRows == oldNumRows && newNumCols == oldNumCols) {
     // E.g. for video-frame processing when we've already used ffmpeg
     // to downsample for us.
-    int n = oldNumRows * oldNumCols;
-    for (int i = 0; i < n; i++) {
+    size_t n = (size_t)oldNumRows * oldNumCols;
+    for (size_t i = 0; i < n; i++) {
       scaledR[i] = fullBufferR1[i];
       scaledG[i] = fullBufferG1[i];
       scaledB[i] = fullBufferB1[i];
@@ -404,9 +404,9 @@ void box1DFloat(
   int phase_3_nreps = vector_length - full_window_size;
   int phase_4_nreps = half_window_size - 1;
 
-  int li = 0; // Index of left edge of read window, for subtracts
-  int ri = 0; // Index of right edge of read windows, for adds
-  int oi = 0; // Index into output vector
+  size_t li = 0; // Index of left edge of read window, for subtracts
+  size_t ri = 0; // Index of right edge of read windows, for adds
+  size_t oi = 0; // Index into output vector
 
   float sum = 0.0;
   int current_window_size = 0;
@@ -457,7 +457,12 @@ void boxAlongRowsFloat(
     int numCols,
     int window_size) {
   for (int i = 0; i < numRows; i++) {
-    box1DFloat(&in[i * numCols], &out[i * numCols], numCols, 1, window_size);
+    box1DFloat(
+        &in[(size_t)i * numCols],
+        &out[(size_t)i * numCols],
+        numCols,
+        1,
+        window_size);
   }
 }
 
