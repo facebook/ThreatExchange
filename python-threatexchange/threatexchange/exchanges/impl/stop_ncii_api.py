@@ -105,24 +105,32 @@ class StopNCIICredentials(auth.CredentialHelper):
             "help": "Optional. Override the API base URL (e.g. for testing). Leave blank to use https://api.stopncii.org/v1"
         },
     )
+    feedback_function_key: t.Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Optional. API key for the Submit Feedback endpoint. Needed to send feedback on hashes back to StopNCII."
+        },
+    )
 
     @classmethod
     def _from_str(cls, s: str) -> "StopNCIICredentials":
         parts = s.strip().split(",")
-        if len(parts) == 2:
-            fetch_function_key, subscription_key = parts
-            base_url_override = None
-        elif len(parts) == 3:
-            fetch_function_key, subscription_key, base_url_override = parts
-        else:
+        if len(parts) not in (2, 3, 4):
             raise ValueError(
-                "Invalid stopNCII credentials format. Should be 'function_key,subscription_key' OR 'function_key_subscription_key,base_url_override'."
+                "Invalid stopNCII credentials format. Should be 'function_key,subscription_key', "
+                "'function_key,subscription_key,base_url_override', or "
+                "'function_key,subscription_key,base_url_override,feedback_function_key' "
+                "(base_url_override may be left empty)."
             )
+        fetch_function_key, subscription_key = parts[:2]
+        base_url_override = parts[2] if len(parts) > 2 and parts[2] else None
+        feedback_function_key = parts[3] if len(parts) > 3 and parts[3] else None
 
         return cls(
             subscription_key=subscription_key,
             fetch_function_key=fetch_function_key,
             base_url_override=base_url_override,
+            feedback_function_key=feedback_function_key,
         )
 
     def _are_valid(self) -> bool:
@@ -179,11 +187,17 @@ class StopNCIISignalExchangeAPI(
         credentials: t.Optional[StopNCIICredentials] = None,
     ) -> "StopNCIISignalExchangeAPI":
         credentials = credentials or StopNCIICredentials.get(cls)
+        additional_keys: t.Dict[api.StopNCIIEndpoint, str] = {}
+        if credentials.feedback_function_key:
+            additional_keys[api.StopNCIIEndpoint.SubmitFeedback] = (
+                credentials.feedback_function_key
+            )
         return cls(
             collab,
             api.StopNCIIAPI(
                 credentials.subscription_key,
                 credentials.fetch_function_key,
+                additional_function_keys=additional_keys,
                 base_url_override=credentials.base_url_override,
             ),
         )
