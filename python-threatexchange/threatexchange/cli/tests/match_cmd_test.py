@@ -3,6 +3,7 @@
 import pathlib
 import tempfile
 import os
+from PIL import Image
 from threatexchange.cli.tests.e2e_test_helper import (
     ThreatExchangeCLIE2eHelper,
     ThreatExchangeCLIE2eTest,
@@ -71,3 +72,13 @@ class MatchCommandTest(ThreatExchangeCLIE2eTest):
                     ("--rotations", "photo", tmp_file.name),
                     f"pdq {rotation.name} 16 (Sample Signals) INVESTIGATION_SEED",
                 )
+
+    def test_photo_match_low_quality(self):
+        # A solid image is below the PDQ quality threshold, so it has no hash
+        with tempfile.NamedTemporaryFile(suffix=".bmp") as tmp_file:
+            Image.new("RGB", (100, 100)).save(tmp_file.name)
+            for args in [
+                ("photo", tmp_file.name),
+                ("--rotations", "photo", tmp_file.name),
+            ]:
+                self.assert_cli_output(args, "")
