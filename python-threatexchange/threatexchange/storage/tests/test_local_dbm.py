@@ -1,10 +1,15 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import pathlib
+import typing as t
+
 import pytest
 
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
-from threatexchange.exchanges.fetch_state import NoCheckpointing
+from threatexchange.exchanges.fetch_state import (
+    FetchedSignalMetadata,
+    NoCheckpointing,
+)
 from threatexchange.exchanges.impl.static_sample import StaticSampleSignalExchangeAPI
 from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
@@ -481,3 +486,99 @@ def test_bank_add_content_unknown_bank(tmpdir: pathlib.Path) -> None:
     store = local_dbm.DBMStore(pathlib.Path(tmpdir))
     with pytest.raises(KeyError, match="NO_BANK"):
         store.bank_add_content("NO_BANK", {PdqSignal: "a" * 64})
+
+
+def _dbm_files(folder: pathlib.Path, base: str) -> t.List[pathlib.Path]:
+    """Files that some dbm backend created for `base` in folder."""
+    return [
+        folder / (base + ext)
+        for ext in _DBM_SUFFIXES
+        if (folder / (base + ext)).exists()
+    ]
+
+
+_DBM_SUFFIXES = ("", ".db", ".dir", ".dat", ".bak")
+
+
+def test_on_disk_names_use_enum_values(tmpdir: pathlib.Path) -> None:
+    """
+    On-disk names must come from _DbType values, not str(_DbType.X).
+
+    str() of a plain Enum member is "_DbType.X", which would tie the files
+    to a private class name.
+    """
+    folder = pathlib.Path(tmpdir)
+    store = _make_store(folder)
+    store.create_or_update_signal_type_override("pdq", 0.5)
+    store._create_or_update_content_type_override("photo", False)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+    store.exchange_commit_fetch(
+        collab, None, {("pdq", "a" * 64): FetchedSignalMetadata()}, NoCheckpointing()
+    )
+    store.bank_update(_make_bank(), create=True)
+    store.bank_add_content("TEST_BANK", {PdqSignal: "a" * 64})
+
+    names = [p.name for p in folder.iterdir()]
+    assert not [n for n in names if n.startswith("_DbType")], names
+    for base in (
+        "signal_type",
+        "content_type",
+        "exchanges",
+        "exchange_status",
+        "banks",
+    ):
+        assert _dbm_files(folder, base), f"no dbm file for {base}: {names}"
+    assert _dbm_files(folder / "exchange_data", "test_collab")
+    assert _dbm_files(folder / "bank_content", "TEST_BANK")
+
+    # Overrides survive a reopen of the same folder
+    reopened = _make_store(folder)
+    assert reopened.get_signal_type_configs()["pdq"].enabled_ratio == 0.5
+    assert reopened.get_content_type_configs()["photo"].enabled is False
+
+
+def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
+    folder = pathlib.Path(tmpdir)
+    store = _make_store(folder)
+
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+    store.exchange_commit_fetch(
+        collab, None, {("pdq", "a" * 64): FetchedSignalMetadata()}, NoCheckpointing()
+    )
+    assert _dbm_files(folder / "exchange_data", "test_collab")
+    store.exchange_delete("test_collab")
+    assert not _dbm_files(folder / "exchange_data", "test_collab")
+
+    store.bank_update(_make_bank("OLD"), create=True)
+    cid = store.bank_add_content("OLD", {PdqSignal: "a" * 64})
+    store.bank_update(_make_bank("NEW"), rename_from="OLD")
+    assert not _dbm_files(folder / "bank_content", "OLD")
+    assert _dbm_files(folder / "bank_content", "NEW")
+    assert [c.id for c in store.bank_content_get([cid])] == [cid]
+
+    store.bank_delete("NEW")
+    assert not _dbm_files(folder / "bank_content", "NEW")
+
+
+def test_state_version(tmpdir: pathlib.Path) -> None:
+    folder = pathlib.Path(tmpdir)
+    version_file = folder / local_dbm.STATE_VERSION_FILENAME
+
+    assert local_dbm.DBMStore.read_state_version(folder) is None
+    local_dbm.DBMStore(folder)
+    # Not written yet - see legacy CLI state migration (#1754)
+    assert not version_file.exists()
+
+    version_file.write_text(f"{local_dbm.STATE_VERSION}\n")
+    assert local_dbm.DBMStore.read_state_version(folder) == local_dbm.STATE_VERSION
+    local_dbm.DBMStore(folder)
+
+    version_file.write_text(str(local_dbm.STATE_VERSION + 1))
+    with pytest.raises(ValueError, match="newer version"):
+        local_dbm.DBMStore(folder)
+
+    version_file.write_text("garbage")
+    with pytest.raises(ValueError, match="Unparsable"):
+        local_dbm.DBMStore.read_state_version(folder)
