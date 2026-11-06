@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import dbm
 import importlib
 from dataclasses import dataclass, field
 import pathlib
@@ -517,7 +518,9 @@ def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
     )
     assert _dbm_files(folder / "exchange_data", "test_collab")
     store.exchange_delete("test_collab")
-    assert not _dbm_files(folder / "exchange_data", "test_collab")
+    # Deleting clears the db rather than removing its files
+    with dbm.open(str(folder / "exchange_data" / "test_collab")) as db:
+        assert len(db) == 0
 
     store.bank_update(_make_bank("OLD"), create=True)
     cid = store.bank_add_content("OLD", {PdqSignal: "a" * 64})
@@ -527,7 +530,8 @@ def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
     assert [c.id for c in store.bank_content_get([cid])] == [cid]
 
     store.bank_delete("NEW")
-    assert not _dbm_files(folder / "bank_content", "NEW")
+    with dbm.open(str(folder / "bank_content" / "NEW")) as db:
+        assert len(db) == 0
 
 
 def test_state_version(tmpdir: pathlib.Path) -> None:
@@ -749,6 +753,37 @@ def test_exchange_create_makes_bank(tmpdir: pathlib.Path) -> None:
     # Updating doesn't touch the bank
     store.exchange_update(_make_collab(), create=False)
     assert set(store.get_banks()) == {"test_collab"}
+
+    # Never fetched, so default status
+    status = store.exchange_get_fetch_status("test_collab")
+    assert status.last_fetch_complete_ts is None
+    assert status.fetched_items == 0
+
+
+def test_exchange_create_bank_exists(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    store.bank_update(_make_bank("test_collab"), create=True)
+    with pytest.raises(ValueError, match="bank with that name already exists"):
+        store.exchange_update(_make_collab(), create=True)
+    # Nothing was written
+    assert store.exchange_get("test_collab") is None
+
+
+def test_exchange_create_bank_fails(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    with patch.object(store, "bank_update", side_effect=OSError("disk full")):
+        store.exchange_update(collab, create=True)
+    # The config is kept even though the bank couldn't be created
+    assert store.exchange_get("test_collab") == collab
+    assert store.get_bank("test_collab") is None
+
+    # The next fetch creates it
+    store.exchange_commit_fetch(
+        collab, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+    )
+    assert store.get_bank("test_collab") is not None
+    assert len(_bank_content(store, "test_collab")) == 1
 
 
 def test_commit_fetch_populates_bank(tmpdir: pathlib.Path) -> None:
@@ -999,3 +1034,41 @@ def test_iter_gdbm_items_last_key_deleted(tmp_path: pathlib.Path) -> None:
         del db[last]
     with pytest.raises(RuntimeError, match="deleted mid-iteration"):
         next(it)
+
+
+def test_exchange_delete_order(tmpdir: pathlib.Path) -> None:
+    """Teardown is status, data, bank, config: interrupting leaves the later ones"""
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+
+    def fetch() -> None:
+        store.exchange_start_fetch("test_collab")
+        store.exchange_commit_fetch(
+            collab, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+        )
+        assert store.exchange_get_fetch_checkpoint("test_collab") is not None
+
+    fetch()
+    # Fails clearing data: only the status (and checkpoint) are gone
+    with patch.object(local_dbm, "_clear_data", side_effect=OSError("boom")):
+        with pytest.raises(OSError):
+            store.exchange_delete("test_collab")
+    assert store.exchange_get_fetch_checkpoint("test_collab") is None
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 1
+    assert len(_bank_content(store, "test_collab")) == 1
+    assert store.exchange_get("test_collab") == collab
+
+    fetch()
+    # Fails deleting the bank: status and data are gone, bank and config remain
+    with patch.object(store, "bank_delete", side_effect=OSError("boom")):
+        with pytest.raises(OSError):
+            store.exchange_delete("test_collab")
+    assert store.exchange_get_fetch_checkpoint("test_collab") is None
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 0
+    assert store.get_bank("test_collab") is not None
+    assert store.exchange_get("test_collab") == collab
+
+    store.exchange_delete("test_collab")
+    assert store.get_bank("test_collab") is None
+    assert store.exchange_get("test_collab") is None

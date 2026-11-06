@@ -175,15 +175,15 @@ def record_key_from_str(key_str: str) -> t.Any:
 _DBM_FILE_SUFFIXES = ("", ".db", ".dir", ".dat", ".bak")
 
 
-def _unlink_dbm_files(base: Path) -> None:
+def _clear_data(path: Path) -> None:
     """
-    Delete all the files of a dbm at base.
+    Delete all records in the dbm at path, leaving an empty db.
 
-    Different dbm backends create files with different extensions, so try
-    all known suffixes.
+    Opening with flag "n" always creates a new, empty db, replacing any
+    existing one.
     """
-    for ext in _DBM_FILE_SUFFIXES:
-        base.with_name(base.name + ext).unlink(missing_ok=True)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    dbm.open(str(path), "n").close()
 
 
 _NEXT_ID_KEY = b"__next_id__"
@@ -218,7 +218,7 @@ def _iter_dbm_items(
         return
     for i in range(0, len(keys), batch_size):
         with open_db() as db:
-            batch = [(k, db.get(k)) for k in keys[i : i + batch_size]]
+            batch = [(k, db.get(k)) for k in keys[i: i + batch_size]]
         for k, v in batch:
             if v is not None:
                 yield k, v
@@ -303,7 +303,8 @@ class DBMStore(iface.IUnifiedStore):
             content_types = [PhotoContent, VideoContent]
         if exchange_types is None:
             exchange_types = t.cast(
-                t.Sequence[TSignalExchangeAPICls], [StaticSampleSignalExchangeAPI]
+                t.Sequence[TSignalExchangeAPICls], [
+                    StaticSampleSignalExchangeAPI]
             )
 
         self.signal_types = {st.get_name(): st for st in signal_types}
@@ -524,12 +525,29 @@ class DBMStore(iface.IUnifiedStore):
             credentials_json = dataclass_json.dataclass_dumps(cfg.credentials)
         stored = _ExchangeAPICredsCfg(credentials_json=credentials_json)
         with self._open(_DbType.EXCHANGE_TYPE) as db:
-            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(stored).encode()
+            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(
+                stored).encode()
 
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
     ) -> None:
-        """Create or update a collaboration."""
+        """
+        Create or update a collaboration.
+
+        Setup happens in order, and teardown (_exchange_teardown) in reverse:
+          1. The exchange config
+          2. The collab's bank, named after the collab
+          3. Fetch status and fetched data, created lazily on first fetch
+
+        If creating the bank fails, the config is kept. The bank is created
+        again by _ensure_collab_bank on the next fetch (and should be by
+        anything that rebuilds banks, like the dataset command).
+        """
+        if create and self.get_bank(cfg.name) is not None:
+            raise ValueError(
+                f"Can't create collaboration {cfg.name!r}, "
+                "a bank with that name already exists"
+            )
         with self._open(_DbType.EXCHANGES) as db:
             exists = db.get(cfg.name) is not None
             if create and exists:
@@ -549,6 +567,7 @@ class DBMStore(iface.IUnifiedStore):
         Create the bank holding a collab's fetched content, if missing.
 
         Like HMA, each collab gets one bank, named after the collab.
+        Safe to call repeatedly, so it can regenerate a missing bank.
         """
         if self.get_bank(collab_name) is None:
             self.bank_update(
@@ -556,20 +575,31 @@ class DBMStore(iface.IUnifiedStore):
                 create=True,
             )
 
-    def _exchange_drop_data(self, name: str) -> None:
-        """Drop a collab's fetched data, fetch status, and bank."""
+    def _exchange_teardown(self, name: str, *, keep_config: bool) -> None:
+        """
+        Tear down a collab in the reverse order of setup (see exchange_update).
+
+          3. Fetch status, then fetched data. The status holds the checkpoint,
+             so it goes first: if interrupted, the next fetch starts over
+             rather than resuming on top of missing data.
+          2. The bank (if keep_config, only its content is cleared)
+          1. The exchange config (unless keep_config)
+        """
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             if name in db:
                 del db[name]
-        _unlink_dbm_files(self._folder / _DbType.EXCHANGE_DATA.value / name)
+        _clear_data(self._folder / _DbType.EXCHANGE_DATA.value / name)
+        if keep_config:
+            _clear_data(self._folder / _DbType.BANK_CONTENT.value / name)
+            return
         self.bank_delete(name)
-
-    def exchange_delete(self, name: str) -> None:
-        """Delete a collaboration and all its associated data, including its bank."""
         with self._open(_DbType.EXCHANGES) as db:
             if name in db:
                 del db[name]
-        self._exchange_drop_data(name)
+
+    def exchange_delete(self, name: str) -> None:
+        """Delete a collaboration and all its associated data, including its bank."""
+        self._exchange_teardown(name, keep_config=False)
 
     def exchange_clear_data(self, name: str) -> None:
         """
@@ -582,8 +612,7 @@ class DBMStore(iface.IUnifiedStore):
         """
         if self.exchange_get(name) is None:
             raise KeyError(f"No such collaboration: {name!r}")
-        self._exchange_drop_data(name)
-        self._ensure_collab_bank(name)
+        self._exchange_teardown(name, keep_config=True)
 
     def exchanges_get(self) -> t.Mapping[str, CollaborationConfigBase]:
         """Get all collaboration configs."""
@@ -605,13 +634,19 @@ class DBMStore(iface.IUnifiedStore):
         return ret
 
     def exchange_get_fetch_status(self, name: str) -> iface.FetchStatus:
-        """Get the last fetch status."""
+        """
+        Get the last fetch status.
+
+        The status is created lazily by the first fetch, so a collab that
+        has never been fetched gets a default status.
+        """
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             raw = db.get(name)
             if raw is None:
                 status = _ExchangeStatus()
             else:
-                status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
+                status = dataclass_json.dataclass_loads(
+                    raw.decode(), _ExchangeStatus)
         with self._open_collab_data(name) as db:
             fetched_items = len(db)
         return iface.FetchStatus(
@@ -631,7 +666,8 @@ class DBMStore(iface.IUnifiedStore):
             raw = db.get(name)
             if raw is None:
                 return None
-            status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
+            status = dataclass_json.dataclass_loads(
+                raw.decode(), _ExchangeStatus)
             if status.checkpoint_json is None:
                 return None
         with self._open(_DbType.EXCHANGES) as db:
@@ -660,7 +696,7 @@ class DBMStore(iface.IUnifiedStore):
             return cfg.api_cls.for_collab(collab_config)
 
     def exchange_start_fetch(self, collab_name: str) -> None:
-        """Record the start of a fetch attempt."""
+        """Record the start of a fetch attempt, creating the status if missing."""
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             raw = db.get(collab_name)
             status = (
@@ -820,7 +856,8 @@ class DBMStore(iface.IUnifiedStore):
 
                 signals: t.Dict[str, str] = {}
                 if merged is not None:
-                    signals = self._record_to_signals(api_cls, collab, key, merged)
+                    signals = self._record_to_signals(
+                        api_cls, collab, key, merged)
 
                 content_id = self._sync_record_bank_content(
                     bank_db, collab.name, key, content_id, signals, now
@@ -859,8 +896,10 @@ class DBMStore(iface.IUnifiedStore):
         with self._open_collab_data(collab_name) as db:
             raw = db.get(record_key_to_str(key).encode())
         if raw is None:
-            raise KeyError(f"No data for key {key!r} in collaboration {collab_name!r}")
-        record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
+            raise KeyError(
+                f"No data for key {key!r} in collaboration {collab_name!r}")
+        record = dataclass_json.dataclass_loads(
+            raw.decode(), _ExchangeDataRecord)
         return dataclass_json.dataclass_loads(record.value_json, record_cls)
 
     def exchange_yield_data(
@@ -875,7 +914,8 @@ class DBMStore(iface.IUnifiedStore):
         for raw_key, raw in _iter_dbm_items(
             lambda: self._open_collab_data(collab_name)
         ):
-            record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
+            record = dataclass_json.dataclass_loads(
+                raw.decode(), _ExchangeDataRecord)
             yield (
                 record_key_from_str(raw_key.decode()),
                 dataclass_json.dataclass_loads(record.value_json, record_cls),
@@ -933,12 +973,16 @@ class DBMStore(iface.IUnifiedStore):
                     old.rename(new)
 
     def bank_delete(self, name: str) -> None:
-        """Delete a bank and all its content. No exception if bank doesn't exist."""
+        """
+        Delete a bank and all its content. No exception if bank doesn't exist.
+
+        Content is cleared before the bank config, the reverse of creation.
+        """
+        _clear_data(self._folder / _DbType.BANK_CONTENT.value / name)
         with self._open(_DbType.BANKS) as db:
             key = name.encode() if not isinstance(name, bytes) else name
             if key in db:
                 del db[key]
-        _unlink_dbm_files(self._folder / _DbType.BANK_CONTENT.value / name)
 
     def bank_content_get(
         self, id: t.Iterable[int]
@@ -1006,12 +1050,14 @@ class DBMStore(iface.IUnifiedStore):
             updated = _BankStoredContent(
                 id=val.id,
                 disable_until_ts=val.disable_until_ts,
-                collab_metadata={k: list(v) for k, v in val.collab_metadata.items()},
+                collab_metadata={k: list(v)
+                                 for k, v in val.collab_metadata.items()},
                 original_media_uri=val.original_media_uri,
                 created_ts=existing.created_ts,
                 signals=existing.signals,
             )
-            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(updated).encode()
+            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(
+                updated).encode()
 
     def bank_add_content(
         self,
@@ -1030,7 +1076,8 @@ class DBMStore(iface.IUnifiedStore):
             collab_metadata={},
             original_media_uri=None,
             created_ts=now,
-            signals={st.get_name(): val for st, val in content_signals.items()},
+            signals={st.get_name(): val for st,
+                     val in content_signals.items()},
         )
         if config is not None:
             stored.disable_until_ts = config.disable_until_ts
@@ -1094,7 +1141,8 @@ class DBMStore(iface.IUnifiedStore):
         signal_type_name = signal_type.get_name() if signal_type is not None else None
         for bank_name in self.get_banks():
             for _, raw in _iter_dbm_items(
-                functools.partial(self._open_bank_content, bank_name), batch_size
+                functools.partial(self._open_bank_content,
+                                  bank_name), batch_size
             ):
                 stored = dataclass_json.dataclass_loads(
                     raw.decode(), _BankStoredContent
