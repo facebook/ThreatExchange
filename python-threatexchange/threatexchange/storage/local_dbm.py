@@ -5,6 +5,7 @@ Simple dbm implementation of the storage interface.
 """
 
 import dbm
+import logging
 from enum import Enum
 import os
 import tempfile
@@ -134,11 +135,54 @@ class _BankStoredContent:
     signals: t.Dict[str, str]  # signal_type_name -> signal_value
 
 
-def _key_str(key: t.Any) -> str:
-    """Convert a TUpdateRecordKey to a stable string for DBM storage."""
+@dataclass
+class _ExchangeDataRecord:
+    """
+    Stored fetched record for one key of a collab, plus its bank content link.
+
+    bank_content_id points at the content in the collab's bank that was
+    created from this record, or None if the record had no usable signals.
+    """
+
+    value_json: str  # dataclass_dumps of the API's record value class
+    bank_content_id: t.Optional[int] = None
+
+
+def record_key_to_str(key: t.Any) -> str:
+    """
+    Convert a TUpdateRecordKey to a stable string.
+
+    This is how keys are stored in DBM, and also the form used for
+    BankContentConfig.collab_metadata. Reverse with record_key_from_str.
+    """
     if isinstance(key, tuple):
         return json.dumps(list(key))
     return json.dumps(key)
+
+
+def record_key_from_str(key_str: str) -> t.Any:
+    """Reverse of record_key_to_str (JSON lists become tuples)."""
+
+    def _to_tuples(val: t.Any) -> t.Any:
+        if isinstance(val, list):
+            return tuple(_to_tuples(v) for v in val)
+        return val
+
+    return _to_tuples(json.loads(key_str))
+
+
+_DBM_FILE_SUFFIXES = ("", ".db", ".dir", ".dat", ".bak")
+
+
+def _unlink_dbm_files(base: Path) -> None:
+    """
+    Delete all the files of a dbm at base.
+
+    Different dbm backends create files with different extensions, so try
+    all known suffixes.
+    """
+    for ext in _DBM_FILE_SUFFIXES:
+        base.with_name(base.name + ext).unlink(missing_ok=True)
 
 
 _NEXT_ID_KEY = b"__next_id__"
@@ -425,20 +469,49 @@ class DBMStore(iface.IUnifiedStore):
                 config_json=dataclass_json.dataclass_dumps(cfg),
             )
             db[cfg.name] = dataclass_json.dataclass_dumps(collab).encode()
+        if create:
+            self._ensure_collab_bank(cfg.name)
 
-    def exchange_delete(self, name: str) -> None:
-        """Delete a collaboration and all its associated data."""
-        with self._open(_DbType.EXCHANGES) as db:
-            if name in db:
-                del db[name]
+    def _ensure_collab_bank(self, collab_name: str) -> None:
+        """
+        Create the bank holding a collab's fetched content, if missing.
+
+        Like HMA, each collab gets one bank, named after the collab.
+        """
+        if self.get_bank(collab_name) is None:
+            self.bank_update(
+                iface.BankConfig(name=collab_name, matching_enabled_ratio=1.0),
+                create=True,
+            )
+
+    def _exchange_drop_data(self, name: str) -> None:
+        """Drop a collab's fetched data, fetch status, and bank."""
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             if name in db:
                 del db[name]
-        # Delete the per-collab data db file(s). Different dbm backends create
-        # files with different extensions, so try all known suffixes.
-        base = self._folder / _DbType.EXCHANGE_DATA.value / name
-        for ext in ("", ".db", ".dir", ".dat", ".bak"):
-            base.with_name(base.name + ext).unlink(missing_ok=True)
+        _unlink_dbm_files(self._folder / _DbType.EXCHANGE_DATA.value / name)
+        self.bank_delete(name)
+
+    def exchange_delete(self, name: str) -> None:
+        """Delete a collaboration and all its associated data, including its bank."""
+        with self._open(_DbType.EXCHANGES) as db:
+            if name in db:
+                del db[name]
+        self._exchange_drop_data(name)
+
+    def exchange_clear_data(self, name: str) -> None:
+        """
+        Drop all fetched data for a collab, but keep its config.
+
+        Clears the fetched records, fetch status (including the checkpoint),
+        and the collab's bank content, so the next fetch starts from scratch.
+
+        Not part of the ISignalExchangeStore interface.
+        """
+        if self.exchange_get(name) is None:
+            raise KeyError(f"No such collaboration: {name!r}")
+        self._exchange_drop_data(name)
+        self._ensure_collab_bank(name)
 
     def exchanges_get(self) -> t.Mapping[str, CollaborationConfigBase]:
         """Get all collaboration configs."""
@@ -543,6 +616,98 @@ class DBMStore(iface.IUnifiedStore):
             status.up_to_date = is_up_to_date
             db[collab_name] = dataclass_json.dataclass_dumps(status).encode()
 
+    def _exchange_api_cls(self, collab_name: str) -> TSignalExchangeAPICls:
+        """Return the API class for a stored collab, or raise KeyError."""
+        with self._open(_DbType.EXCHANGES) as db:
+            raw_collab = db.get(collab_name)
+        if raw_collab is None:
+            raise KeyError(f"No such collaboration: {collab_name!r}")
+        collab_data = dataclass_json.dataclass_loads(
+            raw_collab.decode(), _ExchangeCollab
+        )
+        api_cls = self.exchange_types.get(collab_data.api)
+        if api_cls is None:
+            raise KeyError(f"Unknown exchange API: {collab_data.api!r}")
+        return api_cls
+
+    def _record_to_signals(
+        self,
+        api_cls: TSignalExchangeAPICls,
+        collab: CollaborationConfigBase,
+        key: t.Any,
+        val: t.Any,
+    ) -> t.Dict[str, str]:
+        """
+        Convert one fetched record to the signals for its bank content.
+
+        Bank content holds one signal per SignalType, so if a record has
+        several signals of the same type, the lowest one is kept.
+        """
+        converted = api_cls.naive_convert_to_signal_type(
+            list(self.signal_types.values()), collab, {key: val}
+        )
+        ret = {}
+        for st, signals in converted.items():
+            if not signals:
+                continue
+            ordered = sorted(signals)
+            if len(ordered) > 1:
+                logging.warning(
+                    "%s record %r has %d %s signals, only keeping one",
+                    collab.name,
+                    key,
+                    len(ordered),
+                    st.get_name(),
+                )
+            ret[st.get_name()] = ordered[0]
+        return ret
+
+    def _sync_record_bank_content(
+        self,
+        bank_db: t.Any,
+        collab_name: str,
+        key: t.Any,
+        content_id: t.Optional[int],
+        signals: t.Dict[str, str],
+        now: int,
+    ) -> t.Optional[int]:
+        """
+        Make a record's bank content match its signals, return its content id.
+
+        Removes the content if there are no signals, creates it if there is
+        none yet, and updates it in place (keeping its id) if they changed.
+        """
+        stored = None
+        if content_id is not None:
+            raw = bank_db.get(_content_key(content_id))
+            if raw is not None:
+                stored = dataclass_json.dataclass_loads(
+                    raw.decode(), _BankStoredContent
+                )
+        if not signals:
+            if stored is not None:
+                del bank_db[_content_key(stored.id)]
+            return None
+        if stored is None:
+            stored = _BankStoredContent(
+                id=self._get_next_id(),
+                disable_until_ts=iface.BankContentConfig.ENABLED,
+                collab_metadata={collab_name: [record_key_to_str(key)]},
+                original_media_uri=None,
+                created_ts=now,
+                signals=signals,
+            )
+        elif stored.signals == signals:
+            return stored.id
+        else:
+            stored.signals = signals
+            # Bump created_ts so incremental index builds see the change
+            stored.created_ts = now
+        bank_db[_content_key(stored.id)] = dataclass_json.dataclass_dumps(
+            stored
+        ).encode()
+        return stored.id
+
     def exchange_commit_fetch(
         self,
         collab: CollaborationConfigBase,
@@ -550,15 +715,56 @@ class DBMStore(iface.IUnifiedStore):
         dat: t.Dict[t.Any, t.Any],
         checkpoint: FetchCheckpointBase,
     ) -> None:
-        """Commit fetched data and update the checkpoint."""
-        with self._open_collab_data(collab.name) as db:
+        """
+        Commit fetched data and update the checkpoint.
+
+        Each update is merged with the stored record via the API's
+        fetch_value_merge. The collab's bank is kept in sync: one bank
+        content per record with usable signals, whose collab_metadata
+        points back at the record key.
+        """
+        api_cls = self._exchange_api_cls(collab.name)
+        record_cls = api_cls.get_record_cls()
+        self._ensure_collab_bank(collab.name)
+        now = int(time.time())
+        with (
+            self._open_collab_data(collab.name) as data_db,
+            self._open_bank_content(collab.name) as bank_db,
+        ):
             for key, val in dat.items():
-                db_key = _key_str(key).encode()
-                if val is None:
-                    if db_key in db:
-                        del db[db_key]
+                db_key = record_key_to_str(key).encode()
+                raw_existing = data_db.get(db_key)
+                existing = None
+                old_val = None
+                if raw_existing is not None:
+                    existing = dataclass_json.dataclass_loads(
+                        raw_existing.decode(), _ExchangeDataRecord
+                    )
+                    old_val = dataclass_json.dataclass_loads(
+                        existing.value_json, record_cls
+                    )
+                merged = api_cls.fetch_value_merge(old_val, val)
+                content_id = None if existing is None else existing.bank_content_id
+
+                signals: t.Dict[str, str] = {}
+                if merged is not None:
+                    signals = self._record_to_signals(api_cls, collab, key, merged)
+
+                content_id = self._sync_record_bank_content(
+                    bank_db, collab.name, key, content_id, signals, now
+                )
+
+                # Sync the record itself
+                if merged is None:
+                    if db_key in data_db:
+                        del data_db[db_key]
                 else:
-                    db[db_key] = dataclass_json.dataclass_dumps(val).encode()
+                    data_db[db_key] = dataclass_json.dataclass_dumps(
+                        _ExchangeDataRecord(
+                            value_json=dataclass_json.dataclass_dumps(merged),
+                            bank_content_id=content_id,
+                        )
+                    ).encode()
         with self._open(_DbType.EXCHANGE_STATUS) as db:
             raw = db.get(collab.name)
             status = (
@@ -568,7 +774,7 @@ class DBMStore(iface.IUnifiedStore):
             )
             status.checkpoint_json = dataclass_json.dataclass_dumps(checkpoint)
             ts = checkpoint.get_progress_timestamp()
-            status.checkpoint_ts = ts if ts is not None else int(time.time())
+            status.checkpoint_ts = ts if ts is not None else now
             db[collab.name] = dataclass_json.dataclass_dumps(status).encode()
 
     def exchange_get_data(
@@ -577,24 +783,32 @@ class DBMStore(iface.IUnifiedStore):
         key: TUpdateRecordKey,
     ) -> iface.FetchedSignalMetadata:
         """Return the stored metadata for a fetched record."""
-        with self._open(_DbType.EXCHANGES) as db:
-            raw_collab = db.get(collab_name)
-            if raw_collab is None:
-                raise KeyError(f"No such collaboration: {collab_name!r}")
-            collab_data = dataclass_json.dataclass_loads(
-                raw_collab.decode(), _ExchangeCollab
-            )
-        api_cls = self.exchange_types.get(collab_data.api)
-        if api_cls is None:
-            raise KeyError(f"Unknown exchange API: {collab_data.api!r}")
-        record_cls = api_cls.get_record_cls()
+        record_cls = self._exchange_api_cls(collab_name).get_record_cls()
         with self._open_collab_data(collab_name) as db:
-            raw = db.get(_key_str(key).encode())
-            if raw is None:
-                raise KeyError(
-                    f"No data for key {key!r} in collaboration {collab_name!r}"
+            raw = db.get(record_key_to_str(key).encode())
+        if raw is None:
+            raise KeyError(f"No data for key {key!r} in collaboration {collab_name!r}")
+        record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
+        return dataclass_json.dataclass_loads(record.value_json, record_cls)
+
+    def exchange_yield_data(
+        self, collab_name: str
+    ) -> t.Iterator[t.Tuple[t.Any, t.Any]]:
+        """
+        Yield every stored (key, record) for a collab, in no particular order.
+
+        Not part of the ISignalExchangeStore interface.
+        """
+        record_cls = self._exchange_api_cls(collab_name).get_record_cls()
+        with self._open_collab_data(collab_name) as db:
+            for raw_key in db.keys():
+                record = dataclass_json.dataclass_loads(
+                    db[raw_key].decode(), _ExchangeDataRecord
                 )
-            return dataclass_json.dataclass_loads(raw.decode(), record_cls)
+                yield (
+                    record_key_from_str(raw_key.decode()),
+                    dataclass_json.dataclass_loads(record.value_json, record_cls),
+                )
 
     # IBankStore
 
@@ -641,7 +855,7 @@ class DBMStore(iface.IUnifiedStore):
             d = self._folder / _DbType.BANK_CONTENT.value
             old_base = d / rename_from
             new_base = d / bank.name
-            for ext in ("", ".db", ".dir", ".dat", ".bak"):
+            for ext in _DBM_FILE_SUFFIXES:
                 old = old_base.with_name(old_base.name + ext)
                 new = new_base.with_name(new_base.name + ext)
                 if old.exists():
@@ -653,10 +867,7 @@ class DBMStore(iface.IUnifiedStore):
             key = name.encode() if not isinstance(name, bytes) else name
             if key in db:
                 del db[key]
-        d = self._folder / _DbType.BANK_CONTENT.value
-        base = d / name
-        for ext in ("", ".db", ".dir", ".dat", ".bak"):
-            base.with_name(base.name + ext).unlink(missing_ok=True)
+        _unlink_dbm_files(self._folder / _DbType.BANK_CONTENT.value / name)
 
     def bank_content_get(
         self, id: t.Iterable[int]
