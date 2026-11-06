@@ -218,7 +218,7 @@ def _iter_dbm_items(
         return
     for i in range(0, len(keys), batch_size):
         with open_db() as db:
-            batch = [(k, db.get(k)) for k in keys[i: i + batch_size]]
+            batch = [(k, db.get(k)) for k in keys[i : i + batch_size]]
         for k, v in batch:
             if v is not None:
                 yield k, v
@@ -303,8 +303,7 @@ class DBMStore(iface.IUnifiedStore):
             content_types = [PhotoContent, VideoContent]
         if exchange_types is None:
             exchange_types = t.cast(
-                t.Sequence[TSignalExchangeAPICls], [
-                    StaticSampleSignalExchangeAPI]
+                t.Sequence[TSignalExchangeAPICls], [StaticSampleSignalExchangeAPI]
             )
 
         self.signal_types = {st.get_name(): st for st in signal_types}
@@ -525,8 +524,7 @@ class DBMStore(iface.IUnifiedStore):
             credentials_json = dataclass_json.dataclass_dumps(cfg.credentials)
         stored = _ExchangeAPICredsCfg(credentials_json=credentials_json)
         with self._open(_DbType.EXCHANGE_TYPE) as db:
-            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(
-                stored).encode()
+            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(stored).encode()
 
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
@@ -645,8 +643,7 @@ class DBMStore(iface.IUnifiedStore):
             if raw is None:
                 status = _ExchangeStatus()
             else:
-                status = dataclass_json.dataclass_loads(
-                    raw.decode(), _ExchangeStatus)
+                status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
         with self._open_collab_data(name) as db:
             fetched_items = len(db)
         return iface.FetchStatus(
@@ -666,8 +663,7 @@ class DBMStore(iface.IUnifiedStore):
             raw = db.get(name)
             if raw is None:
                 return None
-            status = dataclass_json.dataclass_loads(
-                raw.decode(), _ExchangeStatus)
+            status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
             if status.checkpoint_json is None:
                 return None
         with self._open(_DbType.EXCHANGES) as db:
@@ -856,8 +852,7 @@ class DBMStore(iface.IUnifiedStore):
 
                 signals: t.Dict[str, str] = {}
                 if merged is not None:
-                    signals = self._record_to_signals(
-                        api_cls, collab, key, merged)
+                    signals = self._record_to_signals(api_cls, collab, key, merged)
 
                 content_id = self._sync_record_bank_content(
                     bank_db, collab.name, key, content_id, signals, now
@@ -896,10 +891,8 @@ class DBMStore(iface.IUnifiedStore):
         with self._open_collab_data(collab_name) as db:
             raw = db.get(record_key_to_str(key).encode())
         if raw is None:
-            raise KeyError(
-                f"No data for key {key!r} in collaboration {collab_name!r}")
-        record = dataclass_json.dataclass_loads(
-            raw.decode(), _ExchangeDataRecord)
+            raise KeyError(f"No data for key {key!r} in collaboration {collab_name!r}")
+        record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
         return dataclass_json.dataclass_loads(record.value_json, record_cls)
 
     def exchange_yield_data(
@@ -914,8 +907,7 @@ class DBMStore(iface.IUnifiedStore):
         for raw_key, raw in _iter_dbm_items(
             lambda: self._open_collab_data(collab_name)
         ):
-            record = dataclass_json.dataclass_loads(
-                raw.decode(), _ExchangeDataRecord)
+            record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
             yield (
                 record_key_from_str(raw_key.decode()),
                 dataclass_json.dataclass_loads(record.value_json, record_cls),
@@ -1050,14 +1042,12 @@ class DBMStore(iface.IUnifiedStore):
             updated = _BankStoredContent(
                 id=val.id,
                 disable_until_ts=val.disable_until_ts,
-                collab_metadata={k: list(v)
-                                 for k, v in val.collab_metadata.items()},
+                collab_metadata={k: list(v) for k, v in val.collab_metadata.items()},
                 original_media_uri=val.original_media_uri,
                 created_ts=existing.created_ts,
                 signals=existing.signals,
             )
-            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(
-                updated).encode()
+            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(updated).encode()
 
     def bank_add_content(
         self,
@@ -1076,8 +1066,7 @@ class DBMStore(iface.IUnifiedStore):
             collab_metadata={},
             original_media_uri=None,
             created_ts=now,
-            signals={st.get_name(): val for st,
-                     val in content_signals.items()},
+            signals={st.get_name(): val for st, val in content_signals.items()},
         )
         if config is not None:
             stored.disable_until_ts = config.disable_until_ts
@@ -1141,8 +1130,7 @@ class DBMStore(iface.IUnifiedStore):
         signal_type_name = signal_type.get_name() if signal_type is not None else None
         for bank_name in self.get_banks():
             for _, raw in _iter_dbm_items(
-                functools.partial(self._open_bank_content,
-                                  bank_name), batch_size
+                functools.partial(self._open_bank_content, bank_name), batch_size
             ):
                 stored = dataclass_json.dataclass_loads(
                     raw.decode(), _BankStoredContent
