@@ -50,7 +50,7 @@ STATE_VERSION_FILENAME = "state_version"
 
 
 """
-Folder (not a dbm) in the store folder holding one serialized
+Folder in the store folder holding one serialized
 SignalTypeIndex file per SignalType, written via SignalTypeIndex.serialize.
 
 Indices can be large, so they live in plain files rather than in a dbm.
@@ -339,6 +339,10 @@ class DBMStore(iface.IUnifiedStore):
         try:
             with os.fdopen(fd, "wb") as f:
                 index.serialize(f)
+                # Make sure the data is on disk before the rename, so a crash
+                # can't leave a partial file under the final name.
+                f.flush()
+                os.fsync(f.fileno())
             os.replace(tmp_name, path)
         except BaseException:
             Path(tmp_name).unlink(missing_ok=True)

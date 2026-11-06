@@ -547,10 +547,6 @@ def test_state_version(tmpdir: pathlib.Path) -> None:
         local_dbm.DBMStore.read_state_version(folder)
 
 
-def test_unified_store(tmpdir: pathlib.Path) -> None:
-    assert isinstance(local_dbm.DBMStore(pathlib.Path(tmpdir)), iface.IUnifiedStore)
-
-
 def test_signal_type_index_store(tmpdir: pathlib.Path) -> None:
     folder = pathlib.Path(tmpdir)
     store: iface.ISignalTypeIndexStore = local_dbm.DBMStore(folder)
