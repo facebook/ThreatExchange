@@ -545,3 +545,103 @@ def test_state_version(tmpdir: pathlib.Path) -> None:
     version_file.write_text("garbage")
     with pytest.raises(ValueError, match="Unparsable"):
         local_dbm.DBMStore.read_state_version(folder)
+
+
+def test_unified_store(tmpdir: pathlib.Path) -> None:
+    assert isinstance(local_dbm.DBMStore(pathlib.Path(tmpdir)), iface.IUnifiedStore)
+
+
+def test_signal_type_index_store(tmpdir: pathlib.Path) -> None:
+    folder = pathlib.Path(tmpdir)
+    store: iface.ISignalTypeIndexStore = local_dbm.DBMStore(folder)
+    # Note: indices have 2+ entries because a single-entry PDQ (faiss
+    # IndexBinaryMultiHash) index doesn't survive serialization.
+
+    # Nothing stored yet
+    assert store.get_signal_type_index(PdqSignal) is None
+    assert store.get_last_index_build_checkpoint(PdqSignal) is None
+
+    pdq_a = "a" * 64
+    pdq_b = "b" * 64
+    pdq_c = "c" * 64
+    checkpoint = iface.SignalTypeIndexBuildCheckpoint(
+        last_item_timestamp=100, last_item_id=3, total_hash_count=2
+    )
+    store.store_signal_type_index(
+        PdqSignal, PdqSignal.get_index_cls().build([(pdq_a, 1), (pdq_c, 3)]), checkpoint
+    )
+    assert (folder / local_dbm.INDEX_FOLDER_NAME / "pdq.index").is_file()
+
+    index = store.get_signal_type_index(PdqSignal)
+    assert index is not None
+    assert [m.metadata for m in index.query(pdq_a)] == [1]
+    assert store.get_last_index_build_checkpoint(PdqSignal) == checkpoint
+
+    # Other signal types are unaffected
+    assert store.get_signal_type_index(VideoMD5Signal) is None
+    assert store.get_last_index_build_checkpoint(VideoMD5Signal) is None
+
+    # Replace
+    checkpoint2 = iface.SignalTypeIndexBuildCheckpoint(
+        last_item_timestamp=200, last_item_id=3, total_hash_count=2
+    )
+    store.store_signal_type_index(
+        PdqSignal,
+        PdqSignal.get_index_cls().build([(pdq_b, 2), (pdq_c, 3)]),
+        checkpoint2,
+    )
+    index = store.get_signal_type_index(PdqSignal)
+    assert index is not None
+    assert index.query(pdq_a) == []
+    assert [m.metadata for m in index.query(pdq_b)] == [2]
+    assert store.get_last_index_build_checkpoint(PdqSignal) == checkpoint2
+
+    # Survives reopening the store
+    reopened = local_dbm.DBMStore(folder)
+    assert reopened.get_last_index_build_checkpoint(PdqSignal) == checkpoint2
+    index = reopened.get_signal_type_index(PdqSignal)
+    assert index is not None
+    assert [m.metadata for m in index.query(pdq_b)] == [2]
+
+    # A checkpoint without its index file isn't trusted
+    (folder / local_dbm.INDEX_FOLDER_NAME / "pdq.index").unlink()
+    assert store.get_signal_type_index(PdqSignal) is None
+    assert store.get_last_index_build_checkpoint(PdqSignal) is None
+
+
+def test_signal_type_index_store_failed_write(tmpdir: pathlib.Path) -> None:
+    folder = pathlib.Path(tmpdir)
+    store = local_dbm.DBMStore(folder)
+    pdq_a = "a" * 64
+    pdq_c = "c" * 64
+    checkpoint = iface.SignalTypeIndexBuildCheckpoint(
+        last_item_timestamp=100, last_item_id=3, total_hash_count=2
+    )
+    store.store_signal_type_index(
+        PdqSignal, PdqSignal.get_index_cls().build([(pdq_a, 1), (pdq_c, 3)]), checkpoint
+    )
+
+    bad_index = PdqSignal.get_index_cls().build([("b" * 64, 2), (pdq_c, 3)])
+
+    def explode(fout: t.BinaryIO) -> None:
+        fout.write(b"partial")
+        raise RuntimeError("disk full")
+
+    bad_index.serialize = explode  # type: ignore[method-assign]
+    with pytest.raises(RuntimeError, match="disk full"):
+        store.store_signal_type_index(
+            PdqSignal,
+            bad_index,
+            iface.SignalTypeIndexBuildCheckpoint(
+                last_item_timestamp=200, last_item_id=3, total_hash_count=2
+            ),
+        )
+
+    # Previous index and checkpoint intact, no temp files left behind
+    index = store.get_signal_type_index(PdqSignal)
+    assert index is not None
+    assert [m.metadata for m in index.query(pdq_a)] == [1]
+    assert store.get_last_index_build_checkpoint(PdqSignal) == checkpoint
+    assert [p.name for p in (folder / local_dbm.INDEX_FOLDER_NAME).iterdir()] == [
+        "pdq.index"
+    ]

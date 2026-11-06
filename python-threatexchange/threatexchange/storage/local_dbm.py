@@ -6,6 +6,8 @@ Simple dbm implementation of the storage interface.
 
 import dbm
 from enum import Enum
+import os
+import tempfile
 from dataclasses import dataclass
 import json
 import time
@@ -15,6 +17,7 @@ from pathlib import Path
 from threatexchange.utils import dataclass_json
 from threatexchange.storage import interfaces as iface
 from threatexchange.signal_type.signal_base import SignalType
+from threatexchange.signal_type.index import SignalTypeIndex
 from threatexchange.content_type.content_base import ContentType
 from threatexchange.exchanges import auth
 from threatexchange.exchanges.collab_config import CollaborationConfigBase
@@ -46,6 +49,16 @@ any dbm file, and regardless of which dbm backend wrote the store.
 STATE_VERSION_FILENAME = "state_version"
 
 
+"""
+Folder (not a dbm) in the store folder holding one serialized
+SignalTypeIndex file per SignalType, written via SignalTypeIndex.serialize.
+
+Indices can be large, so they live in plain files rather than in a dbm.
+The "_v2" suffix avoids colliding with the legacy CLI's "index/" folder.
+"""
+INDEX_FOLDER_NAME = "index_v2"
+
+
 class _DbType(Enum):
     """
     The dbm files (or directories of dbm files) in the store folder.
@@ -58,7 +71,7 @@ class _DbType(Enum):
     EXCHANGE_STATUS = "exchange_status"
     EXCHANGE_DATA = "exchange_data"
     BANKS = "banks"
-    INDEX = "index"
+    INDEX_CHECKPOINT = "index_checkpoint"
     BANK_CONTENT = "bank_content"
 
 
@@ -136,13 +149,7 @@ def _content_key(content_id: int) -> str:
     return str(content_id)
 
 
-# TODO - eventually to unified store
-class DBMStore(
-    iface.ISignalTypeConfigStore,
-    iface.IContentTypeConfigStore,
-    iface.ISignalExchangeStore,
-    iface.IBankStore,
-):
+class DBMStore(iface.IUnifiedStore):
     """
     Local machine storage based on python dbm library,
 
@@ -296,6 +303,70 @@ class DBMStore(
             db[content_type] = dataclass_json.dataclass_dumps(
                 _ContentTypeCfg(enabled=enabled)
             ).encode()
+
+    # ISignalTypeIndexStore
+
+    def _index_file(self, signal_type: t.Type[SignalType]) -> Path:
+        return self._folder / INDEX_FOLDER_NAME / f"{signal_type.get_name()}.index"
+
+    def get_signal_type_index(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[SignalTypeIndex[int]]:
+        """Return the stored index for this SignalType, if one has been stored."""
+        path = self._index_file(signal_type)
+        if not path.is_file():
+            return None
+        with path.open("rb") as f:
+            return signal_type.get_index_cls().deserialize(f)
+
+    def store_signal_type_index(
+        self,
+        signal_type: t.Type[SignalType],
+        index: SignalTypeIndex,
+        checkpoint: iface.SignalTypeIndexBuildCheckpoint,
+    ) -> None:
+        """
+        Persist the index to its file, then record its build checkpoint.
+
+        The index is written to a temporary file and moved into place, so a
+        failed write leaves any previously stored index intact.
+        """
+        path = self._index_file(signal_type)
+        path.parent.mkdir(exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(
+            dir=path.parent, prefix=f".{path.name}.", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "wb") as f:
+                index.serialize(f)
+            os.replace(tmp_name, path)
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
+        with self._open(_DbType.INDEX_CHECKPOINT) as db:
+            db[signal_type.get_name()] = dataclass_json.dataclass_dumps(
+                checkpoint
+            ).encode()
+
+    def get_last_index_build_checkpoint(
+        self, signal_type: t.Type[SignalType]
+    ) -> t.Optional[iface.SignalTypeIndexBuildCheckpoint]:
+        """
+        Return the checkpoint of the stored index, or None if there isn't one.
+
+        Returns None if the index file is missing, even if a checkpoint was
+        recorded, so callers rebuild rather than trust a checkpoint for an
+        index that can't be loaded.
+        """
+        if not self._index_file(signal_type).is_file():
+            return None
+        with self._open(_DbType.INDEX_CHECKPOINT) as db:
+            raw = db.get(signal_type.get_name())
+        if raw is None:
+            return None
+        return dataclass_json.dataclass_loads(
+            raw.decode(), iface.SignalTypeIndexBuildCheckpoint
+        )
 
     # ISignalExchangeStore
 
