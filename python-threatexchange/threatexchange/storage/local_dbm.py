@@ -29,8 +29,28 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.content_type.photo import PhotoContent
 from threatexchange.content_type.video import VideoContent
 
+"""
+Version of the on-disk layout written by DBMStore.
+
+Bump this whenever the layout changes incompatibly.
+"""
+STATE_VERSION = 1
+
+
+"""
+Plain text file (outside of any dbm) in the store folder holding STATE_VERSION.
+
+It's plain text so it can be checked without opening (and therefore creating)
+any dbm file, and regardless of which dbm backend wrote the store.
+"""
+STATE_VERSION_FILENAME = "state_version"
+
 
 class _DbType(Enum):
+    """
+    The dbm files (or directories of dbm files) in the store folder.
+    """
+
     SIGNAL_TYPE = "signal_type"
     CONTENT_TYPE = "content_type"
     EXCHANGE_TYPE = "exchange_type"
@@ -94,7 +114,8 @@ class _BankStoredContent:
 
     id: int
     disable_until_ts: int
-    collab_metadata: t.Dict[str, t.List[str]]  # concrete types for JSON roundtrip
+    # concrete types for JSON roundtrip
+    collab_metadata: t.Dict[str, t.List[str]]
     original_media_uri: t.Optional[str]
     created_ts: int  # set at insert, preserved on update; used for index checkpoint
     signals: t.Dict[str, str]  # signal_type_name -> signal_value
@@ -145,6 +166,14 @@ class DBMStore(
         assert folder.is_dir(), "must be path"
         self._folder = folder
 
+        stored_version = self.read_state_version(folder)
+        if stored_version is not None and stored_version > STATE_VERSION:
+            raise ValueError(
+                f"{folder} was written by a newer version of this library "
+                f"(state version {stored_version}, this version supports up to "
+                f"{STATE_VERSION}). Upgrade, or use a fresh folder."
+            )
+
         if signal_types is None:
             signal_types = [PdqSignal, VideoMD5Signal]
         if content_types is None:
@@ -167,21 +196,40 @@ class DBMStore(
             exchange_types
         ), "All exchange types must have unique names"
 
+    @staticmethod
+    def read_state_version(folder: Path) -> t.Optional[int]:
+        """
+        Return the state version stored in folder, or None if there isn't one.
+
+        Doesn't open or create any dbm files, so it's safe to call before
+        deciding whether a folder needs migrating.
+        """
+        version_file = folder / STATE_VERSION_FILENAME
+        if not version_file.is_file():
+            return None
+        content = version_file.read_text().strip()
+        try:
+            return int(content)
+        except ValueError:
+            raise ValueError(
+                f"Unparsable {STATE_VERSION_FILENAME} in {folder}: {content!r}"
+            ) from None
+
     def _open(self, db: _DbType, *, sub_db: str = ""):
-        file = self._folder / str(db)
+        file = self._folder / db.value
         if sub_db:
             file = file / sub_db
         return dbm.open(str(file), "c")
 
     def _open_collab_data(self, collab_name: str):
         """Open a per-collab exchange data db in its own subfolder."""
-        d = self._folder / str(_DbType.EXCHANGE_DATA)
+        d = self._folder / _DbType.EXCHANGE_DATA.value
         d.mkdir(exist_ok=True)
         return dbm.open(str(d / collab_name), "c")
 
     def _open_bank_content(self, bank_name: str):
         """Open the per-bank content DBM file, creating the directory if needed."""
-        d = self._folder / str(_DbType.BANK_CONTENT)
+        d = self._folder / _DbType.BANK_CONTENT.value
         d.mkdir(exist_ok=True)
         return dbm.open(str(d / bank_name), "c")
 
@@ -313,7 +361,7 @@ class DBMStore(
                 del db[name]
         # Delete the per-collab data db file(s). Different dbm backends create
         # files with different extensions, so try all known suffixes.
-        base = self._folder / str(_DbType.EXCHANGE_DATA) / name
+        base = self._folder / _DbType.EXCHANGE_DATA.value / name
         for ext in ("", ".db", ".dir", ".dat", ".bak"):
             base.with_name(base.name + ext).unlink(missing_ok=True)
 
@@ -515,7 +563,7 @@ class DBMStore(
         if rename_from is not None:
             # Rename the per-bank content DBM file(s) on disk.
             # Different dbm backends create different file extensions.
-            d = self._folder / str(_DbType.BANK_CONTENT)
+            d = self._folder / _DbType.BANK_CONTENT.value
             old_base = d / rename_from
             new_base = d / bank.name
             for ext in ("", ".db", ".dir", ".dat", ".bak"):
@@ -530,7 +578,7 @@ class DBMStore(
             key = name.encode() if not isinstance(name, bytes) else name
             if key in db:
                 del db[key]
-        d = self._folder / str(_DbType.BANK_CONTENT)
+        d = self._folder / _DbType.BANK_CONTENT.value
         base = d / name
         for ext in ("", ".db", ".dir", ".dat", ".bak"):
             base.with_name(base.name + ext).unlink(missing_ok=True)
