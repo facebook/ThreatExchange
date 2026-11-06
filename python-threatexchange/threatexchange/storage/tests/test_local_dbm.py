@@ -101,8 +101,8 @@ def test_exchange_api_config_update(tmpdir: pathlib.Path) -> None:
 
     # StaticSampleSignalExchangeAPI doesn't support auth; update with no credentials
     cfg = iface.SignalExchangeAPIConfig(
-        api_cls=StaticSampleSignalExchangeAPI
-    )  # type: ignore[arg-type]
+        api_cls=StaticSampleSignalExchangeAPI  # type: ignore[arg-type]
+    )
     store.exchange_api_config_update(cfg)
 
     cfgs = store.exchange_apis_get_configs()
@@ -324,8 +324,9 @@ def test_bank_create_get_delete(tmpdir: pathlib.Path) -> None:
     # Update (no create flag)
     updated = _make_bank(ratio=0.5)
     store.bank_update(updated)
-    # type: ignore[union-attr]
-    assert store.get_bank("TEST_BANK").matching_enabled_ratio == 0.5
+    fetched = store.get_bank("TEST_BANK")
+    assert fetched is not None
+    assert fetched.matching_enabled_ratio == 0.5
 
     # Update non-existent raises
     with pytest.raises(ValueError, match="does not exist"):
