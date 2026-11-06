@@ -5,6 +5,7 @@ Simple dbm implementation of the storage interface.
 """
 
 import dbm
+import functools
 import logging
 from enum import Enum
 import os
@@ -186,6 +187,77 @@ def _unlink_dbm_files(base: Path) -> None:
 
 
 _NEXT_ID_KEY = b"__next_id__"
+
+
+def _iter_dbm_items(
+    open_db: t.Callable[[], t.Any], batch_size: int = 100
+) -> t.Iterator[t.Tuple[bytes, bytes]]:
+    """
+    Iterate a dbm's items without holding it open while yielding.
+
+    Some dbm backends (e.g. dbm.gnu) take an exclusive lock, so a generator
+    that yields with the db open would make any store call by the caller
+    that reopens the same file fail. Instead, snapshot the keys, then read
+    values in batches, closing the db before yielding each batch. Keys
+    deleted mid-iteration are skipped.
+
+    Note: for backends other than dbm.gnu, this loads every key into memory
+    up front, which may not be ideal for large dbs. The generic dbm interface
+    has no ordered or resumable iteration, so avoiding this likely needs a
+    different backend. dbm.gnu can resume iteration from a key, so it uses
+    _iter_gdbm_items instead, which only holds one batch in memory.
+    """
+    batch_size = max(batch_size, 1)
+    with open_db() as db:
+        if hasattr(db, "nextkey"):
+            keys = None
+        else:
+            keys = list(db.keys())
+    if keys is None:
+        yield from _iter_gdbm_items(open_db, batch_size)
+        return
+    for i in range(0, len(keys), batch_size):
+        with open_db() as db:
+            batch = [(k, db.get(k)) for k in keys[i : i + batch_size]]
+        for k, v in batch:
+            if v is not None:
+                yield k, v
+
+
+def _iter_gdbm_items(
+    open_db: t.Callable[[], t.Any], batch_size: int
+) -> t.Iterator[t.Tuple[bytes, bytes]]:
+    """
+    Iterate a dbm.gnu db's items, holding only one batch in memory.
+
+    Like _iter_dbm_items, the db is closed before yielding each batch. Each
+    batch resumes with nextkey() from the last key read, which gdbm supports
+    across a close and reopen.
+
+    The order is gdbm's hash order, not sorted. If the db is written to while
+    iterating, gdbm may reorganize its buckets, so keys can be skipped or
+    repeated. If the last key of a batch is deleted while iterating, there is
+    nothing to resume from, so this raises rather than silently stopping.
+    """
+    last: t.Optional[bytes] = None
+    while True:
+        batch: t.List[t.Tuple[bytes, bytes]] = []
+        with open_db() as db:
+            if last is None:
+                key = db.firstkey()
+            elif last not in db:
+                raise RuntimeError(
+                    f"Key {last!r} was deleted mid-iteration, can't resume"
+                )
+            else:
+                key = db.nextkey(last)
+            while key is not None and len(batch) < batch_size:
+                batch.append((key, db[key]))
+                key = db.nextkey(key)
+        yield from batch
+        if key is None:
+            return
+        last = batch[-1][0]
 
 
 def _content_key(content_id: int) -> str:
@@ -800,15 +872,14 @@ class DBMStore(iface.IUnifiedStore):
         Not part of the ISignalExchangeStore interface.
         """
         record_cls = self._exchange_api_cls(collab_name).get_record_cls()
-        with self._open_collab_data(collab_name) as db:
-            for raw_key in db.keys():
-                record = dataclass_json.dataclass_loads(
-                    db[raw_key].decode(), _ExchangeDataRecord
-                )
-                yield (
-                    record_key_from_str(raw_key.decode()),
-                    dataclass_json.dataclass_loads(record.value_json, record_cls),
-                )
+        for raw_key, raw in _iter_dbm_items(
+            lambda: self._open_collab_data(collab_name)
+        ):
+            record = dataclass_json.dataclass_loads(raw.decode(), _ExchangeDataRecord)
+            yield (
+                record_key_from_str(raw_key.decode()),
+                dataclass_json.dataclass_loads(record.value_json, record_cls),
+            )
 
     # IBankStore
 
@@ -1022,21 +1093,18 @@ class DBMStore(iface.IUnifiedStore):
         """Yield all bank content, optionally filtered to a specific signal type."""
         signal_type_name = signal_type.get_name() if signal_type is not None else None
         for bank_name in self.get_banks():
-            with self._open_bank_content(bank_name) as db:
-                for raw_key in db.keys():
-                    raw = db[raw_key]
-                    stored = dataclass_json.dataclass_loads(
-                        raw.decode(), _BankStoredContent
+            for _, raw in _iter_dbm_items(
+                functools.partial(self._open_bank_content, bank_name), batch_size
+            ):
+                stored = dataclass_json.dataclass_loads(
+                    raw.decode(), _BankStoredContent
+                )
+                for stype_name, signal_val in stored.signals.items():
+                    if signal_type_name is not None and stype_name != signal_type_name:
+                        continue
+                    yield iface.BankContentIterationItem(
+                        signal_type_name=stype_name,
+                        signal_val=signal_val,
+                        bank_content_id=stored.id,
+                        bank_content_timestamp=stored.created_ts,
                     )
-                    for stype_name, signal_val in stored.signals.items():
-                        if (
-                            signal_type_name is not None
-                            and stype_name != signal_type_name
-                        ):
-                            continue
-                        yield iface.BankContentIterationItem(
-                            signal_type_name=stype_name,
-                            signal_val=signal_val,
-                            bank_content_id=stored.id,
-                            bank_content_timestamp=stored.created_ts,
-                        )

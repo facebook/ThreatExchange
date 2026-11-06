@@ -1,5 +1,6 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import importlib
 from dataclasses import dataclass, field
 import pathlib
 import time
@@ -933,3 +934,68 @@ def test_exchange_yield_data(tmpdir: pathlib.Path) -> None:
 
     with pytest.raises(KeyError):
         list(store.exchange_yield_data("no_such_collab"))
+
+
+def _dbm_backends() -> t.List[str]:
+    """dbm backend modules available on this platform"""
+    ret = []
+    for name in ("dbm.gnu", "dbm.ndbm", "dbm.dumb", "dbm.sqlite3"):
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            continue
+        ret.append(name)
+    return ret
+
+
+@pytest.mark.parametrize("backend", _dbm_backends())
+@pytest.mark.parametrize("batch_size", [1, 3, 100])
+def test_iter_dbm_items(tmp_path: pathlib.Path, backend: str, batch_size: int) -> None:
+    mod = importlib.import_module(backend)
+    path = str(tmp_path / "db")
+
+    def open_db() -> t.Any:
+        return mod.open(path, "c")
+
+    expected = {f"k{i}".encode(): f"v{i}".encode() for i in range(10)}
+    with open_db() as db:
+        for k, v in expected.items():
+            db[k] = v
+
+    seen = {}
+    for k, v in local_dbm._iter_dbm_items(open_db, batch_size):
+        # The db must not be held open while yielding (dbm.gnu locks it)
+        with open_db() as db:
+            assert db[k] == v
+        assert k not in seen
+        seen[k] = v
+    assert seen == expected
+
+    assert (
+        list(
+            local_dbm._iter_dbm_items(
+                lambda: mod.open(str(tmp_path / "empty"), "c"), batch_size
+            )
+        )
+        == []
+    )
+
+
+def test_iter_gdbm_items_last_key_deleted(tmp_path: pathlib.Path) -> None:
+    gnu = pytest.importorskip("dbm.gnu")
+    path = str(tmp_path / "db")
+
+    def open_db() -> t.Any:
+        return gnu.open(path, "c")
+
+    with open_db() as db:
+        for i in range(4):
+            db[f"k{i}".encode()] = b"v"
+
+    it = local_dbm._iter_dbm_items(open_db, batch_size=2)
+    next(it)
+    last, _ = next(it)
+    with open_db() as db:
+        del db[last]
+    with pytest.raises(RuntimeError, match="deleted mid-iteration"):
+        next(it)
