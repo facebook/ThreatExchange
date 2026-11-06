@@ -22,8 +22,7 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 
 
 def test_signal_type(tmpdir: pathlib.Path):
-    storage: iface.ISignalTypeConfigStore = local_dbm.DBMStore(
-        pathlib.Path(tmpdir))
+    storage: iface.ISignalTypeConfigStore = local_dbm.DBMStore(pathlib.Path(tmpdir))
 
     # Get with unset values
     cfgs = storage.get_signal_type_configs()
@@ -84,8 +83,7 @@ def test_exchange_apis_get_configs(tmpdir: pathlib.Path) -> None:
     store = _make_store(tmpdir)
 
     cfgs = store.exchange_apis_get_configs()
-    assert set(cfgs) == {
-        "sample", FBThreatExchangeSignalExchangeAPI.get_name()}
+    assert set(cfgs) == {"sample", FBThreatExchangeSignalExchangeAPI.get_name()}
 
     sample_cfg = cfgs["sample"]
     assert sample_cfg.api_cls is StaticSampleSignalExchangeAPI
@@ -103,7 +101,8 @@ def test_exchange_api_config_update(tmpdir: pathlib.Path) -> None:
 
     # StaticSampleSignalExchangeAPI doesn't support auth; update with no credentials
     cfg = iface.SignalExchangeAPIConfig(
-        api_cls=StaticSampleSignalExchangeAPI)  # type: ignore[arg-type]
+        api_cls=StaticSampleSignalExchangeAPI
+    )  # type: ignore[arg-type]
     store.exchange_api_config_update(cfg)
 
     cfgs = store.exchange_apis_get_configs()
@@ -195,8 +194,7 @@ def test_exchange_fetch_lifecycle(tmpdir: pathlib.Path) -> None:
     assert status.fetch_in_progress is True
 
     # Complete fetch (success)
-    store.exchange_complete_fetch(
-        "test_collab", is_up_to_date=True, exception=False)
+    store.exchange_complete_fetch("test_collab", is_up_to_date=True, exception=False)
     status = store.exchange_get_fetch_status("test_collab")
     assert status.fetch_in_progress is False
     assert status.last_fetch_complete_ts is not None
@@ -204,8 +202,7 @@ def test_exchange_fetch_lifecycle(tmpdir: pathlib.Path) -> None:
     assert status.up_to_date is True
 
     # Complete fetch (exception)
-    store.exchange_complete_fetch(
-        "test_collab", is_up_to_date=False, exception=True)
+    store.exchange_complete_fetch("test_collab", is_up_to_date=False, exception=True)
     status = store.exchange_get_fetch_status("test_collab")
     assert status.last_fetch_succeeded is False
     assert status.up_to_date is False
@@ -450,8 +447,7 @@ def test_bank_yield_content(tmpdir: pathlib.Path) -> None:
 
     pdq_val = "1" * 64
     md5_val = "2" * 32
-    store.bank_add_content(
-        "BANK_A", {PdqSignal: pdq_val, VideoMD5Signal: md5_val})
+    store.bank_add_content("BANK_A", {PdqSignal: pdq_val, VideoMD5Signal: md5_val})
     store.bank_add_content("BANK_B", {PdqSignal: "3" * 64})
 
     # Yield all: 2 PDQ + 1 MD5 = 3 items
@@ -461,8 +457,7 @@ def test_bank_yield_content(tmpdir: pathlib.Path) -> None:
     # Yield filtered to PDQ: 2 items
     pdq_items = list(store.bank_yield_content(signal_type=PdqSignal))
     assert len(pdq_items) == 2
-    assert all(item.signal_type_name == PdqSignal.get_name()
-               for item in pdq_items)
+    assert all(item.signal_type_name == PdqSignal.get_name() for item in pdq_items)
 
     # Yield filtered to MD5: 1 item
     md5_items = list(store.bank_yield_content(signal_type=VideoMD5Signal))
@@ -480,8 +475,7 @@ def test_index_build_target(tmpdir: pathlib.Path) -> None:
 
     store.bank_update(_make_bank(), create=True)
     store.bank_add_content("TEST_BANK", {PdqSignal: "a" * 64})
-    store.bank_add_content(
-        "TEST_BANK", {PdqSignal: "b" * 64, VideoMD5Signal: "c" * 32})
+    store.bank_add_content("TEST_BANK", {PdqSignal: "b" * 64, VideoMD5Signal: "c" * 32})
     store.bank_add_content("TEST_BANK", {VideoMD5Signal: "d" * 32})
 
     pdq_target = store.get_current_index_build_target(PdqSignal)
@@ -513,8 +507,7 @@ def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
     collab = _make_collab()
     store.exchange_update(collab, create=True)
     store.exchange_commit_fetch(
-        collab, None, {("pdq", "a" * 64)
-                        : FetchedSignalMetadata()}, NoCheckpointing()
+        collab, None, {("pdq", "a" * 64): FetchedSignalMetadata()}, NoCheckpointing()
     )
     assert _dbm_files(folder / "exchange_data", "test_collab")
     store.exchange_delete("test_collab")
@@ -541,8 +534,7 @@ def test_state_version(tmpdir: pathlib.Path) -> None:
     assert not version_file.exists()
 
     version_file.write_text(f"{local_dbm.STATE_VERSION}\n")
-    assert local_dbm.DBMStore.read_state_version(
-        folder) == local_dbm.STATE_VERSION
+    assert local_dbm.DBMStore.read_state_version(folder) == local_dbm.STATE_VERSION
     local_dbm.DBMStore(folder)
 
     version_file.write_text(str(local_dbm.STATE_VERSION + 1))

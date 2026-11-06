@@ -180,8 +180,7 @@ class DBMStore(
             content_types = [PhotoContent, VideoContent]
         if exchange_types is None:
             exchange_types = t.cast(
-                t.Sequence[TSignalExchangeAPICls], [
-                    StaticSampleSignalExchangeAPI]
+                t.Sequence[TSignalExchangeAPICls], [StaticSampleSignalExchangeAPI]
             )
 
         self.signal_types = {st.get_name(): st for st in signal_types}
@@ -334,8 +333,7 @@ class DBMStore(
             credentials_json = dataclass_json.dataclass_dumps(cfg.credentials)
         stored = _ExchangeAPICredsCfg(credentials_json=credentials_json)
         with self._open(_DbType.EXCHANGE_TYPE) as db:
-            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(
-                stored).encode()
+            db[cfg.api_cls.get_name()] = dataclass_json.dataclass_dumps(stored).encode()
 
     def exchange_update(
         self, cfg: CollaborationConfigBase, *, create: bool = False
@@ -393,8 +391,7 @@ class DBMStore(
             if raw is None:
                 status = _ExchangeStatus()
             else:
-                status = dataclass_json.dataclass_loads(
-                    raw.decode(), _ExchangeStatus)
+                status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
         with self._open_collab_data(name) as db:
             fetched_items = len(db)
         return iface.FetchStatus(
@@ -414,8 +411,7 @@ class DBMStore(
             raw = db.get(name)
             if raw is None:
                 return None
-            status = dataclass_json.dataclass_loads(
-                raw.decode(), _ExchangeStatus)
+            status = dataclass_json.dataclass_loads(raw.decode(), _ExchangeStatus)
             if status.checkpoint_json is None:
                 return None
         with self._open(_DbType.EXCHANGES) as db:
@@ -653,14 +649,12 @@ class DBMStore(
             updated = _BankStoredContent(
                 id=val.id,
                 disable_until_ts=val.disable_until_ts,
-                collab_metadata={k: list(v)
-                                 for k, v in val.collab_metadata.items()},
+                collab_metadata={k: list(v) for k, v in val.collab_metadata.items()},
                 original_media_uri=val.original_media_uri,
                 created_ts=existing.created_ts,
                 signals=existing.signals,
             )
-            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(
-                updated).encode()
+            db[_content_key(val.id)] = dataclass_json.dataclass_dumps(updated).encode()
 
     def bank_add_content(
         self,
@@ -679,8 +673,7 @@ class DBMStore(
             collab_metadata={},
             original_media_uri=None,
             created_ts=now,
-            signals={st.get_name(): val for st,
-                     val in content_signals.items()},
+            signals={st.get_name(): val for st, val in content_signals.items()},
         )
         if config is not None:
             stored.disable_until_ts = config.disable_until_ts
