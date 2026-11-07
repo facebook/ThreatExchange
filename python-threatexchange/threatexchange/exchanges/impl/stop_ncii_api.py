@@ -2,10 +2,12 @@
 
 """SignalExchangeAPI implementation for StopNCII.org"""
 
+import datetime
 from functools import lru_cache
+import logging
 import time
 import typing as t
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from threatexchange.exchanges.clients.stopncii import api
 
@@ -21,6 +23,27 @@ from threatexchange.signal_type.md5 import VideoMD5Signal
 from threatexchange.signal_type.url import URLSignal
 from threatexchange.signal_type.raw_text import RawTextSignal
 
+# StopNCII has been observed to return a malformed page for a specific window
+# of the FetchHashes stream until fixed on their side (see
+# github.com/facebook/ThreatExchange/issues/2004). A malformed page has no
+# nextSetTimestamp to continue from, so we skip ahead this far, record the
+# skipped window in the checkpoint, and retry it on every later fetch.
+MALFORMED_PAGE_SKIP_SEC = 10 * 60
+# After this many skips in a row without a good page, stop and raise instead,
+# so a fully broken API fails loudly rather than skipping through all time.
+MALFORMED_PAGE_MAX_CONSECUTIVE_SKIPS = 12
+
+
+@dataclass
+class StopNCIISkippedWindow:
+    """[start, end) of the FetchHashes stream not yet fetched successfully"""
+
+    start: int
+    end: int
+
+    def __str__(self) -> str:
+        return f"{_timeformat(self.start)} - {_timeformat(self.end)}"
+
 
 @dataclass
 class StopNCIICheckpoint(
@@ -28,6 +51,9 @@ class StopNCIICheckpoint(
 ):
     update_time: int
     last_fetch_time: int
+    # Windows before update_time that were skipped because of malformed
+    # pages, oldest first. Retried on every fetch until they succeed.
+    skipped_windows: t.List[StopNCIISkippedWindow] = field(default_factory=list)
 
     def is_stale(self) -> bool:
         """Consider stale after 30d of not fetching"""
@@ -36,11 +62,16 @@ class StopNCIICheckpoint(
     def get_progress_timestamp(self) -> t.Optional[int]:
         return self.update_time
 
+    def get_incomplete_ranges(self) -> t.Sequence[t.Tuple[int, int]]:
+        return [(w.start, w.end) for w in self.skipped_windows]
+
     @classmethod
     def from_stopncii_fetch(
-        cls, response: api.FetchHashesResponse
+        cls,
+        response: api.FetchHashesResponse,
+        skipped_windows: t.Sequence[StopNCIISkippedWindow] = (),
     ) -> "StopNCIICheckpoint":
-        return cls(response.nextSetTimestamp, int(time.time()))
+        return cls(response.nextSetTimestamp, int(time.time()), list(skipped_windows))
 
 
 @dataclass
@@ -200,14 +231,115 @@ class StopNCIISignalExchangeAPI(
         ]
     ]:
         start_time = api.StopNCIIAPI.DEFAULT_START_TIME
+        skipped: t.List[StopNCIISkippedWindow] = []
         if checkpoint is not None:
             start_time = checkpoint.update_time
-        for result in self.api.fetch_hashes_iter(start_timestamp=start_time):
-            translated = (_get_delta_mapping(r) for r in result.hashRecords)
-            yield state.FetchDelta(
-                dict(t for t in translated if t[0][0]),
-                StopNCIICheckpoint.from_stopncii_fetch(result),
+            # Copied, since we modify them and they are shared with checkpoints
+            skipped = [replace(w) for w in checkpoint.skipped_windows]
+
+        # Retry earlier skipped windows first, so once StopNCII fixes their
+        # data, it gets fetched without any action from whoever runs this.
+        for window in list(skipped):
+            yield from self._fetch_skipped_window(window, start_time, skipped)
+
+        position = start_time
+        consecutive_skips = 0
+        while True:
+            try:
+                for result in self.api.fetch_hashes_iter(start_timestamp=position):
+                    consecutive_skips = 0
+                    position = result.nextSetTimestamp
+                    yield _to_delta(result, _checkpoint(position, skipped))
+                return
+            except api.StopNCIIMalformedResponseError:
+                consecutive_skips += 1
+                now = int(time.time())
+                if (
+                    consecutive_skips > MALFORMED_PAGE_MAX_CONSECUTIVE_SKIPS
+                    or position >= now
+                ):
+                    raise
+            # Never skip past now, or records changed after the skip could
+            # be missed when the window is later fetched successfully.
+            window = StopNCIISkippedWindow(
+                position, min(position + MALFORMED_PAGE_SKIP_SEC, now)
             )
+            if skipped and skipped[-1].end == window.start:
+                skipped[-1].end = window.end
+            else:
+                skipped.append(window)
+            logging.error(
+                "StopNCII returned a malformed page, skipping %s. "
+                "It will be retried on every later fetch until it succeeds.",
+                window,
+            )
+            position = window.end
+            yield state.FetchDelta({}, _checkpoint(position, skipped))
+            if position >= now:
+                return
+
+    def _fetch_skipped_window(
+        self,
+        window: StopNCIISkippedWindow,
+        update_time: int,
+        skipped: t.List[StopNCIISkippedWindow],
+    ) -> t.Iterator[
+        state.FetchDelta[
+            t.Tuple[str, str],
+            StopNCIISignalMetadata,
+            StopNCIICheckpoint,
+        ]
+    ]:
+        """
+        Fetch a previously skipped window, removing it from skipped once done.
+
+        On partial progress, the window is shrunk to what is left. Records
+        are the current snapshot, so fetching them late won't overwrite
+        newer data with stale data.
+        """
+        original = str(window)
+        try:
+            for result in self.api.fetch_hashes_iter(start_timestamp=window.start):
+                # If there are no more records, everything up to now has been
+                # fetched, and a window never extends past when it was skipped.
+                if result.nextSetTimestamp >= window.end or not result.hasMoreRecords:
+                    skipped.remove(window)
+                    logging.info("StopNCII fetched previously skipped %s", original)
+                    yield _to_delta(result, _checkpoint(update_time, skipped))
+                    return
+                window.start = max(window.start, result.nextSetTimestamp)
+                yield _to_delta(result, _checkpoint(update_time, skipped))
+        except api.StopNCIIMalformedResponseError:
+            logging.warning(
+                "StopNCII still returns a malformed page for previously skipped %s, "
+                "will retry on the next fetch",
+                window,
+            )
+
+
+def _checkpoint(
+    update_time: int, skipped: t.Sequence[StopNCIISkippedWindow]
+) -> StopNCIICheckpoint:
+    return StopNCIICheckpoint(
+        update_time, int(time.time()), [replace(w) for w in skipped]
+    )
+
+
+def _to_delta(
+    result: api.FetchHashesResponse, checkpoint: StopNCIICheckpoint
+) -> state.FetchDelta[
+    t.Tuple[str, str],
+    StopNCIISignalMetadata,
+    StopNCIICheckpoint,
+]:
+    translated = (_get_delta_mapping(r) for r in result.hashRecords)
+    return state.FetchDelta(dict(t for t in translated if t[0][0]), checkpoint)
+
+
+def _timeformat(timestamp: int) -> str:
+    return datetime.datetime.fromtimestamp(
+        timestamp, tz=datetime.timezone.utc
+    ).isoformat()
 
 
 def _get_delta_mapping(
