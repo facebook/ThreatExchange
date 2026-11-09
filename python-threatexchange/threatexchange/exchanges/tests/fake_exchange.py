@@ -102,8 +102,7 @@ class FakeExchangeAPIBase(
 
 
 class FakeSimpleUpdatesAPI(
-    FakeExchangeAPIBase[FakeSignalMetadata,
-                        t.Tuple[str, str], FakeSignalMetadata],
+    FakeExchangeAPIBase[FakeSignalMetadata, t.Tuple[str, str], FakeSignalMetadata],
     SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase, FakeCheckpoint, FakeSignalMetadata
     ],
@@ -231,8 +230,7 @@ class FakeIdKeyedAPI(FakeExchangeAPIBase[FakeSignalMetadata, int, FakeIdRecord])
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]]:
         # signal type -> signal -> owner -> tags
         remapped: t.DefaultDict[
-            t.Type[SignalType], t.DefaultDict[str,
-                                              t.DefaultDict[int, t.Set[str]]]
+            t.Type[SignalType], t.DefaultDict[str, t.DefaultDict[int, t.Set[str]]]
         ] = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
         for record in fetched.values():
             if record is None or record.deleted:
