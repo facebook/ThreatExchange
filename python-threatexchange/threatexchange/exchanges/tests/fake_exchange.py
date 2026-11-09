@@ -102,7 +102,8 @@ class FakeExchangeAPIBase(
 
 
 class FakeSimpleUpdatesAPI(
-    FakeExchangeAPIBase[FakeSignalMetadata, t.Tuple[str, str], FakeSignalMetadata],
+    FakeExchangeAPIBase[FakeSignalMetadata,
+                        t.Tuple[str, str], FakeSignalMetadata],
     SignalExchangeAPIWithSimpleUpdates[
         CollaborationConfigBase, FakeCheckpoint, FakeSignalMetadata
     ],
@@ -145,11 +146,64 @@ class FakeIdRecord(FakeSignalMetadata):
 
 class FakeIdKeyedAPI(FakeExchangeAPIBase[FakeSignalMetadata, int, FakeIdRecord]):
     """
-    Records keyed by int id rather than by signal.
+    Records keyed by int id rather than by signal, roughly like NCMEC.
 
-    A record with deleted=True is a tombstone that removes the record.
-    Otherwise a new record replaces the old one. Converting to signals merges
-    the records for the same signal into one opinion per owner.
+    Updates are Mapping[int, Optional[FakeIdRecord]]:
+    * Key: the record id.
+    * Value: the full current state of that record. It replaces whatever
+      was stored for that id; there are no partial updates.
+    * Delete: either `None` or a `FakeIdRecord(deleted=True)` tombstone
+      (the NCMEC style). Both remove the record.
+
+    Signals come from the record's fields: `md5` -> VideoMD5Signal and
+    `pdq` -> PdqSignal. A record with neither is still stored, but yields
+    no signals. naive_convert_to_signal_type() merges every record with the
+    same signal into one INVESTIGATION_SEED opinion per `owner`, unioning
+    their tags.
+
+    Fetches are scripted through the constructor: each mapping in `fetches`
+    is one FetchDelta from fetch_iter(), with checkpoints
+    FakeCheckpoint(100), FakeCheckpoint(200), ... The checkpoint passed to
+    fetch_iter() is ignored, so every call replays all the fetches.
+    for_collab() returns an instance with no fetches.
+
+    Example:
+
+        md5 = "0" * 32
+        api = FakeIdKeyedAPI(
+            [
+                # First fetch: two owners flag the same md5
+                {
+                    1: FakeIdRecord(owner=1, tags=["a"], md5=md5),
+                    2: FakeIdRecord(owner=2, tags=["b"], md5=md5),
+                },
+                # Second fetch: record 1 is updated, record 2 is deleted
+                {
+                    1: FakeIdRecord(owner=1, tags=["c"], md5=md5),
+                    2: FakeIdRecord(deleted=True),
+                },
+            ]
+        )
+        collab = FakeIdKeyedAPI.make_collab()
+        first, second = api.fetch_iter([], None)
+        assert first.checkpoint == FakeCheckpoint(100)
+        assert FakeIdKeyedAPI.naive_convert_to_signal_type(
+            [VideoMD5Signal], collab, first.updates
+        ) == {
+            VideoMD5Signal: {
+                md5: FakeSignalMetadata(
+                    [
+                        SignalOpinionWithOwner(
+                            SignalOpinionCategory.INVESTIGATION_SEED, {"a"}, 1
+                        ),
+                        SignalOpinionWithOwner(
+                            SignalOpinionCategory.INVESTIGATION_SEED, {"b"}, 2
+                        ),
+                    ]
+                )
+            }
+        }
+
     """
 
     @classmethod
@@ -177,7 +231,8 @@ class FakeIdKeyedAPI(FakeExchangeAPIBase[FakeSignalMetadata, int, FakeIdRecord])
     ) -> t.Dict[t.Type[SignalType], t.Dict[str, FakeSignalMetadata]]:
         # signal type -> signal -> owner -> tags
         remapped: t.DefaultDict[
-            t.Type[SignalType], t.DefaultDict[str, t.DefaultDict[int, t.Set[str]]]
+            t.Type[SignalType], t.DefaultDict[str,
+                                              t.DefaultDict[int, t.Set[str]]]
         ] = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
         for record in fetched.values():
             if record is None or record.deleted:
@@ -205,7 +260,7 @@ class FakeIdKeyedAPI(FakeExchangeAPIBase[FakeSignalMetadata, int, FakeIdRecord])
 
 def exchange_types(*apis: type) -> t.List[TSignalExchangeAPICls]:
     """
-    A list of exchange classes, typed for DBMStore(exchange_types=...) and
-    similar, without a `# type: ignore[list-item]` on every entry.
+    Shortcut for typing converting API literals into the form storage expects
+    e.g. DBMStore(exchange_types=...)
     """
     return t.cast(t.List[TSignalExchangeAPICls], list(apis))
