@@ -2,7 +2,6 @@
 
 import dbm
 import importlib
-from dataclasses import dataclass, field
 import pathlib
 import time
 import typing as t
@@ -20,11 +19,15 @@ from threatexchange.exchanges.impl.fb_threatexchange_api import (
     FBThreatExchangeCollabConfig,
     FBThreatExchangeSignalExchangeAPI,
 )
+from threatexchange.exchanges.tests.fake_exchange import (
+    FakeIdKeyedAPI,
+    FakeIdRecord,
+    exchange_types,
+)
 from threatexchange.storage import interfaces as iface
 from threatexchange.storage import local_dbm
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
-from threatexchange.signal_type.signal_base import SignalType
 
 
 def test_signal_type(tmpdir: pathlib.Path):
@@ -64,10 +67,9 @@ def test_content_type(tmpdir: pathlib.Path):
 def _make_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
     return local_dbm.DBMStore(
         pathlib.Path(tmpdir),
-        exchange_types=[
-            StaticSampleSignalExchangeAPI,  # type: ignore[list-item]
-            FBThreatExchangeSignalExchangeAPI,  # type: ignore[list-item]
-        ],
+        exchange_types=exchange_types(
+            StaticSampleSignalExchangeAPI, FBThreatExchangeSignalExchangeAPI
+        ),
     )
 
 
@@ -222,8 +224,6 @@ def test_exchange_commit_and_checkpoint(tmpdir: pathlib.Path) -> None:
     # No checkpoint before any fetch
     assert store.exchange_get_fetch_checkpoint("test_collab") is None
 
-    from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
-
     checkpoint = NoCheckpointing()
     dat: dict = {
         (
@@ -263,8 +263,6 @@ def test_exchange_get_client(tmpdir: pathlib.Path) -> None:
 
 def test_exchange_get_data(tmpdir: pathlib.Path) -> None:
     """exchange_get_data returns the stored FetchedSignalMetadata for a key."""
-    from threatexchange.exchanges.fetch_state import FetchedSignalMetadata
-
     store = _make_store(tmpdir)
     collab = _make_collab()
     store.exchange_update(collab, create=True)
@@ -655,52 +653,21 @@ def test_signal_type_index_store_failed_write(tmpdir: pathlib.Path) -> None:
 # exchange_commit_fetch: merge + bank-per-collab
 
 
-@dataclass
-class _IdKeyedRecord(FetchedSignalMetadata):
-    pdq: t.Optional[str] = None
-    tags: t.List[str] = field(default_factory=list)
-    deleted: bool = False
-
-
-class _IdKeyedAPI(StaticSampleSignalExchangeAPI):
-    """
-    Records keyed by id rather than by signal, with a non-trivial merge.
-
-    Merging unions the tags with the stored record, and a deleted record
-    is removed, similar to NCMEC.
-    """
+class _TagUnionAPI(FakeIdKeyedAPI):
+    """Merging unions tags with the stored record, so merge is observable."""
 
     @classmethod
     def get_name(cls) -> str:
-        return "id_keyed"
-
-    @staticmethod
-    def get_record_cls() -> t.Type[_IdKeyedRecord]:
-        return _IdKeyedRecord
+        return "tag_union"
 
     @classmethod
-    def fetch_value_merge(  # type: ignore[override]
-        cls, old: t.Optional[_IdKeyedRecord], new: t.Optional[_IdKeyedRecord]
-    ) -> t.Optional[_IdKeyedRecord]:
-        assert new is not None
-        if new.deleted:
-            return None
-        if old is not None:
-            new.tags = sorted(set(old.tags) | set(new.tags))
-        return new
-
-    @classmethod
-    def naive_convert_to_signal_type(  # type: ignore[override]
-        cls,
-        signal_types: t.Sequence[t.Type[SignalType]],
-        collab: CollaborationConfigBase,
-        fetched: t.Mapping[str, _IdKeyedRecord],
-    ) -> t.Dict[t.Type[SignalType], t.Dict[str, _IdKeyedRecord]]:
-        ret: t.Dict[t.Type[SignalType], t.Dict[str, _IdKeyedRecord]] = {}
-        for record in fetched.values():
-            if record.pdq is not None and PdqSignal in signal_types:
-                ret.setdefault(PdqSignal, {})[record.pdq] = record
-        return ret
+    def fetch_value_merge(
+        cls, old: t.Optional[FakeIdRecord], new: t.Optional[FakeIdRecord]
+    ) -> t.Optional[FakeIdRecord]:
+        merged = super().fetch_value_merge(old, new)
+        if merged is not None and old is not None:
+            merged.tags = sorted(set(old.tags) | set(merged.tags))
+        return merged
 
 
 PDQ_A = "a" * 64
@@ -708,21 +675,13 @@ PDQ_B = "b" * 64
 MD5_A = "a" * 32
 
 
-def _make_id_keyed_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
-    store = local_dbm.DBMStore(
-        pathlib.Path(tmpdir),
-        exchange_types=[
-            StaticSampleSignalExchangeAPI,  # type: ignore[list-item]
-            _IdKeyedAPI,  # type: ignore[list-item]
-        ],
-    )
-    store.exchange_update(
-        CollaborationConfigBase(
-            name="id_collab", api=_IdKeyedAPI.get_name(), enabled=True
-        ),
-        create=True,
-    )
-    return store
+def _make_id_keyed_store(
+    tmpdir: pathlib.Path, api: t.Type[FakeIdKeyedAPI] = FakeIdKeyedAPI
+) -> t.Tuple[local_dbm.DBMStore, CollaborationConfigBase]:
+    store = local_dbm.DBMStore(pathlib.Path(tmpdir), exchange_types=exchange_types(api))
+    collab = api.make_collab("id_collab")
+    store.exchange_update(collab, create=True)
+    return store, collab
 
 
 def _bank_content(store: local_dbm.DBMStore, bank: str) -> t.Dict[int, t.Any]:
@@ -836,56 +795,52 @@ def test_commit_fetch_populates_bank(tmpdir: pathlib.Path) -> None:
 
 
 def test_commit_fetch_applies_merge(tmpdir: pathlib.Path) -> None:
-    store = _make_id_keyed_store(tmpdir)
-    collab = store.exchange_get("id_collab")
-    assert collab is not None
+    store, collab = _make_id_keyed_store(tmpdir, _TagUnionAPI)
     cp = NoCheckpointing()
 
     store.exchange_commit_fetch(
-        collab, None, {"1": _IdKeyedRecord(pdq=PDQ_A, tags=["x"])}, cp
+        collab, None, {1: FakeIdRecord(pdq=PDQ_A, tags=["x"])}, cp
     )
     store.exchange_commit_fetch(
-        collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_A, tags=["y"])}, cp
+        collab, cp, {1: FakeIdRecord(pdq=PDQ_A, tags=["y"])}, cp
     )
     # Merged with the stored value, rather than replaced
-    assert store.exchange_get_data("id_collab", "1") == _IdKeyedRecord(
+    assert store.exchange_get_data("id_collab", 1) == FakeIdRecord(
         pdq=PDQ_A, tags=["x", "y"]
     )
 
     # Merge returning None deletes the record and its content
-    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(deleted=True)}, cp)
+    store.exchange_commit_fetch(collab, cp, {1: FakeIdRecord(deleted=True)}, cp)
     with pytest.raises(KeyError):
-        store.exchange_get_data("id_collab", "1")
+        store.exchange_get_data("id_collab", 1)
     assert _bank_content(store, "id_collab") == {}
     assert store.exchange_get_fetch_status("id_collab").fetched_items == 0
 
 
 def test_commit_fetch_signal_changes(tmpdir: pathlib.Path) -> None:
-    store = _make_id_keyed_store(tmpdir)
-    collab = store.exchange_get("id_collab")
-    assert collab is not None
+    store, collab = _make_id_keyed_store(tmpdir)
     cp = NoCheckpointing()
 
-    store.exchange_commit_fetch(collab, None, {"1": _IdKeyedRecord(pdq=PDQ_A)}, cp)
+    store.exchange_commit_fetch(collab, None, {1: FakeIdRecord(pdq=PDQ_A)}, cp)
     [(content_id, (_, signals))] = _bank_content(store, "id_collab").items()
     assert signals == {"pdq": PDQ_A}
     target_before = store.get_current_index_build_target(PdqSignal)
 
     # Signal changes: same content id, new signal, newer than the old target
     with patch("time.time", return_value=time.time() + 10):
-        store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_B)}, cp)
+        store.exchange_commit_fetch(collab, cp, {1: FakeIdRecord(pdq=PDQ_B)}, cp)
     assert store.bank_content_get_signals([content_id]) == {content_id: {"pdq": PDQ_B}}
     target_after = store.get_current_index_build_target(PdqSignal)
     assert target_after.total_hash_count == 1
     assert target_after.last_item_timestamp > target_before.last_item_timestamp
 
     # No more usable signals: content removed, record kept
-    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(tags=["z"])}, cp)
+    store.exchange_commit_fetch(collab, cp, {1: FakeIdRecord(tags=["z"])}, cp)
     assert _bank_content(store, "id_collab") == {}
-    assert store.exchange_get_data("id_collab", "1") == _IdKeyedRecord(tags=["z"])
+    assert store.exchange_get_data("id_collab", 1) == FakeIdRecord(tags=["z"])
 
     # Signal comes back: new content
-    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_A)}, cp)
+    store.exchange_commit_fetch(collab, cp, {1: FakeIdRecord(pdq=PDQ_A)}, cp)
     [(new_content_id, (_, signals))] = _bank_content(store, "id_collab").items()
     assert signals == {"pdq": PDQ_A}
     assert new_content_id != content_id
@@ -958,14 +913,12 @@ def test_exchange_yield_data(tmpdir: pathlib.Path) -> None:
 
     id_keyed_dir = pathlib.Path(tmpdir) / "id_keyed"
     id_keyed_dir.mkdir()
-    store2 = _make_id_keyed_store(id_keyed_dir)
-    collab2 = store2.exchange_get("id_collab")
-    assert collab2 is not None
+    store2, collab2 = _make_id_keyed_store(id_keyed_dir)
     store2.exchange_commit_fetch(
-        collab2, None, {"1": _IdKeyedRecord(pdq=PDQ_A)}, NoCheckpointing()
+        collab2, None, {1: FakeIdRecord(pdq=PDQ_A)}, NoCheckpointing()
     )
     assert list(store2.exchange_yield_data("id_collab")) == [
-        ("1", _IdKeyedRecord(pdq=PDQ_A))
+        (1, FakeIdRecord(pdq=PDQ_A))
     ]
 
     with pytest.raises(KeyError):
