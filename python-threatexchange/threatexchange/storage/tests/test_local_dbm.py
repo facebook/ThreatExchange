@@ -773,7 +773,8 @@ def test_exchange_create_bank_fails(tmpdir: pathlib.Path) -> None:
     store = _make_store(tmpdir)
     collab = _make_collab()
     with patch.object(store, "bank_update", side_effect=OSError("disk full")):
-        store.exchange_update(collab, create=True)
+        with pytest.raises(OSError, match="disk full"):
+            store.exchange_update(collab, create=True)
     # The config is kept even though the bank couldn't be created
     assert store.exchange_get("test_collab") == collab
     assert store.get_bank("test_collab") is None
