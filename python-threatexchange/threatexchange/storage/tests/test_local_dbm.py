@@ -1,7 +1,12 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
+import dbm
+import importlib
+from dataclasses import dataclass, field
 import pathlib
+import time
 import typing as t
+from unittest.mock import patch
 
 import pytest
 
@@ -19,6 +24,7 @@ from threatexchange.storage import interfaces as iface
 from threatexchange.storage import local_dbm
 from threatexchange.signal_type.pdq.signal import PdqSignal
 from threatexchange.signal_type.md5 import VideoMD5Signal
+from threatexchange.signal_type.signal_base import SignalType
 
 
 def test_signal_type(tmpdir: pathlib.Path):
@@ -512,7 +518,9 @@ def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
     )
     assert _dbm_files(folder / "exchange_data", "test_collab")
     store.exchange_delete("test_collab")
-    assert not _dbm_files(folder / "exchange_data", "test_collab")
+    # Deleting clears the db rather than removing its files
+    with dbm.open(str(folder / "exchange_data" / "test_collab")) as db:
+        assert len(db) == 0
 
     store.bank_update(_make_bank("OLD"), create=True)
     cid = store.bank_add_content("OLD", {PdqSignal: "a" * 64})
@@ -522,7 +530,8 @@ def test_delete_and_rename_find_files(tmpdir: pathlib.Path) -> None:
     assert [c.id for c in store.bank_content_get([cid])] == [cid]
 
     store.bank_delete("NEW")
-    assert not _dbm_files(folder / "bank_content", "NEW")
+    with dbm.open(str(folder / "bank_content" / "NEW")) as db:
+        assert len(db) == 0
 
 
 def test_state_version(tmpdir: pathlib.Path) -> None:
@@ -641,3 +650,426 @@ def test_signal_type_index_store_failed_write(tmpdir: pathlib.Path) -> None:
     assert [p.name for p in (folder / local_dbm.INDEX_FOLDER_NAME).iterdir()] == [
         "pdq.index"
     ]
+
+
+# exchange_commit_fetch: merge + bank-per-collab
+
+
+@dataclass
+class _IdKeyedRecord(FetchedSignalMetadata):
+    pdq: t.Optional[str] = None
+    tags: t.List[str] = field(default_factory=list)
+    deleted: bool = False
+
+
+class _IdKeyedAPI(StaticSampleSignalExchangeAPI):
+    """
+    Records keyed by id rather than by signal, with a non-trivial merge.
+
+    Merging unions the tags with the stored record, and a deleted record
+    is removed, similar to NCMEC.
+    """
+
+    @classmethod
+    def get_name(cls) -> str:
+        return "id_keyed"
+
+    @staticmethod
+    def get_record_cls() -> t.Type[_IdKeyedRecord]:
+        return _IdKeyedRecord
+
+    @classmethod
+    def fetch_value_merge(  # type: ignore[override]
+        cls, old: t.Optional[_IdKeyedRecord], new: t.Optional[_IdKeyedRecord]
+    ) -> t.Optional[_IdKeyedRecord]:
+        assert new is not None
+        if new.deleted:
+            return None
+        if old is not None:
+            new.tags = sorted(set(old.tags) | set(new.tags))
+        return new
+
+    @classmethod
+    def naive_convert_to_signal_type(  # type: ignore[override]
+        cls,
+        signal_types: t.Sequence[t.Type[SignalType]],
+        collab: CollaborationConfigBase,
+        fetched: t.Mapping[str, _IdKeyedRecord],
+    ) -> t.Dict[t.Type[SignalType], t.Dict[str, _IdKeyedRecord]]:
+        ret: t.Dict[t.Type[SignalType], t.Dict[str, _IdKeyedRecord]] = {}
+        for record in fetched.values():
+            if record.pdq is not None and PdqSignal in signal_types:
+                ret.setdefault(PdqSignal, {})[record.pdq] = record
+        return ret
+
+
+PDQ_A = "a" * 64
+PDQ_B = "b" * 64
+MD5_A = "a" * 32
+
+
+def _make_id_keyed_store(tmpdir: pathlib.Path) -> local_dbm.DBMStore:
+    store = local_dbm.DBMStore(
+        pathlib.Path(tmpdir),
+        exchange_types=[
+            StaticSampleSignalExchangeAPI,  # type: ignore[list-item]
+            _IdKeyedAPI,  # type: ignore[list-item]
+        ],
+    )
+    store.exchange_update(
+        CollaborationConfigBase(
+            name="id_collab", api=_IdKeyedAPI.get_name(), enabled=True
+        ),
+        create=True,
+    )
+    return store
+
+
+def _bank_content(store: local_dbm.DBMStore, bank: str) -> t.Dict[int, t.Any]:
+    """All content in a bank: id -> (config, signals)"""
+    ids = {
+        item.bank_content_id
+        for item in store.bank_yield_content()
+        if store.bank_content_get([item.bank_content_id])[0].bank.name == bank
+    }
+    signals = store.bank_content_get_signals(ids)
+    return {c.id: (c, signals[c.id]) for c in store.bank_content_get(ids)}
+
+
+def test_record_key_roundtrip() -> None:
+    for key in ["abc", 123, ("pdq", "abc"), ("a", ("b", 1))]:
+        as_str = local_dbm.record_key_to_str(key)
+        assert isinstance(as_str, str)
+        assert local_dbm.record_key_from_str(as_str) == key
+
+
+def test_exchange_create_makes_bank(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    store.exchange_update(_make_collab(), create=True)
+    bank = store.get_bank("test_collab")
+    assert bank is not None
+    assert bank.enabled
+
+    # Updating doesn't touch the bank
+    store.exchange_update(_make_collab(), create=False)
+    assert set(store.get_banks()) == {"test_collab"}
+
+    # Never fetched, so default status
+    status = store.exchange_get_fetch_status("test_collab")
+    assert status.last_fetch_complete_ts is None
+    assert status.fetched_items == 0
+
+
+def test_exchange_create_bank_exists(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    store.bank_update(_make_bank("test_collab"), create=True)
+    with pytest.raises(ValueError, match="bank with that name already exists"):
+        store.exchange_update(_make_collab(), create=True)
+    # Nothing was written
+    assert store.exchange_get("test_collab") is None
+
+
+def test_exchange_create_bank_fails(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    with patch.object(store, "bank_update", side_effect=OSError("disk full")):
+        with pytest.raises(OSError, match="disk full"):
+            store.exchange_update(collab, create=True)
+    # The config is kept even though the bank couldn't be created
+    assert store.exchange_get("test_collab") == collab
+    assert store.get_bank("test_collab") is None
+
+    # The next fetch creates it
+    store.exchange_commit_fetch(
+        collab, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+    )
+    assert store.get_bank("test_collab") is not None
+    assert len(_bank_content(store, "test_collab")) == 1
+
+
+def test_commit_fetch_populates_bank(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+
+    dat: dict = {
+        ("pdq", PDQ_A): FetchedSignalMetadata(),
+        ("video_md5", MD5_A): FetchedSignalMetadata(),
+        ("pdq", "not a valid pdq"): FetchedSignalMetadata(),
+    }
+    store.exchange_commit_fetch(collab, None, dat, NoCheckpointing())
+
+    # All records are stored, even the one without usable signals
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 3
+
+    content = _bank_content(store, "test_collab")
+    assert sorted(tuple(signals.items()) for _, signals in content.values()) == [
+        (("pdq", PDQ_A),),
+        (("video_md5", MD5_A),),
+    ]
+    for cfg, signals in content.values():
+        assert cfg.enabled
+        # collab_metadata points back at the fetched record
+        [(collab_name, [key_str])] = cfg.collab_metadata.items()
+        assert collab_name == "test_collab"
+        key = local_dbm.record_key_from_str(key_str)
+        assert key == next(iter(signals.items()))
+        assert store.exchange_get_data(collab_name, key) == FetchedSignalMetadata()
+
+    assert store.get_current_index_build_target(PdqSignal).total_hash_count == 1
+    assert store.get_current_index_build_target(VideoMD5Signal).total_hash_count == 1
+
+    # Committing the same data again doesn't create duplicates
+    store.exchange_commit_fetch(collab, NoCheckpointing(), dat, NoCheckpointing())
+    assert _bank_content(store, "test_collab").keys() == content.keys()
+
+    # Deleting a record removes its content
+    store.exchange_commit_fetch(
+        collab, NoCheckpointing(), {("pdq", PDQ_A): None}, NoCheckpointing()
+    )
+    assert [s for _, s in _bank_content(store, "test_collab").values()] == [
+        {"video_md5": MD5_A}
+    ]
+    assert store.get_current_index_build_target(PdqSignal).total_hash_count == 0
+    with pytest.raises(KeyError):
+        store.exchange_get_data("test_collab", ("pdq", PDQ_A))
+
+
+def test_commit_fetch_applies_merge(tmpdir: pathlib.Path) -> None:
+    store = _make_id_keyed_store(tmpdir)
+    collab = store.exchange_get("id_collab")
+    assert collab is not None
+    cp = NoCheckpointing()
+
+    store.exchange_commit_fetch(
+        collab, None, {"1": _IdKeyedRecord(pdq=PDQ_A, tags=["x"])}, cp
+    )
+    store.exchange_commit_fetch(
+        collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_A, tags=["y"])}, cp
+    )
+    # Merged with the stored value, rather than replaced
+    assert store.exchange_get_data("id_collab", "1") == _IdKeyedRecord(
+        pdq=PDQ_A, tags=["x", "y"]
+    )
+
+    # Merge returning None deletes the record and its content
+    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(deleted=True)}, cp)
+    with pytest.raises(KeyError):
+        store.exchange_get_data("id_collab", "1")
+    assert _bank_content(store, "id_collab") == {}
+    assert store.exchange_get_fetch_status("id_collab").fetched_items == 0
+
+
+def test_commit_fetch_signal_changes(tmpdir: pathlib.Path) -> None:
+    store = _make_id_keyed_store(tmpdir)
+    collab = store.exchange_get("id_collab")
+    assert collab is not None
+    cp = NoCheckpointing()
+
+    store.exchange_commit_fetch(collab, None, {"1": _IdKeyedRecord(pdq=PDQ_A)}, cp)
+    [(content_id, (_, signals))] = _bank_content(store, "id_collab").items()
+    assert signals == {"pdq": PDQ_A}
+    target_before = store.get_current_index_build_target(PdqSignal)
+
+    # Signal changes: same content id, new signal, newer than the old target
+    with patch("time.time", return_value=time.time() + 10):
+        store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_B)}, cp)
+    assert store.bank_content_get_signals([content_id]) == {content_id: {"pdq": PDQ_B}}
+    target_after = store.get_current_index_build_target(PdqSignal)
+    assert target_after.total_hash_count == 1
+    assert target_after.last_item_timestamp > target_before.last_item_timestamp
+
+    # No more usable signals: content removed, record kept
+    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(tags=["z"])}, cp)
+    assert _bank_content(store, "id_collab") == {}
+    assert store.exchange_get_data("id_collab", "1") == _IdKeyedRecord(tags=["z"])
+
+    # Signal comes back: new content
+    store.exchange_commit_fetch(collab, cp, {"1": _IdKeyedRecord(pdq=PDQ_A)}, cp)
+    [(new_content_id, (_, signals))] = _bank_content(store, "id_collab").items()
+    assert signals == {"pdq": PDQ_A}
+    assert new_content_id != content_id
+
+
+def test_exchange_delete_removes_bank(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+    store.exchange_commit_fetch(
+        collab, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+    )
+    assert len(_bank_content(store, "test_collab")) == 1
+
+    store.exchange_delete("test_collab")
+    assert store.get_banks() == {}
+    assert list(store.bank_yield_content()) == []
+
+    # Recreating starts from empty
+    store.exchange_update(collab, create=True)
+    assert _bank_content(store, "test_collab") == {}
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 0
+
+
+def test_exchange_clear_data(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    other = _make_collab("other_collab")
+    store.exchange_update(collab, create=True)
+    store.exchange_update(other, create=True)
+    for c in (collab, other):
+        store.exchange_commit_fetch(
+            c, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+        )
+    store.exchange_start_fetch("test_collab")
+    store.exchange_complete_fetch("test_collab", is_up_to_date=True, exception=False)
+
+    store.exchange_clear_data("test_collab")
+
+    # Config and (empty) bank kept
+    assert store.exchange_get("test_collab") == collab
+    assert store.get_bank("test_collab") is not None
+    assert _bank_content(store, "test_collab") == {}
+    # Data and status gone
+    assert list(store.exchange_yield_data("test_collab")) == []
+    assert store.exchange_get_fetch_checkpoint("test_collab") is None
+    status = store.exchange_get_fetch_status("test_collab")
+    assert status.fetched_items == 0
+    assert status.last_fetch_complete_ts is None
+    # Other collabs untouched
+    assert len(_bank_content(store, "other_collab")) == 1
+    assert store.exchange_get_fetch_status("other_collab").fetched_items == 1
+
+    with pytest.raises(KeyError):
+        store.exchange_clear_data("no_such_collab")
+
+
+def test_exchange_yield_data(tmpdir: pathlib.Path) -> None:
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+    assert list(store.exchange_yield_data("test_collab")) == []
+
+    dat: dict = {
+        ("pdq", PDQ_A): FetchedSignalMetadata(),
+        ("video_md5", MD5_A): FetchedSignalMetadata(),
+    }
+    store.exchange_commit_fetch(collab, None, dat, NoCheckpointing())
+    assert dict(store.exchange_yield_data("test_collab")) == dat
+
+    id_keyed_dir = pathlib.Path(tmpdir) / "id_keyed"
+    id_keyed_dir.mkdir()
+    store2 = _make_id_keyed_store(id_keyed_dir)
+    collab2 = store2.exchange_get("id_collab")
+    assert collab2 is not None
+    store2.exchange_commit_fetch(
+        collab2, None, {"1": _IdKeyedRecord(pdq=PDQ_A)}, NoCheckpointing()
+    )
+    assert list(store2.exchange_yield_data("id_collab")) == [
+        ("1", _IdKeyedRecord(pdq=PDQ_A))
+    ]
+
+    with pytest.raises(KeyError):
+        list(store.exchange_yield_data("no_such_collab"))
+
+
+def _dbm_backends() -> t.List[str]:
+    """dbm backend modules available on this platform"""
+    ret = []
+    for name in ("dbm.gnu", "dbm.ndbm", "dbm.dumb", "dbm.sqlite3"):
+        try:
+            importlib.import_module(name)
+        except ImportError:
+            continue
+        ret.append(name)
+    return ret
+
+
+@pytest.mark.parametrize("backend", _dbm_backends())
+@pytest.mark.parametrize("batch_size", [1, 3, 100])
+def test_iter_dbm_items(tmp_path: pathlib.Path, backend: str, batch_size: int) -> None:
+    mod = importlib.import_module(backend)
+    path = str(tmp_path / "db")
+
+    def open_db() -> t.Any:
+        return mod.open(path, "c")
+
+    expected = {f"k{i}".encode(): f"v{i}".encode() for i in range(10)}
+    with open_db() as db:
+        for k, v in expected.items():
+            db[k] = v
+
+    seen = {}
+    for k, v in local_dbm._iter_dbm_items(open_db, batch_size):
+        # The db must not be held open while yielding (dbm.gnu locks it)
+        with open_db() as db:
+            assert db[k] == v
+        assert k not in seen
+        seen[k] = v
+    assert seen == expected
+
+    assert (
+        list(
+            local_dbm._iter_dbm_items(
+                lambda: mod.open(str(tmp_path / "empty"), "c"), batch_size
+            )
+        )
+        == []
+    )
+
+
+def test_iter_gdbm_items_last_key_deleted(tmp_path: pathlib.Path) -> None:
+    gnu = pytest.importorskip("dbm.gnu")
+    path = str(tmp_path / "db")
+
+    def open_db() -> t.Any:
+        return gnu.open(path, "c")
+
+    with open_db() as db:
+        for i in range(4):
+            db[f"k{i}".encode()] = b"v"
+
+    it = local_dbm._iter_dbm_items(open_db, batch_size=2)
+    next(it)
+    last, _ = next(it)
+    with open_db() as db:
+        del db[last]
+    with pytest.raises(RuntimeError, match="deleted mid-iteration"):
+        next(it)
+
+
+def test_exchange_delete_order(tmpdir: pathlib.Path) -> None:
+    """Teardown is status, data, bank, config: interrupting leaves the later ones"""
+    store = _make_store(tmpdir)
+    collab = _make_collab()
+    store.exchange_update(collab, create=True)
+
+    def fetch() -> None:
+        store.exchange_start_fetch("test_collab")
+        store.exchange_commit_fetch(
+            collab, None, {("pdq", PDQ_A): FetchedSignalMetadata()}, NoCheckpointing()
+        )
+        assert store.exchange_get_fetch_checkpoint("test_collab") is not None
+
+    fetch()
+    # Fails clearing data: only the status (and checkpoint) are gone
+    with patch.object(local_dbm, "_clear_data", side_effect=OSError("boom")):
+        with pytest.raises(OSError):
+            store.exchange_delete("test_collab")
+    assert store.exchange_get_fetch_checkpoint("test_collab") is None
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 1
+    assert len(_bank_content(store, "test_collab")) == 1
+    assert store.exchange_get("test_collab") == collab
+
+    fetch()
+    # Fails deleting the bank: status and data are gone, bank and config remain
+    with patch.object(store, "bank_delete", side_effect=OSError("boom")):
+        with pytest.raises(OSError):
+            store.exchange_delete("test_collab")
+    assert store.exchange_get_fetch_checkpoint("test_collab") is None
+    assert store.exchange_get_fetch_status("test_collab").fetched_items == 0
+    assert store.get_bank("test_collab") is not None
+    assert store.exchange_get("test_collab") == collab
+
+    store.exchange_delete("test_collab")
+    assert store.get_bank("test_collab") is None
+    assert store.exchange_get("test_collab") is None
