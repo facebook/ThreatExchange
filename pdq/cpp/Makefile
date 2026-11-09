@@ -67,6 +67,7 @@ MAINS=\
  hashtool256 \
  pdq-downsample-demo \
  test-bits \
+ test-downscaling \
  hamming-tabulate \
  test-hamming \
  test-flat \
@@ -76,7 +77,7 @@ MAINS=\
 WASMMAINS=pdq-photo-hasher
 
 TESTS=\
- run-test-bits run-test-hamming run-reg-test run-test-flat
+ run-test-bits run-test-hamming run-reg-test run-test-flat run-test-downscaling
 
 # ================================================================
 top: $(MAINS) $(TESTS)
@@ -93,6 +94,8 @@ run-reg-test:
 	./reg_test/run
 run-test-flat: test-flat
 	./test-flat
+run-test-downscaling: test-downscaling
+	./test-downscaling
 itso:
 	cp output-regtest/out reg_test/expected
 
@@ -102,6 +105,11 @@ hashtool256: bin/hashtool256.cpp $(LIBSRCS) $(LIBHDRS)
 
 test-bits: bin/test-bits.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/test-bits.cpp $(LIBSRCS) -o test-bits $(LFLAGS)
+
+# Overflow regression tests (ThreatExchange#1979). Depends only on the
+# downscaling translation unit, so it builds without the image-I/O layer.
+test-downscaling: bin/test-downscaling.cpp downscaling/downscaling.cpp downscaling/downscaling.h
+	$(CCOPT) bin/test-downscaling.cpp downscaling/downscaling.cpp -o test-downscaling $(LFLAGS)
 
 hamming-tabulate: bin/hamming-tabulate.cpp $(LIBSRCS) $(LIBHDRS)
 	$(CCOPT) bin/hamming-tabulate.cpp $(LIBSRCS) -o test-hamming $(LFLAGS)
