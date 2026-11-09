@@ -94,6 +94,8 @@ New functionality should have unittests. Core functionality like SignalType and 
 
 We prefer tests to live in their own files in the /tests/ directory where the code under test is.
 
+There are some utilities to help with writing tests against common functionality in test directories, such as for faking storage, exchanges, types, etc, which live in the test directory where the interface is defined. Prefer using "real" version of those interfaces when possible - e.g. instead of faking a SignalType, use an existing SignalType like PdqSignal and use `get_examples` to get valid values.  
+
 ### Skipped Tests
 Many tests rely on extensions that are not installed by default when you install `threatexchange`. It is okay to submit a PR without running skipped tests, they will be run by workflow. If you find out that tests are failing, you can follow the instructions in the extensions directories to install the needed dependencies, which will make the tests runnable locally.
 
