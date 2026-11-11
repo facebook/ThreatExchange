@@ -246,6 +246,11 @@ $ touch ~/.tx_stopncii_keys
 $ chmod 600 ~/.tx_stopncii_keys
 $ echo '<FUNCTION_KEY>,<SUBSCRIPTION_KEY>' > ~/.tx_stopncii_keys
 
+# Optional - to send feedback on hashes back to StopNCII, add your Submit
+# Feedback function key as a fourth value. The third value, a base URL
+# override, can be left empty.
+$ TX_STOPNCII_KEYS='<FUNCTION_KEY>,<SUBSCRIPTION_KEY>,,<FEEDBACK_FUNCTION_KEY>'
+
 # Step 2 - set up config
 $ threatexchange config collab edit stop_ncii --create 'StopNCII'
 

@@ -6,10 +6,13 @@ import typing as t
 from threatexchange.exchanges.fetch_state import AggregateSignalOpinionCategory
 from threatexchange.exchanges.clients.stopncii.tests.test_api import api
 
-from threatexchange.exchanges.impl.stop_ncii_api import StopNCIISignalExchangeAPI
+from threatexchange.exchanges.impl.stop_ncii_api import (
+    StopNCIICredentials,
+    StopNCIISignalExchangeAPI,
+)
 from threatexchange.exchanges.collab_config import CollaborationConfigWithDefaults
 
-from threatexchange.exchanges.clients.stopncii.api import StopNCIIAPI
+from threatexchange.exchanges.clients.stopncii.api import StopNCIIAPI, StopNCIIEndpoint
 
 
 @pytest.fixture
@@ -59,3 +62,41 @@ def test_fetch(exchange: StopNCIISignalExchangeAPI, monkeypatch: pytest.MonkeyPa
     assert ao.tags == {"Nude", "Objectionable"}
 
     assert next(it, None) is None  # We fetched everything
+
+
+@pytest.mark.parametrize(
+    ("s", "base_url", "feedback_key"),
+    [
+        ("fetch,sub", None, None),
+        ("fetch,sub,https://example.test", "https://example.test", None),
+        ("fetch,sub,,feedback", None, "feedback"),
+        ("fetch,sub,https://example.test,feedback", "https://example.test", "feedback"),
+    ],
+)
+def test_credentials_from_str(
+    s: str, base_url: t.Optional[str], feedback_key: t.Optional[str]
+):
+    creds = StopNCIICredentials._from_str(s)
+    assert creds.fetch_function_key == "fetch"
+    assert creds.subscription_key == "sub"
+    assert creds.base_url_override == base_url
+    assert creds.feedback_function_key == feedback_key
+
+
+def test_credentials_from_str_invalid():
+    with pytest.raises(ValueError):
+        StopNCIICredentials._from_str("only_one_part")
+    with pytest.raises(ValueError):
+        StopNCIICredentials._from_str("a,b,c,d,e")
+
+
+def test_for_collab_passes_feedback_key():
+    collab = CollaborationConfigWithDefaults("Test")
+    with_key = StopNCIISignalExchangeAPI.for_collab(
+        collab, StopNCIICredentials._from_str("fetch,sub,,feedback")
+    )
+    assert with_key.api._function_keys[StopNCIIEndpoint.SubmitFeedback] == "feedback"
+    without_key = StopNCIISignalExchangeAPI.for_collab(
+        collab, StopNCIICredentials._from_str("fetch,sub")
+    )
+    assert StopNCIIEndpoint.SubmitFeedback not in without_key.api._function_keys
